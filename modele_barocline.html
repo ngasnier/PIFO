@@ -1,0 +1,103 @@
+<!--
+Copyright (C) 2018 Nicolas GASNIER <ngasnier@orange.fr>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
+    <title>Modèle météo barocline</title>
+    <link rel="stylesheet" type="text/css" href="css/jquery-ui.min.css"/>
+    <script src="js/vendor/jquery-3.2.1.min.js"></script>
+    <script src="js/vendor/jszip.min.js"></script>
+    <script src="js/mb_meteo_barocline_main.js" type="module"></script>
+    <style>
+        html, body {
+            /*overflow: hidden;*/
+            width   : 100%;
+            height  : 100%;
+            margin  : 0;
+            padding : 0;
+            font-size: small;
+        }
+
+        #renderCanvas {
+            width   : 100%;
+            height  : 100%;
+            touch-action: none;
+        }
+        #result {
+            overflow-x: scroll;
+        }
+        #slice {
+            overflow-x: scroll;
+        }
+        #separateur {
+            clear:left;
+        }
+        #runHours, #historyInterval {
+            width: 3em;
+        }
+        fieldset {
+            float:left;
+        }
+        td, th {
+            min-width:12px;
+            min-height:12px;
+            text-align:center;
+            font-size:50%;
+        }
+        table {
+            border:0px none white;
+            border-spacing: 0px;
+        }
+    </style>
+</head>
+<body>
+    <form action="#">
+        <p>
+            <input type="checkbox" name="incRelief" id="incRelief" title="Si décoché, utilise la pression au niveau de la mer et un géopotentiel nul pour la surface."/><label for="incRelief">Inclure le relief</label> | 
+            <input type="checkbox" name="filtering" id="filtering" title="Applique le filtre de Schumann."/><label for="filtering">Filtrer</label> |
+            <a href="#" id="resetButton" title="Réinitialiser la simulation à T=0.">[Reset]</a> - 
+            <a href="#" id="stepButton" title="Avancer la simulation d'un pas de temps.">[Step]</a> 
+            <a href="#" id="playButton" title="Faire tourner la simulation.">[Play]</a> 
+            <a href="#" id="stopButton" title="Stopper la simulation.">[Pause]</a> | 
+            <span id="statistics"></span>
+        </p>
+        <p id="runinit"></p>
+        <p>
+            <label for="runHours">Nombre d'heures du run</label> <input type="text" name="runHours" id="runHours" value="48"/> | 
+            <input type="checkbox" name="history" id="history" title="Active la génération de fichiers d'historique au cours du run."/><label for="history">Générer l'historique</label> |
+            <label for="historyInterval">Intervalle d'historique (en h)</label> <input type="text" name="historyInterval" id="historyInterval" value="3"/> | 
+            <a href="#" id="downloadHistoryButton" title="Télécharger.">[Télécharger l'historique]</a>
+        </p>
+        <p>
+            <fieldset>
+                <legend> Affichage des champs</legend>
+                <input type="checkbox" name="display" id="display" title="Afficher." checked/><label for="display">Afficher</label> |  
+                <label for="variableDump">Variable</label> <select name="variableDump" id="variableDump"></select>
+                <label for="level">Niveau</label> <select name="level" id="level"></select>
+                <a href="#" id="exportButton">[Exporter]</a>
+            </fieldset>
+        </p>
+    </form>
+    <div id="separateur"></div>
+    <div id="result">
+    </div>
+    <div id="slice">
+    </div>
+</body>
+</html>
+
