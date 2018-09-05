@@ -445,7 +445,7 @@ BarotropicModel.prototype.init = function()
 
                 if (xd<yd) xd = yd;
                 
-                this.alpha[i] = 1-Math.tanh(0.5*(this.relaxation-xd));
+                this.alpha[i] = 1-Math.tanh(0.5*(this.relaxation-xd+1));
               }
             else 
             {
