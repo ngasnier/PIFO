@@ -37,6 +37,8 @@ export var ModelFront = function()
 
     this.displayLevel = 0;
     
+    this.firstExecTime = 0;
+    
     this.lastExecTime = 0;
     
     this.totalTime = 0;
@@ -173,6 +175,7 @@ ModelFront.prototype.reset = function()
 
     this.model.totalTime = 0;
     this.model.totalStep = 0;
+    this.firstExecTime = new Date();
     
     this.afterResetCallback();
 }
@@ -199,13 +202,42 @@ ModelFront.prototype.step = function()
     this.checkHistory();
 }
 
-ModelFront.prototype.play = function()
+ModelFront.prototype.playStep = function(timestamp)
 {
-    while (this.model.time<this.stopTime*3600)
+    this.step();
+    this.updateDisplay();
+    if (this.playStatus)
     {
-        this.step();
+        if (this.stopTime==0 || this.model.time<this.stopTime*3600)
+        {
+            var me = this;
+            this.requestFrame = process.nextTick(function()
+            {
+                me.playStep();
+            });
+        }
+        else
+        {
+            var now = new Date();
+            console.log("durée du calcul (ms) : "+(now.getTime()-this.firstExecTime.getTime()));
+        }
     }
 }
+
+ModelFront.prototype.play = function()
+{   
+    if (!this.playStatus)
+    {
+        this.playStatus = true;
+        var me = this;
+        this.requestFrame = process.nextTick(function()
+        {
+            me.playStep();
+        });
+    }
+}
+
+
 
 ModelFront.prototype.getFileNameFor = function(field, level)
 {
