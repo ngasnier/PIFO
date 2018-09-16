@@ -15,8 +15,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Model } from '/js/modeling/Model.js';
-import { Variable } from '/js/modeling/Variable.js';
+import { Model } from './Model.js';
+import { Variable } from './Variable.js';
 
 /**
  * Modèle barotrope en grille A et C et intégration temporelle en différences 

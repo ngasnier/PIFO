@@ -15,11 +15,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Variable } from "/js/modeling/Variable.js";
-import { SchumannFilter } from "/js/modeling/SchumannFilter.js";
-import { FieldHTMLRenderer } from "/js/ui/FieldHTMLRenderer.js";
-import { FieldTextExporter } from "/js/ui/FieldTextExporter.js";
-import { saveAs } from "/js/vendor/FileSaver.js";
+import { Variable } from "../modeling/Variable.js";
+import { SchumannFilter } from "../modeling/SchumannFilter.js";
+import { FieldHTMLRenderer } from "./FieldHTMLRenderer.js";
+import { FieldTextExporter } from "./FieldTextExporter.js";
+import { saveAs } from "../vendor/FileSaver.js";
 
 export var ModelUI = function()
 {

@@ -15,18 +15,18 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { BarotropicInterpolator } from "/js/modeling/BarotropicInterpolator.js";
-import { WGRIBInterpolator } from "/js/modeling/WGRIBInterpolator.js";
-import { TimeInterpolator } from "/js/modeling/TimeInterpolator.js";
-import { Model } from "/js/modeling/Model.js";
-import { BarotropicModel } from "/js/modeling/BarotropicModel.js";
-import { Variable } from "/js/modeling/Variable.js";
+import { BarotropicInterpolator } from "./modeling/BarotropicInterpolator.js";
+import { WGRIBInterpolator } from "./modeling/WGRIBInterpolator.js";
+import { TimeInterpolator } from "./modeling/TimeInterpolator.js";
+import { Model } from "./modeling/Model.js";
+import { BarotropicModel } from "./modeling/BarotropicModel.js";
+import { Variable } from "./modeling/Variable.js";
 
-import { WindHTMLRenderer } from "/js/ui/WindHTMLRenderer.js";
-import { TourbillonHTMLRenderer } from "/js/ui/TourbillonHTMLRenderer.js";
-import { Z500HTMLRenderer } from "/js/ui/Z500HTMLRenderer.js";
-import { BarotropicVerificationHTMLRenderer } from "/js/ui/BarotropicVerificationHTMLRenderer.js";
-import { ModelUI } from "/js/ui/ModelUI.js";
+import { WindHTMLRenderer } from "./ui/WindHTMLRenderer.js";
+import { TourbillonHTMLRenderer } from "./ui/TourbillonHTMLRenderer.js";
+import { Z500HTMLRenderer } from "./ui/Z500HTMLRenderer.js";
+import { BarotropicVerificationHTMLRenderer } from "./ui/BarotropicVerificationHTMLRenderer.js";
+import { ModelUI } from "./ui/ModelUI.js";
 
 var ui = new ModelUI();
 

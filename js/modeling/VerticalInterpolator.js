@@ -15,8 +15,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Model } from '/js/modeling/Model.js';
-import { BaroclinicModel } from '/js/modeling/BaroclinicModel.js';
+import { Model } from './Model.js';
+import { BaroclinicModel } from './BaroclinicModel.js';
 
 /**
  * Interpole les valeurs de z500 pour le modèle et inversement.

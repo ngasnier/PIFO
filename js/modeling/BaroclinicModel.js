@@ -15,8 +15,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Model } from '/js/modeling/Model.js';
-import { Variable } from '/js/modeling/Variable.js';
+import { Model } from './Model.js';
+import { Variable } from './Variable.js';
 
 /**
  * Modèle coordonnée vertical sigma pure en grille C
@@ -1485,10 +1485,6 @@ BaroclinicModel.prototype.setSurfaceLevels = function(p_levels)
         this.beta.push(b);
         this.gamma.push(a+b); 
     }
-    console.log(this.surfaces);
-    console.log(this.couches);
-    console.log(this.niveaux_s);
-    console.log(this.nbcouches);
 }
 
 BaroclinicModel.prototype.getSurfaceLevels = function()

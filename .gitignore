@@ -4,3 +4,5 @@
 /res/run
 /tools/node_modules/
 /tools/package-lock.json
+/output/
+/node_modules/

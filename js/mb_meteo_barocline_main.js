@@ -15,26 +15,26 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { WGRIBInterpolator } from "/js/modeling/WGRIBInterpolator.js";
-import { TimeInterpolator } from "/js/modeling/TimeInterpolator.js";
-import { GeopotentialInterpolator } from "/js/modeling/GeopotentialInterpolator.js";
-import { VerticalInterpolator } from "/js/modeling/VerticalInterpolator.js";
-import { HumidityInterpolator } from "/js/modeling/HumidityInterpolator.js";
-import { Model } from "/js/modeling/Model.js";
-import { BaroclinicModel } from "/js/modeling/BaroclinicModel.js";
-import { Variable } from "/js/modeling/Variable.js";
+import { WGRIBInterpolator } from "./modeling/WGRIBInterpolator.js";
+import { TimeInterpolator } from "./modeling/TimeInterpolator.js";
+import { GeopotentialInterpolator } from "./modeling/GeopotentialInterpolator.js";
+import { VerticalInterpolator } from "./modeling/VerticalInterpolator.js";
+import { HumidityInterpolator } from "./modeling/HumidityInterpolator.js";
+import { Model } from "./modeling/Model.js";
+import { BaroclinicModel } from "./modeling/BaroclinicModel.js";
+import { Variable } from "./modeling/Variable.js";
 
-import { WindHTMLRenderer } from "/js/ui/WindHTMLRenderer.js";
-import { TourbillonHTMLRenderer } from "/js/ui/TourbillonHTMLRenderer.js";
-import { Z500HTMLRenderer } from "/js/ui/Z500HTMLRenderer.js";
-import { T850HTMLRenderer } from "/js/ui/T850HTMLRenderer.js";
-import { VerticalVelocityHTMLRenderer } from "/js/ui/VerticalVelocityHTMLRenderer.js";
-import { QvHTMLRenderer } from "/js/ui/QvHTMLRenderer.js";
-import { PressureHTMLRenderer } from "/js/ui/PressureHTMLRenderer.js";
-import { TemperatureHTMLRenderer } from "/js/ui/TemperatureHTMLRenderer.js";
-import { RainHTMLRenderer } from "/js/ui/RainHTMLRenderer.js";
-import { BarotropicVerificationHTMLRenderer } from "/js/ui/BarotropicVerificationHTMLRenderer.js";
-import { ModelUI } from "/js/ui/ModelUI.js";
+import { WindHTMLRenderer } from "./ui/WindHTMLRenderer.js";
+import { TourbillonHTMLRenderer } from "./ui/TourbillonHTMLRenderer.js";
+import { Z500HTMLRenderer } from "./ui/Z500HTMLRenderer.js";
+import { T850HTMLRenderer } from "./ui/T850HTMLRenderer.js";
+import { VerticalVelocityHTMLRenderer } from "./ui/VerticalVelocityHTMLRenderer.js";
+import { QvHTMLRenderer } from "./ui/QvHTMLRenderer.js";
+import { PressureHTMLRenderer } from "./ui/PressureHTMLRenderer.js";
+import { TemperatureHTMLRenderer } from "./ui/TemperatureHTMLRenderer.js";
+import { RainHTMLRenderer } from "./ui/RainHTMLRenderer.js";
+import { BarotropicVerificationHTMLRenderer } from "./ui/BarotropicVerificationHTMLRenderer.js";
+import { ModelUI } from "./ui/ModelUI.js";
 
 var ui = new ModelUI();
 
