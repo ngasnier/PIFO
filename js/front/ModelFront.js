@@ -64,6 +64,8 @@ export var ModelFront = function()
     this.precHistory = "";
     
     this.historyInfo = "";
+    
+    this.historyDir = "output";
         
     this.beforeResetCallback = function() {};
     this.afterResetCallback = function() {};
@@ -204,12 +206,12 @@ ModelFront.prototype.step = function()
 
 ModelFront.prototype.playStep = function(timestamp)
 {
-    this.step();
-    this.updateDisplay();
     if (this.playStatus)
     {
         if (this.stopTime==0 || this.model.time<this.stopTime*3600)
         {
+            this.step();
+            this.updateDisplay();
             var me = this;
             this.requestFrame = process.nextTick(function()
             {
@@ -260,7 +262,7 @@ ModelFront.prototype.getFileNameFor = function(field, level)
     {
         filename = field+"_"+hour+".txt";
     }
-    return "output/"+filename;
+    return this.historyDir+"/"+filename;
 }
 
 ModelFront.prototype.exportField = function(field, level)
@@ -362,8 +364,7 @@ ModelFront.prototype.checkHistory = function()
 
         if (this.model.time>=this.stopTime*3600)
         {
-            // TODO : paramétrable
-            var filename = "output/fileinfo.txt";
+            var filename = this.historyDir+"/fileinfo.txt";
             console.log("exporting "+filename);
             fs.writeFileSync(filename, this.historyInfo);            
         }

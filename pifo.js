@@ -38,7 +38,7 @@ import { BarotropicVerificationHTMLRenderer } from "./js/ui/BarotropicVerificati
 import { ModelFront } from "./js/front/ModelFront.js";
 
 // Node.js specific
-var fs = require('fs')
+var fs = require('fs');
 
 var wgribInterpolator = new WGRIBInterpolator();
 var geopInterpolator = new GeopotentialInterpolator();
@@ -86,36 +86,53 @@ var requestFrame = 0;
 var ui = new ModelFront();
 var inclureRelief = 0;
 
+var config = {};
+if (process.argv.length>2)
+{
+    config = require("./"+process.argv[2]);
+}
+else 
+{
+    config = require("./config");
+}
+
+
 console.log("loading");
 ui.setStatus("loading");
 
-ui.model = new BaroclinicModel();
-ui.model.projection = Model.PROJ_MERCATOR;
-ui.model.gridType = "C";
-ui.model.verticalType = "L";
+// Choix du type de modèle
+switch (config.model)
+{
+    case "BaroclinicModel":
+        ui.model = new BaroclinicModel();
+        break;
+    default:
+        ui.model = new BaroclinicModel();
+        break;
+        
+}
 
-// TODO : rendre paramétrable
-//ui.model.filter = new SchumannFilter(this.model.width, this.model.height);
-ui.stopTime = 48;
-ui.historyInterval = 6;
+// Paramètres de type de grille
+ui.model.projection = config.projection;
+ui.model.gridType = config.gridType;
+ui.model.verticalType = config.verticalType;
 
-// TODO : les pôles ?
-ui.model.width = 92;
-ui.model.height = 44;
-ui.model.global = true;
-ui.model.dt = 120;
-ui.model.dlat = 4;
-ui.model.dlon = 4;
-ui.model.nlat = 88;
+// Configuration du domaine géographique
+ui.model.width = config.width;
+ui.model.height = config.height;
+ui.model.global = config.global;
+ui.model.dlat = config.dlat;
+ui.model.dlon = config.dlon;
+ui.model.nlat = config.nlat;
 ui.model.slat = ui.model.nlat-(ui.model.height)*ui.model.dlat;
-ui.model.elon = 360;
+ui.model.elon = config.elon;
 ui.model.wlon = ui.model.elon-(ui.model.width-(ui.model.global?2:0))*ui.model.dlon;
-ui.model.relaxation = 8;
+ui.model.relaxation = config.relaxation;
 
 // Choix de surfaces régulièrement espacées sur un nombre souhaité de niveaux
-var ptop = 6250.0;
+var ptop = config.ptop;
 var surfaces = [ ptop/100000];
-var nbsurfaces = 9;
+var nbsurfaces = config.nbSurfaces;
 var lev = ptop/100000;
 for (var i=1;i<nbsurfaces;i++)
 {
@@ -124,6 +141,13 @@ for (var i=1;i<nbsurfaces;i++)
 }
 ui.model.setSurfaceLevels(surfaces);
 
+// Configuration des paramètres temporels de la simulation
+ui.model.dt = config.dt;
+ui.stopTime = config.stopTime;
+ui.historyInterval = config.historyInterval;
+ui.historyDir = config.historyDir;
+
+// Configuration pour les exportations notamment
 ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", levels:ui.model.getLayerLevels(), renderer: windRenderer},
     Temperature: {group:"HistoricVariables", name:"Temperature", levels:(ui.model.verticalType=="CP" ? ui.model.getSurfaceLevels() : ui.model.getLayerLevels()), renderer: temperatureRenderer},
     Z500 : {group:"HistoricVariables", name:"Z500", levels:[1], renderer: z500Renderer, data:z500_display},
@@ -139,8 +163,17 @@ ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", lev
 
 ui.historyList = ["U", "V", "T", "ps", "qv", "Z500", "T850", "latitudes", "longitudes", "apcp"];
 
+// Options de traitement
+switch (config.filter)
+{
+    case "SchumannFilter":
+        ui.model.filter = new SchumannFilter(this.model.width, this.model.height);
+        break;
+}
+
+
 // Interpolation verticale
-verticalInterpolator.inputLevels = [100, 7000, 15000, 35000, 50000, 65000, 85000, 92500, 100000];
+verticalInterpolator.inputLevels = config.inputLevels;
 
 // Init l'interpolation spatiale des données d'entrée
 wgribInterpolator.global = ui.model.global;
@@ -175,8 +208,7 @@ for (var i=0;i<valids.length;i++)
 
 ui.beforeResetCallback = function()
 {
-    // TODO : a parametrer ;
-    if (inclureRelief)
+    if (config.inputRelief)
     {
         verticalInterpolator.surfacePressure = sfcprs.variable[0];
         ui.model.setVariable("ps", sfcprs.variable[0]);
@@ -240,7 +272,7 @@ ui.beforeExportCallback = function()
 
 reloadData();
 
-// Verif Ok 13/06/2018
+
 function onFieldDownload(data) 
 {
     var f = reslist[0].split("_");

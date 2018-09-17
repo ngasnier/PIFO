@@ -6,3 +6,5 @@
 /tools/package-lock.json
 /output/
 /node_modules/
+/config_europe.json
+/config.json

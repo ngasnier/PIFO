@@ -1,0 +1,29 @@
+{
+    "model": "BaroclinicModel",
+    
+    "projection": 1,
+    "gridType": "C",
+    "verticalType":  "L",
+    
+    "width": 92,
+    "height": 44,
+    "global": true,
+    "dlat": 4,
+    "dlon": 4,
+    "nlat": 88,
+    "elon": 360,
+    "relaxation": 8,
+    
+    "ptop": 6250.0,
+    "nbSurfaces": 9,
+
+    "dt": 120,
+    "stopTime": 48,
+    "historyInterval": 6,
+    "historyDir": "output",
+    
+    "filter": "none",
+    
+    "inputLevels": [100, 7000, 15000, 35000, 50000, 65000, 85000, 92500, 100000],
+    "inputRelief": false
+}
