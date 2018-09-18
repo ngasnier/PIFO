@@ -333,7 +333,7 @@ function onFieldDownload(data)
     reslist.shift();
     if (reslist.length>0)
     {
-        var filename = "res/run/" + scenario + "/" + reslist[0];
+        var filename = config.inputDir + "/" + reslist[0];
         fs.readFile(filename, 'utf8', function(err, data) {
             if (err) throw err;
             onFieldDownload(data);
@@ -368,7 +368,7 @@ function reloadData()
     
     calcCoords();
     
-    var filename = "res/run/" + scenario + "/fileinfo.txt";
+    var filename = config.inputDir + "/fileinfo.txt";
     fs.readFile(filename, 'utf8', function(err, data) {
         if (err) throw err;
         console.log('loaded: ' + filename);
@@ -380,7 +380,7 @@ function reloadData()
         ui.model.startDate = dt;
     });
     
-    filename = "res/run/" + scenario + "/" + reslist[0];
+    filename = config.inputDir + "/" + reslist[0];
     fs.readFile(filename, 'utf8', function(err, data) {
         if (err) throw err;
         onFieldDownload(data);
