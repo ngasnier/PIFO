@@ -447,6 +447,7 @@ export var BaroclinicModel = function ()
                 var t_k_plus_1, t_k, t_k_moins_1;
                 var integ_dtlds=0;
                 var c_chapo = 0;
+                var cp = 0;
                 var dcpt = 0;
                 var k_1 = 0;
                 var k_c = 0;
@@ -521,13 +522,21 @@ export var BaroclinicModel = function ()
                                     )/(8*this.dy)
 
                                 ) / (Model.Cp*this.ps[i]);
-
+                        
                             // Couplage avec les paramètres physiques
-/*                            c_chapo = (Model.Cp_d+Model.Cp_v)/(1); // 1-qr-qs ?
-                            dcpt = -Model.g*m2/(this.ps[i]*this.dsigma[k])*(
-                                    ((Model.Cp_l-Model.Cp)*this.Pl[k][i]*this.T[k][i]-(c_chapo-Model.Cp)*this.Pl[k][i]*this.T[k][i])
+                            cp = Model.Cp+Model.Cp_v*this.qv[k][i];
+                            // Nb : divisé 1-qr-qs, mais qr=qs=0 vu que tout 
+                            // précipite direct en pied de couche
+                            //c_chapo = (Model.Cp+Model.Cp_v*this.qv[k][i]); 
+                            dcpt = -Model.g*m2/(this.ps[i]*this.dsigma[k])
+                                *(
+                                    ((Model.Cp_l-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] // <= INSTABLE avec ce terme !
+                            
+                                    //-(c_chapo-cp)*this.Pl[k+1][i]*this.T[k][i]) // Sans qr ni qs ce terme est toujours nul...
+                                                                                  // Pas la peine de gaspiller du temps de calcul
+                                    
                                     +(-Model.Ll*(this.P_evap[k][i]))
-                                )/Model.Cp;*/
+                                );
                         }
                         else
                         {
@@ -595,7 +604,7 @@ export var BaroclinicModel = function ()
                                 ) / (Model.Cp*this.ps[i]);
                         }
                     
-                        this.St[k][i] = - part1 - adv - part2 + part3;
+                        this.St[k][i] = - part1 - adv - part2 + part3 + dcpt/cp;
                     }
                 }
             }
@@ -628,9 +637,11 @@ export var BaroclinicModel = function ()
         BaroclinicModel.prototype.calcPs = function()
         {
             var n = this.p.length;
+            var flux = 0;
             for (var i=0;i<this.width*this.height-1;i++)
             {
-                this.ps[i] = Math.exp(this.Z[i]);
+                flux = -Model.g * (this.Pl[this.nbcouches][i]); // +Pi-E
+                this.ps[i] = Math.exp(this.Z[i])+flux;
             }
             this.calcPressureLevels();
         }
@@ -756,9 +767,14 @@ export var BaroclinicModel = function ()
                 var kg = this.surfaces[k];
                 for (var i=0;i<nb;i++)
                 {
-                    this.sigmaf[k][i] = this.m[i]*this.m[i]
-                        *(this.sigma[kg]*this.DtildeDs[n][i]
-                        -this.DtildeDs[k-1][i]);
+                    this.sigmaf[k][i] = this.m[i]*this.m[i]*(
+                        
+                            (this.sigma[kg]*this.DtildeDs[n][i]
+                            -this.DtildeDs[k-1][i])
+                    
+                            +Model.g/(this.ps[i]*this.dsigma[k-1])
+                                *(this.Pl[k][i])
+                        );
                 }
            }
         }
@@ -1161,8 +1177,8 @@ BaroclinicModel.prototype.step = function()
     }
  
     // *** Calcul des processus physiques ***
-    /*this.calcConvection();
-    this.calcPrecip();*/
+    //this.calcConvection();
+    this.calcPrecip();
 
     // *** Calcul des tendances ****
     this.calcSz();
