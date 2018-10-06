@@ -145,10 +145,10 @@ Model.Cp_l = 4185;
 //** Capacité thermique massique de la glace
 Model.Cp_l = 2060;
 
-//** Chaleur latente de l'eau liquite
+//** Chaleur latente de l'eau liquide
 Model.Ll = 2264760;
 
-//** Chaleur latente de la vapeur deau
+//** Chaleur latente de la glace
 Model.Li = 334000;
 
 //** Masse volumique de l'air
