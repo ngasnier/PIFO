@@ -524,19 +524,30 @@ export var BaroclinicModel = function ()
                                 ) / (Model.Cp*this.ps[i]);
                         
                             // Couplage avec les paramètres physiques
+                            
+                            // Calcule la capacité thermique massique du mélange
+                            // TODO : est-ce que ça devrait être utilisé dans les équations ci-dessus ?
                             cp = Model.Cp+Model.Cp_v*this.qv[k][i];
+
+                            // Calcul de la variation d'enthalpie
                             // Nb : divisé 1-qr-qs, mais qr=qs=0 vu que tout 
                             // précipite direct en pied de couche
                             //c_chapo = (Model.Cp+Model.Cp_v*this.qv[k][i]); 
                             dcpt = -Model.g*m2/(this.ps[i]*this.dsigma[k])
                                 *(
-                                    (
-                                        (Model.Cp_l-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] // <= INSTABLE avec ce terme !
+                                    // Terme de contribution du changement de pression dûe au changement de 
+                                    // masse à cause du flux de précipitation
+                                    // (si j'ai bien tout compris...)
+                                    // Nb : rend le modèle instable, terme trop fort par endroit...
+                                    // Je préfère le négliger en attendant de comprendre
+/*                                    (
+                                        (Model.Cp_l-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] 
                             
                                         //-(c_chapo-cp)*this.Pl[k+1][i]*this.T[k][i]) // Sans qr ni qs ce terme est toujours nul...
                                                                                   // Pas la peine de gaspiller du temps de calcul
-                                    )
-                            
+                                    )*/
+                                    
+                                    // Terme de contribution de la chaleur latente
                                     +(-Model.Ll*(this.P_evap[k][i]))
                                 );
                         }
