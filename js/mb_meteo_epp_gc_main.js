@@ -49,17 +49,14 @@ var z500_display = [];
 var latitudes = [];
 var longitudes = [];
 
-var valids = ["000", "003", "006", "012", "015", "018", "021", "024"];
-// 0 : GFS 06/05/2017 00Z
-// 1 : GFS 22/02/2018 00Z
-//var valids = ["000", "003", "006", "012", "018", "024"];
-var scenario = "1";
+var valids = [];
+var scenario = "";
 var reslist = [];
 
 $(document).ready(function () {
     
     valids = ["00"];
-    scenario = "bc02";
+    scenario = "2018062200";
     
     ui.setStatus("loading");
     ui.setStatusString("Initialisation");

@@ -74,7 +74,8 @@ var totalTime = 0;
 var totalStep = 0;
 
 var valids = ["00"];
-var scenario = "bc02";
+//var scenario = "2018062200";
+var scenario = "2018092500";
 var reslist = [];
 var status = "loading";
 
@@ -384,7 +385,7 @@ function onFieldDownload(data)
     {
         ui.setStatusString(getLoadingString());
         $.ajax({
-          url : "res/run/bc02/"+reslist[0],
+          url : "res/run/"+scenario+"/"+reslist[0],
           dataType: "text",
           success : onFieldDownload
        });
