@@ -528,15 +528,17 @@ export var BaroclinicModel = function ()
                             // Nb : divisé 1-qr-qs, mais qr=qs=0 vu que tout 
                             // précipite direct en pied de couche
                             //c_chapo = (Model.Cp+Model.Cp_v*this.qv[k][i]); 
-                            dcpt = -Model.g*m2/(this.ps[i]*this.dsigma[k])
+/*                            dcpt = -Model.g*m2/(this.ps[i]*this.dsigma[k])
                                 *(
-                                    ((Model.Cp_l-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] // <= INSTABLE avec ce terme !
+                                    (
+                                        (Model.Cp_l-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] // <= INSTABLE avec ce terme !
                             
-                                    //-(c_chapo-cp)*this.Pl[k+1][i]*this.T[k][i]) // Sans qr ni qs ce terme est toujours nul...
+                                        //-(c_chapo-cp)*this.Pl[k+1][i]*this.T[k][i]) // Sans qr ni qs ce terme est toujours nul...
                                                                                   // Pas la peine de gaspiller du temps de calcul
-                                    
+                                    )
+                            
                                     +(-Model.Ll*(this.P_evap[k][i]))
-                                );
+                                );*/
                         }
                         else
                         {

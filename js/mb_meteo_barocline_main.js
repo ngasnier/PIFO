@@ -91,7 +91,7 @@ $(document).ready(function() {
     ui.model.gridType = "C";
     ui.model.verticalType = "L";
 
-    /*ui.model.width = 144;
+    ui.model.width = 144;
     ui.model.height = 72;
     ui.model.dt = 90;
     ui.model.dlat = 1;
@@ -101,7 +101,7 @@ $(document).ready(function() {
     ui.model.elon = 51;
     ui.model.wlon = ui.model.elon-ui.model.width*ui.model.dlon;
     ui.model.global = false;
-    ui.model.relaxation = 8;*/
+    ui.model.relaxation = 8;
     
 /*    ui.model.width = 182;
     ui.model.height = 88;
@@ -116,7 +116,7 @@ $(document).ready(function() {
     ui.model.relaxation = 8;*/
         
     // TODO : les pôles ?
-    ui.model.width = 92;
+/*    ui.model.width = 92;
     ui.model.height = 44;
     ui.model.global = true;
     ui.model.dt = 120;
@@ -126,7 +126,7 @@ $(document).ready(function() {
     ui.model.slat = ui.model.nlat-(ui.model.height)*ui.model.dlat;
     ui.model.elon = 360;
     ui.model.wlon = ui.model.elon-(ui.model.width-(ui.model.global?2:0))*ui.model.dlon;
-    ui.model.relaxation = 8;
+    ui.model.relaxation = 8;*/
     
     // Choix de surfaces régulièrement espacées sur un nombre souhaité de niveaux
     var ptop = 6250.0;
