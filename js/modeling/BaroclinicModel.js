@@ -528,7 +528,7 @@ export var BaroclinicModel = function ()
                             // Nb : divisé 1-qr-qs, mais qr=qs=0 vu que tout 
                             // précipite direct en pied de couche
                             //c_chapo = (Model.Cp+Model.Cp_v*this.qv[k][i]); 
-/*                            dcpt = -Model.g*m2/(this.ps[i]*this.dsigma[k])
+                            dcpt = -Model.g*m2/(this.ps[i]*this.dsigma[k])
                                 *(
                                     (
                                         (Model.Cp_l-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] // <= INSTABLE avec ce terme !
@@ -538,7 +538,7 @@ export var BaroclinicModel = function ()
                                     )
                             
                                     +(-Model.Ll*(this.P_evap[k][i]))
-                                );*/
+                                );
                         }
                         else
                         {
@@ -764,7 +764,9 @@ export var BaroclinicModel = function ()
         {
             var n = this.sigmaf.length-2;
             var nb = this.width*this.height;
-            for (var k=1;k<this.sigmaf.length;k++)
+            var k = 1;
+            // Commence à 1 car sommet toujours zero
+            for (k=1;k<this.sigmaf.length-1;k++)
             {
                 var kg = this.surfaces[k];
                 for (var i=0;i<nb;i++)
@@ -774,10 +776,18 @@ export var BaroclinicModel = function ()
                             (this.sigma[kg]*this.DtildeDs[n][i]
                             -this.DtildeDs[k-1][i])
                     
+                            // Terme de conservation pour les flux précipitants
                             +Model.g/(this.ps[i]*this.dsigma[k-1])
                                 *(this.Pl[k][i])
                         );
                 }
+           } 
+          
+           // A la base applique la conservation pour les termes précipitants
+           k = this.sigmaf.length-1;
+           for (var i=0;i<nb;i++)
+           {
+               this.sigmaf[k][i] = Model.g*(this.Pl[k][i]); // + Pi - E
            }
         }
 
@@ -974,6 +984,7 @@ export var BaroclinicModel = function ()
             for (var i=0;i<this.Pl[k].length;i++)
             {
                 qsat = this.qsat(this.p[k_couche][i], this.T[k][i]);
+                this.Pl[k+1][i] = 0;
                 if (this.qv[k][i]>qsat)
                 {
                     // Ajout de flux de précipitations
