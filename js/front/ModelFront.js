@@ -338,7 +338,7 @@ ModelFront.prototype.checkHistory = function()
                 +modelname+";"
                 +inithour.substring(inithour.length-2)+";"
                 +this.model.startDate.toLocaleDateString()+";"
-                +hoursfmt.substring(hoursfmt.length-2)+";"
+                +(hoursfmt.length<=3?hoursfmt.substring(hoursfmt.length-2):hours)+";"
                 +dt.toLocaleDateString("fr-fr", {
                      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
                 })+";"
