@@ -235,6 +235,10 @@ export var BaroclinicModel = function ()
     this.St = [];
     this.Sqv = [];
     
+    // Variables temporaires pour le filtrage temporel
+    this.X_tmp = [];
+    this.X2d_tmp = [];
+
                         
     // Méthodes privées du modèle
     if( typeof BaroclinicModel.initialized == "undefined" ) 
@@ -254,11 +258,30 @@ export var BaroclinicModel = function ()
 
         BaroclinicModel.prototype.avanceExpliciteCentre = function()
         {       
-            Variable.a_bc(this.U_t, this.Su, 2*this.dt, this.U_t);
-            Variable.a_bc(this.V_t, this.Sv, 2*this.dt, this.V_t);
-            Variable.a_bc(this.T_t, this.St, 2*this.dt, this.T_t);
-            Variable.a_bc(this.qv_t, this.Sqv, 2*this.dt, this.qv_t);
-            Variable.a_bc2d(this.Z_t, this.Sz, 2*this.dt, this.Z_t);
+            Variable.a_bc(this.U_t, this.Su, 2*this.dt, this.X_tmp);
+            Variable.a_bc(this.U_t, this.U, -2, this.U_t);
+            Variable.sum(this.X_tmp, this.U_t, this.U_t);
+            Variable.a_bc(this.U, this.U_t, 1/2, this.U_t);
+
+            Variable.a_bc(this.V_t, this.Sv, 2*this.dt, this.X_tmp);
+            Variable.a_bc(this.V_t, this.V, -2, this.V_t);
+            Variable.sum(this.X_tmp, this.V_t, this.V_t);
+            Variable.a_bc(this.V, this.V_t, 1/2, this.V_t);
+            
+            Variable.a_bc(this.T_t, this.St, 2*this.dt, this.X_tmp);
+            Variable.a_bc(this.T_t, this.T, -2, this.T_t);
+            Variable.sum(this.X_tmp, this.T_t, this.T_t);
+            Variable.a_bc(this.T, this.T_t, 1/2, this.T_t);
+            
+            Variable.a_bc(this.qv_t, this.Sqv, 2*this.dt, this.X_tmp);
+            Variable.a_bc(this.qv_t, this.qv, -2, this.qv_t);
+            Variable.sum(this.X_tmp, this.qv_t, this.qv_t);
+            Variable.a_bc(this.qv, this.qv_t, 1/2, this.qv_t);
+            
+            Variable.a_bc2d(this.Z_t, this.Sz, 2*this.dt, this.X2d_tmp);
+            Variable.a_bc2d(this.Z_t, this.Z, -2, this.Z_t);
+            Variable.sum(this.X2d_tmp, this.Z_t, this.Z_t);
+            Variable.a_bc2d(this.Z, this.Z_t, 1/2, this.Z_t);
         }
               
               
@@ -527,7 +550,7 @@ export var BaroclinicModel = function ()
                             
                             // Calcule la capacité thermique massique du mélange
                             // TODO : est-ce que ça devrait être utilisé dans les équations ci-dessus ?
-                            cp = Model.Cp+Model.Cp_v*this.qv[k][i];
+/* PLUIE                            cp = Model.Cp+Model.Cp_v*this.qv[k][i];
 
                             // Calcul de la variation d'enthalpie
                             // Nb : divisé 1-qr-qs, mais qr=qs=0 vu que tout 
@@ -540,16 +563,16 @@ export var BaroclinicModel = function ()
                                     // (si j'ai bien tout compris...)
                                     // Nb : rend le modèle instable, terme trop fort par endroit...
                                     // Je préfère le négliger en attendant de comprendre
-/*                                    (
-                                        (Model.Cp_l-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] 
-                            
-                                        //-(c_chapo-cp)*this.Pl[k+1][i]*this.T[k][i]) // Sans qr ni qs ce terme est toujours nul...
-                                                                                  // Pas la peine de gaspiller du temps de calcul
-                                    )*/
+//                                    (
+//                                        (Model.Cp_l-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] 
+//                            
+//                                        //-(c_chapo-cp)*this.Pl[k+1][i]*this.T[k][i]) // Sans qr ni qs ce terme est toujours nul...
+//                                                                                  // Pas la peine de gaspiller du temps de calcul
+//                                    )
                                     
                                     // Terme de contribution de la chaleur latente
                                     +(-Model.Ll*(this.P_evap[k][i]))
-                                );
+                                );*/
                         }
                         else
                         {
@@ -617,7 +640,7 @@ export var BaroclinicModel = function ()
                                 ) / (Model.Cp*this.ps[i]);
                         }
                     
-                        this.St[k][i] = - part1 - adv - part2 + part3 + dcpt/cp;
+                        this.St[k][i] = - part1 - adv - part2 + part3 /* PLUIE + dcpt/cp*/;
                     }
                 }
             }
@@ -653,7 +676,7 @@ export var BaroclinicModel = function ()
             var flux = 0;
             for (var i=0;i<this.width*this.height-1;i++)
             {
-                flux = -Model.g * (this.Pl[this.nbcouches][i]); // +Pi-E
+// PLUIE                flux = -Model.g * (this.Pl[this.nbcouches][i]); // +Pi-E
                 this.ps[i] = Math.exp(this.Z[i])+flux;
             }
             this.calcPressureLevels();
@@ -788,18 +811,18 @@ export var BaroclinicModel = function ()
                             -this.DtildeDs[k-1][i])
                     
                             // Terme de conservation pour les flux précipitants
-                            +Model.g/(this.ps[i]*this.dsigma[k-1])
-                                *(this.Pl[k][i])
+/* PLUIE                           +Model.g/(this.ps[i]*this.dsigma[k-1])
+                                *(this.Pl[k][i])*/
                         );
                 }
            } 
           
            // A la base applique la conservation pour les termes précipitants
-           k = this.sigmaf.length-1;
+/* PLUIE          k = this.sigmaf.length-1;
            for (var i=0;i<nb;i++)
            {
                this.sigmaf[k][i] = Model.g*(this.Pl[k][i]); // + Pi - E
-           }
+           }*/
         }
 
 /*
@@ -1202,7 +1225,7 @@ BaroclinicModel.prototype.step = function()
  
     // *** Calcul des processus physiques ***
     //this.calcConvection();
-    this.calcPrecip();
+    // PLUIE this.calcPrecip();
 
     // *** Calcul des tendances ****
     this.calcSz();
@@ -1305,6 +1328,9 @@ BaroclinicModel.prototype.init = function()
     this.Sv = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.St = Variable.createVariable(this.verticalType=="CP"?this.nbcouches+1:this.nbcouches, this.width, this.height, true);
     this.Sqv = Variable.createVariable(this.nbcouches, this.width, this.height, true);
+    
+    this.X_tmp = Variable.createVariable(this.nbcouches, this.width, this.height, true);
+    this.X2d_tmp = Variable.createVariable(1, this.width, this.height, true);
     
     this.Dtilde = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.DtildeDs = Variable.createVariable(this.nbcouches, this.width, this.height, true);
