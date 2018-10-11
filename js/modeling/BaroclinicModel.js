@@ -257,31 +257,31 @@ export var BaroclinicModel = function ()
         }
 
         BaroclinicModel.prototype.avanceExpliciteCentre = function()
-        {       
-            Variable.a_bc(this.U_t, this.Su, 2*this.dt, this.X_tmp);
-            Variable.a_bc(this.U_t, this.U, -2, this.U_t);
+        {                 
+            Variable.a_bc(this.U_t, this.Su, 2.0*this.dt, this.X_tmp);
+            Variable.a_bc(this.U_t, this.U, -2.0, this.U_t);
             Variable.sum(this.X_tmp, this.U_t, this.U_t);
-            Variable.a_bc(this.U, this.U_t, 1/2, this.U_t);
+            Variable.a_bc(this.U, this.U_t, 0.5, this.U_t);
 
-            Variable.a_bc(this.V_t, this.Sv, 2*this.dt, this.X_tmp);
-            Variable.a_bc(this.V_t, this.V, -2, this.V_t);
+            Variable.a_bc(this.V_t, this.Sv, 2.0*this.dt, this.X_tmp);
+            Variable.a_bc(this.V_t, this.V, -2.0, this.V_t);
             Variable.sum(this.X_tmp, this.V_t, this.V_t);
-            Variable.a_bc(this.V, this.V_t, 1/2, this.V_t);
+            Variable.a_bc(this.V, this.V_t, 0.5, this.V_t);
             
-            Variable.a_bc(this.T_t, this.St, 2*this.dt, this.X_tmp);
-            Variable.a_bc(this.T_t, this.T, -2, this.T_t);
+            Variable.a_bc(this.T_t, this.St, 2.0*this.dt, this.X_tmp);
+            Variable.a_bc(this.T_t, this.T, -2.0, this.T_t);
             Variable.sum(this.X_tmp, this.T_t, this.T_t);
-            Variable.a_bc(this.T, this.T_t, 1/2, this.T_t);
+            Variable.a_bc(this.T, this.T_t, 0.5, this.T_t);
             
-            Variable.a_bc(this.qv_t, this.Sqv, 2*this.dt, this.X_tmp);
-            Variable.a_bc(this.qv_t, this.qv, -2, this.qv_t);
+            Variable.a_bc(this.qv_t, this.Sqv, 2.0*this.dt, this.X_tmp);
+            Variable.a_bc(this.qv_t, this.qv, -2.0, this.qv_t);
             Variable.sum(this.X_tmp, this.qv_t, this.qv_t);
-            Variable.a_bc(this.qv, this.qv_t, 1/2, this.qv_t);
+            Variable.a_bc(this.qv, this.qv_t, 0.5, this.qv_t);
             
-            Variable.a_bc2d(this.Z_t, this.Sz, 2*this.dt, this.X2d_tmp);
-            Variable.a_bc2d(this.Z_t, this.Z, -2, this.Z_t);
+            Variable.a_bc2d(this.Z_t, this.Sz, 2.0*this.dt, this.X2d_tmp);
+            Variable.a_bc2d(this.Z_t, this.Z, -2.0, this.Z_t);
             Variable.sum(this.X2d_tmp, this.Z_t, this.Z_t);
-            Variable.a_bc2d(this.Z, this.Z_t, 1/2, this.Z_t);
+            Variable.a_bc2d(this.Z, this.Z_t, 0.5, this.Z_t);
         }
               
               
@@ -1270,7 +1270,7 @@ BaroclinicModel.prototype.step = function()
     tmp = this.V_t; this.V_t = this.V; this.V = tmp;
     tmp = this.T_t; this.T_t = this.T; this.T = tmp;
     tmp = this.qv_t; this.qv_t = this.qv; this.qv = tmp; 
-    tmp = this.Z_t; this.Z_t = this.Z; this.Z = tmp; 
+    var tmp2d = this.Z_t; this.Z_t = this.Z; this.Z = tmp2d; 
 
     // Recalcule la pression des différentes surfaces s
     this.calcPs();
@@ -1330,7 +1330,7 @@ BaroclinicModel.prototype.init = function()
     this.Sqv = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     
     this.X_tmp = Variable.createVariable(this.nbcouches, this.width, this.height, true);
-    this.X2d_tmp = Variable.createVariable(1, this.width, this.height, true);
+    this.X2d_tmp = Variable.createVariable(1, this.width, this.height);
     
     this.Dtilde = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.DtildeDs = Variable.createVariable(this.nbcouches, this.width, this.height, true);
