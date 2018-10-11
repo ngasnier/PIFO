@@ -1317,7 +1317,7 @@ BaroclinicModel.prototype.init = function()
     }
       
      // Creation des variables intermédiaires et diagnostique sur les couches
-    this.Z = Variable.createVariable(1);
+    this.Z = Variable.createVariable(1, this.width, this.height, false);
     this.sigmaf = Variable.createVariable(this.nbcouches+1, this.width, this.height, true);
     this.phi = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.K = Variable.createVariable(this.nbcouches, this.width, this.height, true);
