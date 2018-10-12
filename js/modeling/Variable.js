@@ -32,30 +32,34 @@ Variable.VARIABLE_TYPE_LAYER = "LAYER";
  * @param {type} nblev 1 = variable 2D, >1 = variable 3D
  * @returns {undefined} la variable
  */
+// Version avec tableaux typés, donne des perfs régulières sous node
 Variable.createVariable = function(nblev, width, height, forceLevels=false)
 {
-    var v = [];
     if (nblev==1 && !forceLevels)
     {
+        var buffer = new ArrayBuffer(width*height * 8);
+        var v = new Float64Array(buffer)
         for (var i=0;i<height*width;i++)
         {
-           v[i] = 0;
+           v[i] = 0.0;
         }
+        return v;
     }
     else
     {
+        var v = new Array(nblev);
         for (var k=0;k<nblev;k++)
         {
-            v[k] = [];
+            var buffer = new ArrayBuffer(width*height * 8);
+            v[k] = new Float64Array(buffer)
             for (var i=0;i<height*width;i++)
             {
-                v[k][i] = 0;
+                v[k][i] = 0.0;
             }
-        }            
+        }
+        return v;
     }
-    return v;
 }
-
 
 /**
  * Copie les valeurs d'une variable dans une autre.
@@ -65,7 +69,7 @@ Variable.createVariable = function(nblev, width, height, forceLevels=false)
  */
 Variable.copy = function(a, b)
 {
-    if (a.length>0 && a[0].constructor===Array)
+    if (a.length>0 && (a[0].constructor===Array || a[0].constructor===Float64Array))
     {
         for (var k=0;k<a.length;k++)
         {
@@ -88,7 +92,7 @@ Variable.copy = function(a, b)
 Variable.clone = function(a)
 {
     var c = [];
-    if (a.length>0 && a[0].constructor===Array)
+    if (a.length>0 && (a[0].constructor===Array || a[0].constructor===Float64Array))
     {
         for (var k=0;k<a.length;k++)
         {
@@ -112,13 +116,14 @@ Variable.clone = function(a)
 Variable.sum = function(x, y, res)
 {
     var nb;
-    if (x.length>0 && x[0].constructor===Array)
+    if (x.length>0 && (x[0].constructor===Array || x[0].constructor===Float64Array) )
     {    
         for (var k=0;k<x.length;k++)
         {
             nb = x[k].length;
             for(var i=0;i<nb;i++)
             {
+                var b = y[k][i];
                 res[k][i] = x[k][i]+y[k][i];
             }
         }
@@ -182,7 +187,7 @@ Variable.a_bc2d = function(a, b, c, res)
 Variable.product = function(x, y, res)
 {
     var nb;
-    if (x.length>0 && x[0].constructor===Array)
+    if (x.length>0 && (x[0].constructor===Array || x[0].constructor===Float64Array))
     {    
         for (var k=0;k<x.length;k++)
         {

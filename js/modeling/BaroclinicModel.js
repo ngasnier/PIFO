@@ -295,13 +295,12 @@ export var BaroclinicModel = function ()
                 var u_k_plus_1, u_k, u_k_moins_1;
                 var adv=0, rtz=0;
                 var kphi=0;
-                var i;
-                for (var y=1;y<this.height-1;y++)
+                var i = this.width+1;
+                var x, y;
+                for (y=1;y<this.height-1;y++)
                 {
-                    for(var x=1;x<this.width-1;x++)
+                    for (x=1;x<this.width-1;x++,i++)
                     {
-                        i = x+y*this.width;
-
                         if (k<this.U.length-1)
                         {
                             d_ktilde_1 = this.sigmaf[k+1][i];
@@ -361,6 +360,7 @@ export var BaroclinicModel = function ()
                         
                         this.Su[k][i] = xi*psvk - adv - kphi - rtz;
                     }
+                    i+=2;
                 }
             }
         }
@@ -384,13 +384,12 @@ export var BaroclinicModel = function ()
                 var v_k_plus_1, v_k, v_k_moins_1;
                 var adv=0, rtz=0;
                 var kphi=0;
-                var i;
-                for (var y=1;y<this.height-1;y++)
+                var i = this.width+1;
+                var x, y;
+                for (y=1;y<this.height-1;y++)
                 {
-                    for(var x=1;x<this.width-1;x++)
+                    for(x=1;x<this.width-1;x++,i++)
                     {
-                        i = x+y*this.width;
-                        
                         if (k<this.V.length-1)
                         {
                             d_ktilde_1 = this.sigmaf[k+1][i+this.width];
@@ -448,6 +447,7 @@ export var BaroclinicModel = function ()
 
                         this.Sv[k][i] = -xi*psuk - adv - kphi - rtz;                        
                     }
+                    i+=2;
                 }
             }
         }
@@ -476,15 +476,13 @@ export var BaroclinicModel = function ()
                 var k_c = 0;
 
                 var m2 = 0;
-                var i;
-                for (var y=1;y<this.height-1;y++)
+                var i= this.width+1;
+                var x, y;
+                for (y=1;y<this.height-1;y++)
                 {
-                    for(var x=1;x<this.width-1;x++)
-                    {
-                        i = x+y*this.width;
-                        
+                    for (x=1;x<this.width-1;x++,i++)
+                    {                       
                         m2 = this.m[i]*this.m[i];
-
                         
                         // Verif Ok 14/06/2018
                         if (this.verticalType=="L")
@@ -642,6 +640,7 @@ export var BaroclinicModel = function ()
                     
                         this.St[k][i] = - part1 - adv - part2 + part3 /* PLUIE + dcpt/cp*/;
                     }
+                    i+=2;
                 }
             }
         }
@@ -660,9 +659,10 @@ export var BaroclinicModel = function ()
         {
             var n = this.DtildeDs.length-1;
             var i = 0;
-            for (var y=1;y<this.height-1;y++)
+            var x, y;
+            for (y=1;y<this.height-1;y++)
             {
-                for(var x=1;x<this.width-1;x++)
+                for (x=1;x<this.width-1;x++)
                 {
                     i = x+y*this.width;
                     this.Sz[i] = -this.m[i]*this.m[i]*this.DtildeDs[n][i]/this.ps[i];
@@ -685,9 +685,10 @@ export var BaroclinicModel = function ()
         BaroclinicModel.prototype.calcPressureLevels = function()
         {
             var n = this.p.length;
-            for (var k=0;k<n;k++)
+            var i=0, k = 0;
+            for (k=0;k<n;k++)
             {
-                for (var i=0;i<this.width*this.height-1;i++)
+                for (i=0;i<this.width*this.height-1;i++)
                 {
                     this.p[k][i] = this.sigma[k]*this.ps[i];
                 }
@@ -697,37 +698,32 @@ export var BaroclinicModel = function ()
         BaroclinicModel.prototype.calcGeop = function()
         {
             var n = this.phi.length;
+            var nb = this.height*this.width;
             var l;  
             var acc = 0;
-            var i = 0;
-            for (var k=0;k<n;k++)
+            var i=0, k=0;
+            for (k=0;k<n;k++)
             {
-                for (var y=0;y<this.height;y++)
+                for (i=0;i<nb;i++)
                 {
-                    for(var x=0;x<this.width;x++)
+                    // Verif Ok 16/06/2018
+                    acc=0;
+                    if (this.verticalType=="L")
                     {
-                        i = x+y*this.width;
-                        
-                        // Verif Ok 16/06/2018
-                        acc=0;
-                        if (this.verticalType=="L")
+                        for (l=k+1;l<n;l++)
                         {
-                            for (l=k+1;l<n;l++)
-                            {
-                                acc += this.gamma[l]*Model.R*this.T[l][i];
-                            }
-                            this.phi[k][i] = this.sfcgeop[i]+acc+this.alpha[k]*Model.R*this.T[k][i];
+                            acc += this.gamma[l]*Model.R*this.T[l][i];
                         }
-                        else
+                        this.phi[k][i] = this.sfcgeop[i]+acc+this.alpha[k]*Model.R*this.T[k][i];
+                    }
+                    else
+                    {
+                        for (l=k+1;l<n;l++)
                         {
-                            for (l=k+1;l<n;l++)
-                            {
-                                acc += this.gamma[l]*Model.R*0.5*(this.T[l][i]+this.T[l+1][i]);
-                            }
-                            this.phi[k][i] = this.sfcgeop[i]+acc+this.gamma[k]*Model.R*0.5*(this.T[k][i]+this.T[k+1][i]);
+                            acc += this.gamma[l]*Model.R*0.5*(this.T[l][i]+this.T[l+1][i]);
                         }
-                        
-                   }
+                        this.phi[k][i] = this.sfcgeop[i]+acc+this.gamma[k]*Model.R*0.5*(this.T[k][i]+this.T[k+1][i]);
+                    }
                 }
             }
         }
@@ -739,13 +735,14 @@ export var BaroclinicModel = function ()
                 var i = 0;
                 var u1 = 0, u2 = 0;
                 var v1 = 0, v2 = 0;
+                var x, y;
                 for (var k=0;k<this.U.length;k++)
                 {
-                    for (var y=1;y<this.height-1;y++)
+                    i = this.width+1;
+                    for (y=1;y<this.height-1;y++)
                     {
-                        for(var x=1;x<this.width-1;x++)
+                        for (x=1;x<this.width-1;x++,i++)
                         {
-                            i = x+y*this.width;
                             // Verif Ok 15/06/2018
                             u1 = this.U[k][i-1];
                             u2 = this.U[k][i];
@@ -755,6 +752,7 @@ export var BaroclinicModel = function ()
                                     0.5*(u1*u1 + u2*u2)
                                     +0.5*(v1*v1 + v2*v2))/2;
                         }
+                        i+=2;
                     }
                 }
             }
@@ -766,14 +764,15 @@ export var BaroclinicModel = function ()
             {
                 var i = 0;
                 var m1=0, m2=0, m3=0, m4=0;
-
+                var x, y;
+                
                 for (var k=0;k<this.U.length;k++)
                 {
-                    for (var y=1;y<this.height-1;y++)
+                    i = this.width+1;
+                    for (y=1;y<this.height-1;y++)
                     {
-                        for(var x=1;x<this.width-1;x++)
+                        for (x=1;x<this.width-1;x++,i++)
                         {
-                            i = x+y*this.width;
                             m1 = this.m[i+this.width];
                             m2 = this.m[i+1+this.width];
                             m3 = this.m[i];
@@ -789,6 +788,7 @@ export var BaroclinicModel = function ()
                                 )
                                 /(0.25*(this.ps[i]+this.ps[i+1]+this.ps[i+this.width]+this.ps[i+this.width+1]));
                         }
+                        i+=2;
                     }
                 }
             }
@@ -798,12 +798,12 @@ export var BaroclinicModel = function ()
         {
             var n = this.sigmaf.length-2;
             var nb = this.width*this.height;
-            var k = 1;
+            var k = 1, i=0;
             // Commence à 1 car sommet toujours zero
             for (k=1;k<this.sigmaf.length-1;k++)
             {
                 var kg = this.surfaces[k];
-                for (var i=0;i<nb;i++)
+                for (i=0;i<nb;i++)
                 {
                     this.sigmaf[k][i] = this.m[i]*this.m[i]*(
                         
@@ -852,33 +852,36 @@ export var BaroclinicModel = function ()
          */
         BaroclinicModel.prototype.calcDtilde = function() 
         {
+            var i = 0;
+            var x, y, k;
+            var nb = this.width*this.height;
             if (this.gridType=="C")
             {           
-                for (var k=0;k<this.nbcouches;k++)
+                for (k=0;k<this.nbcouches;k++)
                 {
-                    for (var y=1;y<this.height-1;y++)
+                    i = this.width+1;
+                    for (y=1;y<this.height-1;y++)
                     {
-                        for(var x=1;x<this.width-1;x++)
+                        for(x=1;x<this.width-1;x++,i++)
                         {
-                            i = x+y*this.width;
-                            
                             // Verif Ok 15/06/2018
                             this.Dtilde[k][i] = ((this.ps[i]+this.ps[i+1])*this.U[k][i]-(this.ps[i-1]+this.ps[i])*this.U[k][i-1])*0.5/this.dx[y]
                                 +((this.ps[i-this.width]+this.ps[i])*this.V[k][i-this.width]-(this.ps[i]+this.ps[i+this.width])*this.V[k][i])*0.5/this.dy;
                         }
+                        i+=2;
                     }
                 }
             }
             
             // Verif Ok 15/06/2018
             // Integre l'expression Dtilde*dsigma sur la verticale
-            for (var i=0;i<this.height*this.width;i++)
+            for (i=0;i<nb;i++)
             {
                 this.DtildeDs[0][i] = this.Dtilde[0][i]*this.dsigma[0];
             }
-            for (var k=1;k<this.nbcouches;k++)
+            for (k=1;k<this.nbcouches;k++)
             {
-                for (var i=0;i<this.height*this.width;i++)
+                for (i=0;i<nb;i++)
                 {
                     this.DtildeDs[k][i] = this.DtildeDs[k-1][i]+this.Dtilde[k][i]*this.dsigma[k];
                 }
@@ -903,12 +906,12 @@ export var BaroclinicModel = function ()
 
                 var m2 = 0;
                 var i;
-                for (var y=1;y<this.height-1;y++)
+                var x, y;
+                for (y=1;y<this.height-1;y++)
                 {
-                    for(var x=1;x<this.width-1;x++)
+                    i = this.width+1;
+                    for(x=1;x<this.width-1;x++,i++)
                     {
-                        i = x+y*this.width;
-                        
                         m2 = this.m[i]*this.m[i];
 
                         if (k<q.length-1)
@@ -952,6 +955,7 @@ export var BaroclinicModel = function ()
                         
                         sq[k][i] = - part1 - adv + dqv;
                     }
+                    i+=2;
                 }
             }
         }
@@ -1188,9 +1192,10 @@ export var BaroclinicModel = function ()
         
         BaroclinicModel.prototype.wrap = function(a)
         {
+            var i=0;
             for (var k=0;k<a.length;k++)
             {
-                for(var i=0;i<this.height;i++)
+                for(i=0;i<this.height;i++)
                 {
                     a[k][i*this.width]=a[k][i*this.width + this.width - 2];
                     a[k][i*this.width + this.width - 1]=a[k][i*this.width+1];
