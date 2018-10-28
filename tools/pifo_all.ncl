@@ -86,7 +86,7 @@ begin
         model 	= str_get_field(infos(filenum), 2, ";")
         run	= str_get_field(infos(filenum), 3, ";")
         date	= str_get_field(infos(filenum), 4, ";")
-        valid	= str_get_field(infos(filenum), 5, ";")
+        valid	= sprinti("%0.3i", stringtointeger(str_get_field(infos(filenum), 5, ";")))
         dateval	= str_get_field(infos(filenum), 6, ";")
         hourval = str_get_field(infos(filenum), 7, ";")
 
