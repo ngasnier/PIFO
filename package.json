@@ -1,0 +1,23 @@
+{
+  "name": "pifo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "pifo.js",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "esm": "^3.0.82"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://nicolas_gasnier@bitbucket.org/nicolas_gasnier/pifo.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "homepage": "https://bitbucket.org/nicolas_gasnier/pifo#readme"
+}
