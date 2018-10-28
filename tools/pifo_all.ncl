@@ -19,8 +19,8 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/shea_util.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/skewt_func.ncl"
-load "config.ncl"
-load "mb_common.ncl"
+
+load "$NCL_ROOT/mb_common.ncl"
 
 function getLevels(fin, lat2U)
 begin
@@ -38,7 +38,7 @@ end
 
 function loadField(f)
 begin
-    data = asciiread(g_prefix+"/scripts/pifo/"+f, -1, "string")
+    data = asciiread(input_dir+"/"+f, -1, "string")
     nblig = dimsizes(data)
     width = stringtoint(str_get_field(data(0), 1, ","))
     height = stringtoint(str_get_field(data(0), 2, ","))
@@ -58,286 +58,281 @@ begin
 end
 
 begin
-	days_of_week = (/ "dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"/)
-	months = (/"janvier", "fevrier", "mars", "avril", "mai", "juin", "juillet", "aout", "septembre", "octobre", "novembre", "decembre"/)
+    days_of_week = (/ "dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"/)
+    months = (/"janvier", "fevrier", "mars", "avril", "mai", "juin", "juillet", "aout", "septembre", "octobre", "novembre", "decembre"/)
 
-	if (isvar("p_fileinfo") .and. p_fileinfo .ne. "") then
-		infos = (/ p_fileinfo /)
-		precfile = str_get_field(p_fileinfo, 8, ";")
-	else
-		infos = asciiread(g_prefix+"/scripts/pifo/fileinfo.txt", -1, "string")
-	end if
-	dims = dimsizes(infos)
+    infos = asciiread(input_dir+"/fileinfo.txt", -1, "string")
 
-	if (isvar("p_start")) then
-		idxstart = p_start
-	else
-		idxstart = 0
-	end if
-	if (isvar("p_end")) then
-		idxend = p_end
-	else
-		idxend = dims-1
-	end if
+    dims = dimsizes(infos)
 
-	; We generate plots, but what kind do we prefer?
-	;device = "x11"
-	device = "ps"
-	
-	; Parcours des previsions
-	do filenum = idxstart, idxend
-		grfile  = str_get_field(infos(filenum), 1, ";")
-		model 	= str_get_field(infos(filenum), 2, ";")
-		run	= str_get_field(infos(filenum), 3, ";")
-		date	= str_get_field(infos(filenum), 4, ";")
-		valid	= str_get_field(infos(filenum), 5, ";")
-		dateval	= str_get_field(infos(filenum), 6, ";")
-		hourval = str_get_field(infos(filenum), 7, ";")
+    if (isvar("p_start")) then
+            idxstart = p_start
+    else
+            idxstart = 0
+    end if
+    if (isvar("p_end")) then
+            idxend = p_end
+    else
+            idxend = dims-1
+    end if
 
-		day   = str_get_field(dateval, 1, "/")
-		month = str_get_field(dateval, 2, "/")
-		year  = str_get_field(dateval, 3, "/")
-		hour  = str_get_field(hourval, 1, ":")
+    ; We generate plots, but what kind do we prefer?
+    ;device = "x11"
+    device = "ps"
+
+    ; Parcours des previsions
+    do filenum = idxstart, idxend
+        grfile  = str_get_field(infos(filenum), 1, ";")
+        model 	= str_get_field(infos(filenum), 2, ";")
+        run	= str_get_field(infos(filenum), 3, ";")
+        date	= str_get_field(infos(filenum), 4, ";")
+        valid	= str_get_field(infos(filenum), 5, ";")
+        dateval	= str_get_field(infos(filenum), 6, ";")
+        hourval = str_get_field(infos(filenum), 7, ";")
+
+        day   = str_get_field(dateval, 1, "/")
+        month = str_get_field(dateval, 2, "/")
+        year  = str_get_field(dateval, 3, "/")
+        hour  = str_get_field(hourval, 1, ":")
 
 
-		; Chargement du fichier de sortie 
-		globalRes = True
-		globalRes@validDate = dateval+"~C~~Z150~"+hourval+"~Z75~(+"+valid+"h)"
-		globalRes@runInfo = "Run "+model+" "+run+"z du "+date
+        ; Chargement du fichier de sortie 
+        globalRes = True
+        globalRes@validDate = dateval+"~C~~Z150~"+hourval+"~Z75~(+"+valid+"h)"
+        globalRes@runInfo = "Run "+model+" "+run+"z du "+date
 
-		; ************************************************************************
-		; Variables
-		; ************************************************************************
-		lat2U = loadField("latitudes_"+grfile)	; latitudes pour chaque point de grille
-		lon2U = loadField("longitudes_"+grfile)	; longitudes pour chaque point de grille
+        ; ************************************************************************
+        ; Variables
+        ; ************************************************************************
+        lat2U = loadField("latitudes_"+grfile)	; latitudes pour chaque point de grille
+        lon2U = loadField("longitudes_"+grfile)	; longitudes pour chaque point de grille
 
-                lat2d = lat2U(:,0)
-                lon2d = lon2U(0,:)
+        lat2d = lat2U(:,0)
+        lon2d = lon2U(0,:)
 
-		; Quelques variables utiles partout
-		fr_res_black = True
-		fr_res_black@mpNationalLineColor = "Black"
-		fr_res_black@mpGeophysicalLineColor = "Black"
-		fr_res_black@mpDefaultFillColor	 = "White"
+        ; Quelques variables utiles partout
+        fr_res_black = True
+        fr_res_black@mpNationalLineColor = "Black"
+        fr_res_black@mpGeophysicalLineColor = "Black"
+        fr_res_black@mpDefaultFillColor	 = "White"
 
-		fr_res_white = True
-		fr_res_white@mpNationalLineColor = "White"
-		fr_res_white@mpGeophysicalLineColor = "White"
-		fr_res_white@mpDefaultFillColor	 = "Black"
+        fr_res_white = True
+        fr_res_white@mpNationalLineColor = "White"
+        fr_res_white@mpGeophysicalLineColor = "White"
+        fr_res_white@mpDefaultFillColor	 = "Black"
 
-		fr_res_cape = True
-		fr_res_cape@mpNationalLineColor = "Black"
-		fr_res_cape@mpGeophysicalLineColor = "Black"
-		fr_res_cape@mpDefaultFillColor	 = "White"
-               
- 		; ************************************************************************
-		; Z500 + PRMSL
-		; ************************************************************************
+        fr_res_cape = True
+        fr_res_cape@mpNationalLineColor = "Black"
+        fr_res_cape@mpGeophysicalLineColor = "Black"
+        fr_res_cape@mpDefaultFillColor	 = "White"
 
-                print("    Z500 + PRSML");
-		outfile = "pifo/images/pifo_prmsl_hgt500_"+valid
-    
-		wks = gsn_open_wks(device, outfile)
-		mb_set_colormap(wks)
- 
-                gen_res = True
-                gen_res@sfXArray = lon2U
-                gen_res@sfYArray = lat2U
-                gen_res@gsnAddCyclic = False
-                gen_res@gsnPaperOrientation = "portrait"
+        ; ************************************************************************
+        ; Z500 + PRMSL
+        ; ************************************************************************
 
-                hgt500 = loadField("Z500_"+grfile)
-                prmsl = loadField("ps_"+grfile)
-                prmsl = prmsl / 100.0
+        print("    Z500 + PRSML");
+        outfile = europe_dir+"/pifo_prmsl_hgt500_"+valid
 
-                plot_hgt500 = mb_geop_z500_fill(wks, hgt500, gen_res)
-                prmsl_res = gen_res
-		prmsl_res@cnLevelSpacingF = 2.
-		prmsl_res@cnLineThicknessF = 2.0
-		prmsl_res@cnLowLabelsOn	= False
-		prmsl_res@cnHighLabelsOn = False
-                plot_prmsl = mb_isobares(wks, prmsl, prmsl_res)
+        wks = gsn_open_wks(device, outfile)
+        mb_set_colormap(wks)
 
-		eur_res3 = True
-		eur_res3@mpNationalLineColor = "Black"
-		eur_res3@mpGeophysicalLineColor = "Black"
-                mapid = mb_map_europe(wks, "Pression et Geopotentiel 500 hPa", globalRes@validDate, globalRes@runInfo, eur_res3)
-		overlay(mapid, plot_hgt500)
-		overlay(mapid, plot_prmsl)
-                draw(mapid)
+        gen_res = True
+        gen_res@sfXArray = lon2U
+        gen_res@sfYArray = lat2U
+        gen_res@gsnAddCyclic = False
+        gen_res@gsnPaperOrientation = "portrait"
 
-                delete(hgt500)
-                delete(prmsl)
+        hgt500 = loadField("Z500_"+grfile)
+        prmsl = loadField("ps_"+grfile)
+        prmsl = prmsl / 100.0
 
-		frame(wks)
+        plot_hgt500 = mb_geop_z500_fill(wks, hgt500, gen_res)
+        prmsl_res = gen_res
+        prmsl_res@cnLevelSpacingF = 2.
+        prmsl_res@cnLineThicknessF = 2.0
+        prmsl_res@cnLowLabelsOn	= False
+        prmsl_res@cnHighLabelsOn = False
+        plot_prmsl = mb_isobares(wks, prmsl, prmsl_res)
 
- 		; ************************************************************************
-		; PRECIPITATIONS
-		; ************************************************************************
+        eur_res3 = True
+        eur_res3@mpNationalLineColor = "Black"
+        eur_res3@mpGeophysicalLineColor = "Black"
+        mapid = mb_map_europe(wks, "Pression et Geopotentiel 500 hPa", globalRes@validDate, globalRes@runInfo, eur_res3)
+        overlay(mapid, plot_hgt500)
+        overlay(mapid, plot_prmsl)
+        draw(mapid)
 
-                apcp = loadField("apcp_"+grfile)
+        delete(hgt500)
+        delete(prmsl)
 
-                if (isvar("apcp_prec")) then
-                    apcp_ech = apcp - apcp_prec
-                else 
-                    apcp_ech = apcp
-		end if
+        frame(wks)
 
-                apcp_prec = apcp
+        ; ************************************************************************
+        ; PRECIPITATIONS
+        ; ************************************************************************
 
+        apcp = loadField("apcp_"+grfile)
 
-		print("    Precipitations cumulées Europe");
-		outfile = "pifo/images/pifo_apcp_acc_"+valid
-		wks = gsn_open_wks(device, outfile)
-		mb_set_colormap(wks)
+        if (isvar("apcp_prec")) then
+            apcp_ech = apcp - apcp_prec
+        else 
+            apcp_ech = apcp
+        end if
 
-		rain_res = True
-                rain_res@sfXArray = lon2U
-                rain_res@sfYArray = lat2U
-                rain_res@gsnAddCyclic = False
-                rain_res@gsnPaperOrientation = "portrait"
-
-		plot_precip = mb_precipitations(wks, apcp, rain_res)
-		
-		eur_res = True
-		eur_res@mpFillOn			= False
-		eur_res@mpNationalLineColor = "Black"
-		eur_res@mpGeophysicalLineColor = "Black"
-		mapid = mb_map_europe(wks, "Precipitations cumulees", globalRes@validDate, globalRes@runInfo, eur_res)
-		overlay(mapid, plot_precip)
-		draw(mapid)
-		frame(wks)
+        apcp_prec = apcp
 
 
-		print("    Precipitations Europe");
-		outfile = "pifo/images/pifo_apcp_"+valid
-		wks = gsn_open_wks(device, outfile)
-		mb_set_colormap(wks)
+        print("    Precipitations cumulées Europe");
+        outfile = europe_dir+"/pifo_apcp_acc_"+valid
+        wks = gsn_open_wks(device, outfile)
+        mb_set_colormap(wks)
 
-		rain_res = True
-                rain_res@sfXArray = lon2U
-                rain_res@sfYArray = lat2U
-                rain_res@gsnAddCyclic = False
-                rain_res@gsnPaperOrientation = "portrait"
+        rain_res = True
+        rain_res@sfXArray = lon2U
+        rain_res@sfYArray = lat2U
+        rain_res@gsnAddCyclic = False
+        rain_res@gsnPaperOrientation = "portrait"
 
-		plot_precip = mb_precipitations(wks, apcp_ech, rain_res)
-		
-		eur_res = True
-		eur_res@mpFillOn            = False
-		eur_res@mpNationalLineColor = "Black"
-		eur_res@mpGeophysicalLineColor = "Black"
-		mapid = mb_map_europe(wks, "Precipitations", globalRes@validDate, globalRes@runInfo, eur_res)
-		overlay(mapid, plot_precip)
-		draw(mapid)
-		frame(wks)
-                
-                delete(plot_precip)
-                delete(apcp)
-                delete(apcp_ech)
+        plot_precip = mb_precipitations(wks, apcp, rain_res)
 
-		; ************************************************************************
-		; Temperature 850 hPa
-		; ************************************************************************
+        eur_res = True
+        eur_res@mpFillOn			= False
+        eur_res@mpNationalLineColor = "Black"
+        eur_res@mpGeophysicalLineColor = "Black"
+        mapid = mb_map_europe(wks, "Precipitations cumulees", globalRes@validDate, globalRes@runInfo, eur_res)
+        overlay(mapid, plot_precip)
+        draw(mapid)
+        frame(wks)
 
-                t850 = loadField("T850_"+grfile)
-                t850 = t850 - 273.15
 
-        ; theta = T*(1000/P)^(Ra/Cp)
+        print("    Precipitations Europe");
+        outfile = europe_dir+"/pifo_apcp_"+valid
+        wks = gsn_open_wks(device, outfile)
+        mb_set_colormap(wks)
+
+        rain_res = True
+        rain_res@sfXArray = lon2U
+        rain_res@sfYArray = lat2U
+        rain_res@gsnAddCyclic = False
+        rain_res@gsnPaperOrientation = "portrait"
+
+        plot_precip = mb_precipitations(wks, apcp_ech, rain_res)
+
+        eur_res = True
+        eur_res@mpFillOn            = False
+        eur_res@mpNationalLineColor = "Black"
+        eur_res@mpGeophysicalLineColor = "Black"
+        mapid = mb_map_europe(wks, "Precipitations", globalRes@validDate, globalRes@runInfo, eur_res)
+        overlay(mapid, plot_precip)
+        draw(mapid)
+        frame(wks)
+
+        delete(plot_precip)
+        delete(apcp)
+        delete(apcp_ech)
+
+        ; ************************************************************************
+        ; Temperature 850 hPa
+        ; ************************************************************************
+
+        t850 = loadField("T850_"+grfile)
+        t850 = t850 - 273.15
+
+; theta = T*(1000/P)^(Ra/Cp)
 ;		theta = t850*1.04758 - 273.15
 ;		copy_VarCoords(t850, theta)
 
-                print("    Température 850 hPa Europe");
-		outfile = "pifo/images/pifo_tmp850_"+valid
-		wks = gsn_open_wks(device, outfile)
-		mb_set_colormap(wks)
+        print("    Température 850 hPa Europe");
+        outfile = europe_dir+"/pifo_tmp850_"+valid
+        wks = gsn_open_wks(device, outfile)
+        mb_set_colormap(wks)
 
-		plot_temp = mb_temp850hpa(wks, t850, gen_res)
-		eur_res5 = True
-		eur_res5@mpNationalLineColor = "Black"
-		eur_res5@mpGeophysicalLineColor = "Black"
-		mapid = mb_map_europe(wks, "Temperature 850 hPa", globalRes@validDate, globalRes@runInfo, eur_res5)
-		delete(eur_res5)
-		overlay(mapid, plot_temp)
+        plot_temp = mb_temp850hpa(wks, t850, gen_res)
+        eur_res5 = True
+        eur_res5@mpNationalLineColor = "Black"
+        eur_res5@mpGeophysicalLineColor = "Black"
+        mapid = mb_map_europe(wks, "Temperature 850 hPa", globalRes@validDate, globalRes@runInfo, eur_res5)
+        delete(eur_res5)
+        overlay(mapid, plot_temp)
 
-		draw(mapid)
-		frame(wks)
+        draw(mapid)
+        frame(wks)
 
-                delete(t850)
-		delete(plot_temp)
+        delete(t850)
+        delete(plot_temp)
 
-		; ************************************************************************
-		; Jet stream + tropopause
-		; ************************************************************************
+        ; ************************************************************************
+        ; Jet stream + tropopause
+        ; ************************************************************************
 
-	 	; Obtient le vent sur le niveau ~300 hPa
-                ; TODO : il faudra un moyen d'interpoler ou récupérer la liste des niveaux
-		ustream = loadField("U_2_"+grfile)
+        ; Obtient le vent sur le niveau ~300 hPa
+        ; TODO : il faudra un moyen d'interpoler ou récupérer la liste des niveaux
+        ustream = loadField("U_2_"+grfile)
 
-		vstream = loadField("V_2_"+grfile)
-		
-		; Carte europe
-                print("    Jet Stream 300 hPa");
-		outfile = "pifo/images/pifo_jet_stream_"+valid
-		wks = gsn_open_wks(device,outfile)
-        	mb_set_colormap(wks)
+        vstream = loadField("V_2_"+grfile)
 
-                vec_res = True
-                vec_res@gsnAddCyclic = False
-                vec_res@vfXArray = lon2d
-                vec_res@vfYArray = lat2d
-		plot_jet = mb_jet_stream_contour(wks, ustream, vstream, gen_res)
-		plot_stream = mb_jet_stream(wks, ustream, vstream, vec_res)
+        ; Carte europe
+        print("    Jet Stream 300 hPa");
+        outfile = europe_dir+"/pifo_jet_stream_"+valid
+        wks = gsn_open_wks(device,outfile)
+        mb_set_colormap(wks)
 
-		eur_res4 = True
-		eur_res4@mpFillOn   = False
-		eur_res4@mpNationalLineColor = "Black"
-		eur_res4@mpGeophysicalLineColor = "Black"
-		mapid = mb_map_europe(wks, "Jet Stream 300 hPa + altitude tropopause", globalRes@validDate, globalRes@runInfo, eur_res4)
-		delete(eur_res4)
-		delete(prmsl_res)
-		overlay(mapid, plot_jet)
-		overlay(mapid, plot_stream)
+        vec_res = True
+        vec_res@gsnAddCyclic = False
+        vec_res@vfXArray = lon2d
+        vec_res@vfYArray = lat2d
+        plot_jet = mb_jet_stream_contour(wks, ustream, vstream, gen_res)
+        plot_stream = mb_jet_stream(wks, ustream, vstream, vec_res)
 
-		draw(mapid)
-		frame(wks)
+        eur_res4 = True
+        eur_res4@mpFillOn   = False
+        eur_res4@mpNationalLineColor = "Black"
+        eur_res4@mpGeophysicalLineColor = "Black"
+        mapid = mb_map_europe(wks, "Jet Stream 300 hPa + altitude tropopause", globalRes@validDate, globalRes@runInfo, eur_res4)
+        delete(eur_res4)
+        delete(prmsl_res)
+        overlay(mapid, plot_jet)
+        overlay(mapid, plot_stream)
 
-		delete(plot_jet)
-		delete(plot_stream)
-                delete(ustream)
-                delete(vstream)
+        draw(mapid)
+        frame(wks)
 
-		; ************************************************************************
-		; Humidite relative
-		; ************************************************************************
-                print("    RH 700 hpa Europe");
+        delete(plot_jet)
+        delete(plot_stream)
+        delete(ustream)
+        delete(vstream)
 
-                qv = loadField("qv_5_"+grfile)
-                t = loadField("T_5_"+grfile)
-                psat = exp(13.7-5120/t) * 101325
-                qsat = 0.622*psat/(70000 - 0.378*psat)
-                rh700 = qv/qsat*100
+        ; ************************************************************************
+        ; Humidite relative
+        ; ************************************************************************
+        print("    RH 700 hpa Europe");
 
-		outfile = "pifo/images/pifo_rh700_"+valid
-		wks = gsn_open_wks(device,outfile)
-		mb_set_colormap(wks)
+        qv = loadField("qv_5_"+grfile)
+        t = loadField("T_5_"+grfile)
+        psat = exp(13.7-5120/t) * 101325
+        qsat = 0.622*psat/(70000 - 0.378*psat)
+        rh700 = qv/qsat*100
 
-		plot_rh700 = mb_humidite(wks, rh700, gen_res)
-                
-		eur_res2 = True
-		eur_res2@mpNationalLineColor = "Black"
-		eur_res2@mpGeophysicalLineColor = "Black"
-		mapid = mb_map_europe(wks, "Humidite relative 700 hPa", globalRes@validDate, globalRes@runInfo, eur_res2)
-		overlay(mapid, plot_rh700)	
-		draw(mapid)
-		frame(wks)
+        outfile = europe_dir+"/pifo_rh700_"+valid
+        wks = gsn_open_wks(device,outfile)
+        mb_set_colormap(wks)
 
-                delete(qv)
-                delete(t)
-                delete(psat)
-                delete(qsat)
-                delete(rh700)
-	end do        ; END OF TIME LOOP
+        plot_rh700 = mb_humidite(wks, rh700, gen_res)
 
+        eur_res2 = True
+        eur_res2@mpNationalLineColor = "Black"
+        eur_res2@mpGeophysicalLineColor = "Black"
+        mapid = mb_map_europe(wks, "Humidite relative 700 hPa", globalRes@validDate, globalRes@runInfo, eur_res2)
+        overlay(mapid, plot_rh700)	
+        draw(mapid)
+        frame(wks)
+
+        delete(qv)
+        delete(t)
+        delete(psat)
+        delete(qsat)
+        delete(rh700)
+    end do        ; END OF TIME LOOP
 end
 
 
