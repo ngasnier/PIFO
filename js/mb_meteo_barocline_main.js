@@ -428,7 +428,7 @@ function reloadData()
             var info = "Run "+fileinfo[1]+" "+fileinfo[2]+"z du "+fileinfo[3];
             var parts = fileinfo[3].split("/");
             $("#runinit").html(info);
-            var dt = new Date(parts[2]+"-"+parts[1]+"-"+parts[0]);
+            var dt = new Date(parts[2]+"-"+parts[1]+"-"+parts[0]+" "+fileinfo[2]+":00 UTC");
             ui.model.startDate = dt;
         }
     });
