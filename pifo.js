@@ -75,7 +75,7 @@ var lastExecTime = 0;
 var totalTime = 0;
 var totalStep = 0;
 
-var valids = ["00"];
+var valids = ["000"];
 var scenario = "bc02";
 var reslist = [];
 var status = "loading";
