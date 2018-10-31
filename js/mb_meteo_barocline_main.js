@@ -23,6 +23,8 @@ import { HumidityInterpolator } from "./modeling/HumidityInterpolator.js";
 import { Model } from "./modeling/Model.js";
 import { BaroclinicModel } from "./modeling/BaroclinicModel.js";
 import { Variable } from "./modeling/Variable.js";
+import { HydrostaticLeapFrogDynamicsCore } from "./modeling/HydrostaticLeapFrogDynamicsCore.js";
+import { HydrostaticLeapFrogDynamicsCore_CP } from "./modeling/HydrostaticLeapFrogDynamicsCore_CP.js";
 
 import { WindHTMLRenderer } from "./ui/WindHTMLRenderer.js";
 import { TourbillonHTMLRenderer } from "./ui/TourbillonHTMLRenderer.js";
@@ -73,7 +75,7 @@ var lastExecTime = 0;
 var totalTime = 0;
 var totalStep = 0;
 
-var valids = ["00"];
+var valids = ["000"];
 var scenario = "2018062200";
 //var scenario = "2018092500";
 var reslist = [];
@@ -91,6 +93,10 @@ $(document).ready(function() {
     ui.model.projection = Model.PROJ_MERCATOR;
     ui.model.gridType = "C";
     ui.model.verticalType = "L";
+    if (ui.model.verticalType == "CP")
+        ui.model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore_CP();
+    else
+        ui.model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore();
 
     ui.model.width = 144;
     ui.model.height = 72;

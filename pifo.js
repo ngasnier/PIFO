@@ -23,6 +23,8 @@ import { HumidityInterpolator } from "./js/modeling/HumidityInterpolator.js";
 import { Model } from "./js/modeling/Model.js";
 import { BaroclinicModel } from "./js/modeling/BaroclinicModel.js";
 import { Variable } from "./js/modeling/Variable.js";
+import { HydrostaticLeapFrogDynamicsCore } from "./js/modeling/HydrostaticLeapFrogDynamicsCore.js";
+import { HydrostaticLeapFrogDynamicsCore_CP } from "./js/modeling/HydrostaticLeapFrogDynamicsCore_CP.js";
 
 import { WindHTMLRenderer } from "./js/ui/WindHTMLRenderer.js";
 import { TourbillonHTMLRenderer } from "./js/ui/TourbillonHTMLRenderer.js";
@@ -116,6 +118,10 @@ switch (config.model)
 ui.model.projection = config.projection;
 ui.model.gridType = config.gridType;
 ui.model.verticalType = config.verticalType;
+if (ui.model.verticalType == "CP")
+    ui.model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore_CP();
+else
+    ui.model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore();
 
 // Configuration du domaine géographique
 ui.model.width = config.width;

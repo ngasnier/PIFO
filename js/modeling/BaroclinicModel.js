@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Model } from './Model.js';
 import { Variable } from './Variable.js';
+import { DynamicsCore } from './DynamicsCore.js';
 
 /**
  * Modèle coordonnée vertical sigma pure en grille C
@@ -117,6 +118,8 @@ export var BaroclinicModel = function ()
 
     // Indices de tous les niveaux
     this.niveaux_s = [];
+    
+    this.dynamicsCore = new DynamicsCore();
        
     // **** VARIABLES DE LA SIMULATION ****
 
@@ -234,11 +237,6 @@ export var BaroclinicModel = function ()
     this.Sv = [];
     this.St = [];
     this.Sqv = [];
-    
-    // Variables temporaires pour le filtrage temporel
-    this.X_tmp = [];
-    this.X2d_tmp = [];
-
                         
     // Méthodes privées du modèle
     if( typeof BaroclinicModel.initialized == "undefined" ) 
@@ -246,430 +244,6 @@ export var BaroclinicModel = function ()
         // ********************************************************************
         // COEUR DYNAMIQUE DU MODELE
         // ********************************************************************
-        
-        BaroclinicModel.prototype.avanceEuler = function()
-        {       
-            Variable.a_bc(this.U, this.Su, this.dt, this.U_t);
-            Variable.a_bc(this.V, this.Sv, this.dt, this.V_t);
-            Variable.a_bc(this.T, this.St, this.dt, this.T_t);
-            Variable.a_bc(this.qv, this.Sqv, this.dt, this.qv_t);
-            Variable.a_bc2d(this.Z, this.Sz, this.dt, this.Z_t);
-        }
-
-        BaroclinicModel.prototype.avanceExpliciteCentre = function()
-        {                 
-            Variable.a_bc(this.U_t, this.Su, 2.0*this.dt, this.X_tmp);
-            Variable.a_bc(this.U_t, this.U, -2.0, this.U_t);
-            Variable.sum(this.X_tmp, this.U_t, this.U_t);
-            Variable.a_bc(this.U, this.U_t, 0.5, this.U_t);
-
-            Variable.a_bc(this.V_t, this.Sv, 2.0*this.dt, this.X_tmp);
-            Variable.a_bc(this.V_t, this.V, -2.0, this.V_t);
-            Variable.sum(this.X_tmp, this.V_t, this.V_t);
-            Variable.a_bc(this.V, this.V_t, 0.5, this.V_t);
-            
-            Variable.a_bc(this.T_t, this.St, 2.0*this.dt, this.X_tmp);
-            Variable.a_bc(this.T_t, this.T, -2.0, this.T_t);
-            Variable.sum(this.X_tmp, this.T_t, this.T_t);
-            Variable.a_bc(this.T, this.T_t, 0.5, this.T_t);
-            
-            Variable.a_bc(this.qv_t, this.Sqv, 2.0*this.dt, this.X_tmp);
-            Variable.a_bc(this.qv_t, this.qv, -2.0, this.qv_t);
-            Variable.sum(this.X_tmp, this.qv_t, this.qv_t);
-            Variable.a_bc(this.qv, this.qv_t, 0.5, this.qv_t);
-            
-            Variable.a_bc2d(this.Z_t, this.Sz, 2.0*this.dt, this.X2d_tmp);
-            Variable.a_bc2d(this.Z_t, this.Z, -2.0, this.Z_t);
-            Variable.sum(this.X2d_tmp, this.Z_t, this.Z_t);
-            Variable.a_bc2d(this.Z, this.Z_t, 0.5, this.Z_t);
-        }
-              
-              
-        BaroclinicModel.prototype.calcSuCouche = function(k)
-        {
-            if (this.gridType=="C")
-            {
-                var xi = 0;
-                var psvk = 0;
-                var d_ktilde_1, d_ktilde_2, d_ktilde_moins_1_1, d_ktilde_moins_1_2;
-                var u_k_plus_1, u_k, u_k_moins_1;
-                var adv=0, rtz=0;
-                var kphi=0;
-                var i = this.width+1;
-                var x, y;
-                for (y=1;y<this.height-1;y++)
-                {
-                    for (x=1;x<this.width-1;x++,i++)
-                    {
-                        if (k<this.U.length-1)
-                        {
-                            d_ktilde_1 = this.sigmaf[k+1][i];
-                            d_ktilde_2 = this.sigmaf[k+1][i+1];
-                            u_k_plus_1 = this.U[k+1][i];
-                        }
-                        else
-                        {
-                            d_ktilde_1 = 0;
-                            d_ktilde_2 = 0;
-                            u_k_plus_1 = 0;
-                        }
-
-                        d_ktilde_moins_1_1 = this.sigmaf[k][i];
-                        d_ktilde_moins_1_2 = this.sigmaf[k][i+1];
-
-                        u_k = this.U[k][i];
-
-                        if (k>0)
-                        {
-                            u_k_moins_1 = this.U[k-1][i];                        
-                        }
-                        else 
-                        {
-                            u_k_moins_1 = 0;
-                        }                        
-
-                        // Verif Ok 14/06/2018
-                        xi = 0.5*(this.tourbillon[k][i]+this.tourbillon[k][i-this.width]); 
-
-                        // Verif Ok 14/06/2018
-                        psvk = (
-                                (this.ps[i]+this.ps[i-this.width])*this.V[k][i-this.width]
-                                +(this.ps[i+1]+this.ps[i+1-this.width])*this.V[k][i+1-this.width]
-                                +(this.ps[i+1]+this.ps[i+1+this.width])*this.V[k][i+1]
-                                +(this.ps[i]+this.ps[i+this.width])*this.V[k][i]
-                            )/8; 
-                       
-                        // Verif Ok 14/06/2018
-                        adv = (1/((this.ps[i+1]+this.ps[i])*this.dsigma[k]))
-                            *(
-                               0.5*(d_ktilde_1+d_ktilde_2)*(u_k_plus_1-u_k)+0.5*(d_ktilde_moins_1_1+d_ktilde_moins_1_2)*(u_k-u_k_moins_1)
-                             );
-
-                        // Verif Ok 14/06/2018
-                        kphi = (this.K[k][i+1]+this.phi[k][i+1]-this.K[k][i]-this.phi[k][i])/this.dx[y];
-
-                        // Verif Ok 14/06/2018
-                        if (this.verticalType=="L")
-                        {
-                            rtz = Model.R*0.5*(this.T[k][i]+this.T[k][i+1])*(this.Z[i+1]-this.Z[i])/this.dx[y];
-                        }
-                        else
-                        {
-                            rtz = Model.R*0.25*(this.T[k][i]+this.T[k][i+1]+this.T[k+1][i]+this.T[k+1][i+1])*(this.Z[i+1]-this.Z[i])/this.dx[y];
-                        }
-                        
-                        this.Su[k][i] = xi*psvk - adv - kphi - rtz;
-                    }
-                    i+=2;
-                }
-            }
-        }
-               
-        BaroclinicModel.prototype.calcSu = function()
-        {
-            var n = this.nbcouches;
-            for (var k=0;k<n;k++)
-            {
-                this.calcSuCouche(k);
-            }
-        }
-               
-        BaroclinicModel.prototype.calcSvCouche = function(k)
-        {
-            if (this.gridType=="C")
-            {
-                var xi = 0;
-                var psuk = 0;
-                var d_ktilde_1, d_ktilde_2, d_ktilde_moins_1_1, d_ktilde_moins_1_2;
-                var v_k_plus_1, v_k, v_k_moins_1;
-                var adv=0, rtz=0;
-                var kphi=0;
-                var i = this.width+1;
-                var x, y;
-                for (y=1;y<this.height-1;y++)
-                {
-                    for(x=1;x<this.width-1;x++,i++)
-                    {
-                        if (k<this.V.length-1)
-                        {
-                            d_ktilde_1 = this.sigmaf[k+1][i+this.width];
-                            d_ktilde_2 = this.sigmaf[k+1][i];
-                            v_k_plus_1 = this.V[k+1][i];                        
-                        }
-                        else
-                        {
-                            d_ktilde_1 = 0;
-                            d_ktilde_2 = 0;
-                            v_k_plus_1 = 0;
-                        }
-
-                        d_ktilde_moins_1_1 = this.sigmaf[k][i+this.width];
-                        d_ktilde_moins_1_2 = this.sigmaf[k][i];
-
-                        v_k = this.V[k][i];
-
-                        if (k>0)
-                        {
-                            v_k_moins_1 = this.V[k-1][i];
-                        }
-                        else
-                        {
-                            v_k_moins_1 = 0;
-                        }
-
-                        // Verif Ok 14/06/2018
-                        xi = 0.5*(this.tourbillon[k][i]+this.tourbillon[k][i-1]);
-
-                        // Verif Ok 14/06/2018
-                        psuk = (
-                                (this.ps[i-1]+this.ps[i])*this.U[k][i-1]
-                                +(this.ps[i]+this.ps[i+1])*this.U[k][i]
-                                +(this.ps[i+this.width]+this.ps[i+this.width+1])*this.U[k][i+this.width]
-                                +(this.ps[i-1+this.width]+this.ps[i+this.width])*this.U[k][i-1+this.width]
-                            )/8;
-                    
-                        // Verif Ok 14/06/2018
-                        adv = (1/((this.ps[i]+this.ps[i+this.width])*this.dsigma[k]))*(
-                               0.5*(d_ktilde_1+d_ktilde_2)*(v_k_plus_1-v_k)+0.5*(d_ktilde_moins_1_1+d_ktilde_moins_1_2)*(v_k-v_k_moins_1));
-
-                        // Verif Ok 14/06/2018
-                        kphi = (this.K[k][i]+this.phi[k][i]-this.K[k][i+this.width]-this.phi[k][i+this.width])/this.dy;
-
-                        // Verif Ok 14/06/2018
-                        if (this.verticalType=="L")
-                        {
-                            rtz = Model.R*0.5*(this.T[k][i]+this.T[k][i+this.width])*(this.Z[i]-this.Z[i+this.width])/this.dy;
-                        }
-                        else
-                        {
-                            rtz = Model.R*0.25*(this.T[k][i]+this.T[k][i+this.width]+this.T[k+1][i]+this.T[k+1][i+this.width])*(this.Z[i]-this.Z[i+this.width])/this.dy;                            
-                        }
-
-                        this.Sv[k][i] = -xi*psuk - adv - kphi - rtz;                        
-                    }
-                    i+=2;
-                }
-            }
-        }
-        
-        BaroclinicModel.prototype.calcSv = function()
-        {
-            var n = this.nbcouches;
-            for (var k=0;k<n;k++)
-            {
-                this.calcSvCouche(k);
-            }            
-        }
-               
-        BaroclinicModel.prototype.calcStCouche = function(k)
-        {
-            if (this.gridType=="C")
-            {
-                var part1=0, part2=0, part3=0, adv=0;
-                var d_ktilde, d_ktilde_moins_1;
-                var t_k_plus_1, t_k, t_k_moins_1;
-                var integ_dtlds=0;
-                var c_chapo = 0;
-                var cp = 0;
-                var dcpt = 0;
-                var k_1 = 0;
-                var k_c = 0;
-
-                var m2 = 0;
-                var i= this.width+1;
-                var x, y;
-                for (y=1;y<this.height-1;y++)
-                {
-                    for (x=1;x<this.width-1;x++,i++)
-                    {                       
-                        m2 = this.m[i]*this.m[i];
-                        
-                        // Verif Ok 14/06/2018
-                        if (this.verticalType=="L")
-                        {
-                            if (k<this.T.length-1)
-                            {
-                                d_ktilde = this.sigmaf[k+1][i];
-                                t_k_plus_1 = this.T[k+1][i]; 
-                            }
-                            else
-                            {
-                                d_ktilde = 0;
-                                t_k_plus_1 = 0;
-                            }
-
-                            d_ktilde_moins_1 = this.sigmaf[k][i];
-                            t_k = this.T[k][i];
-
-
-                            if (k>0)
-                            {
-                                t_k_moins_1 = this.T[k-1][i];
-                                integ_dtlds = this.DtildeDs[k-1][i];
-                            }
-                            else
-                            {
-                                t_k_moins_1 = 0;
-                                integ_dtlds = 0;
-                            }
-
-                            part1 = m2*(
-                                    ((this.ps[i+1]+this.ps[i])*this.U[k][i]*(this.T[k][i+1]-this.T[k][i])
-                                    +(this.ps[i]+this.ps[i-1])*this.U[k][i-1]*(this.T[k][i]-this.T[k][i-1]))/(4*this.dx[y])
-
-                                    +((this.ps[i-this.width]+this.ps[i])*this.V[k][i-this.width]*(this.T[k][i-this.width]-this.T[k][i])
-                                    +(this.ps[i]+this.ps[i+this.width])*this.V[k][i]*(this.T[k][i]-this.T[k][i+this.width]))/(4*this.dy)
-                                )/this.ps[i];
-
-                            // Verif Ok 14/06/2018
-                            // TODO : y'a une coquille dans ce terme, c'est lui qui cause l'instabilité
-                            adv = (d_ktilde*(t_k_plus_1-t_k)+d_ktilde_moins_1*(t_k-t_k_moins_1)) / (this.ps[i]*2*this.dsigma[k]);
-
-                            // Verif Ok 15/06/2018
-                            part2 = Model.R*this.T[k][i]*m2
-                                        *(this.gamma[k]*integ_dtlds+this.alpha[k]*this.Dtilde[k][i]*this.dsigma[k])
-                                    /(Model.Cp*this.ps[i]*this.dsigma[k]);
-
-                            // Verif Ok 15/06/2018
-                            part3 = Model.R*m2 *(
-                                    (
-                                        (this.ps[i]+this.ps[i+1])*this.U[k][i]*(this.T[k][i]+this.T[k][i+1])*(this.Z[i+1]-this.Z[i])
-                                        +(this.ps[i]+this.ps[i-1])*this.U[k][i-1]*(this.T[k][i]+this.T[k][i-1])*(this.Z[i]-this.Z[i-1])                                    
-                                    )/(8*this.dx[y])
-                                +
-                                    ( 
-                                        (this.ps[i]+this.ps[i-this.width])*this.V[k][i-this.width]*(this.T[k][i]+this.T[k][i-this.width])*(this.Z[i-this.width]-this.Z[i])
-                                        +(this.ps[i]+this.ps[i+this.width])*this.V[k][i]*(this.T[k][i]+this.T[k][i+this.width])*(this.Z[i]-this.Z[i+this.width])
-                                    )/(8*this.dy)
-
-                                ) / (Model.Cp*this.ps[i]);
-                        
-                            // Couplage avec les paramètres physiques
-                            
-                            // Calcule la capacité thermique massique du mélange
-                            // TODO : est-ce que ça devrait être utilisé dans les équations ci-dessus ?
-/* PLUIE                            cp = Model.Cp+Model.Cp_v*this.qv[k][i];
-
-                            // Calcul de la variation d'enthalpie
-                            // Nb : divisé 1-qr-qs, mais qr=qs=0 vu que tout 
-                            // précipite direct en pied de couche
-                            //c_chapo = (Model.Cp+Model.Cp_v*this.qv[k][i]); 
-                            dcpt = -Model.g*m2/(this.ps[i]*this.dsigma[k])
-                                *(
-                                    // Terme de contribution du changement de pression dûe au changement de 
-                                    // masse à cause du flux de précipitation
-                                    // (si j'ai bien tout compris...)
-                                    // Nb : rend le modèle instable, terme trop fort par endroit...
-                                    // Je préfère le négliger en attendant de comprendre
-//                                    (
-//                                        (Model.Cp_l-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] 
-//                            
-//                                        //-(c_chapo-cp)*this.Pl[k+1][i]*this.T[k][i]) // Sans qr ni qs ce terme est toujours nul...
-//                                                                                  // Pas la peine de gaspiller du temps de calcul
-//                                    )
-                                    
-                                    // Terme de contribution de la chaleur latente
-                                    +(-Model.Ll*(this.P_evap[k][i]))
-                                );*/
-                        }
-                        else
-                        {
-                            d_ktilde = this.sigmaf[k][i];
-                            
-                            if (k<this.T.length-1)
-                            {
-                                t_k_plus_1 = this.T[k+1][i]; 
-                                k_c = k;
-                            }
-                            else
-                            {
-                                // pas de dérivée donc pas d'advection en limite
-                                t_k_plus_1 = this.T[k][i]; 
-                                k_c = k-1;
-                            }
-
-
-                            if (k>0)
-                            {
-                                t_k_moins_1 = this.T[k-1][i];
-                                integ_dtlds = this.DtildeDs[k-1][i];
-                                k_1 = k-1;
-                            }
-                            else
-                            {
-                                t_k_moins_1 = this.T[k][i];
-                                integ_dtlds = 0;
-                                k_1 = k;
-                            }
-
-                            part1 = m2*(
-                                    ((this.ps[i+1]+this.ps[i])*0.5*(this.U[k_c][i]+this.U[k_1][i])*(this.T[k][i+1]-this.T[k][i])
-                                    +(this.ps[i]+this.ps[i-1])*0.5*(this.U[k_c][i-1]+this.U[k_1][i-1])*(this.T[k][i]-this.T[k][i-1]))/(4*this.dx[y])
-
-                                    +((this.ps[i-this.width]+this.ps[i])*0.5*(this.V[k_c][i-this.width]+this.V[k_1][i-this.width])*(this.T[k][i-this.width]-this.T[k][i])
-                                    +(this.ps[i]+this.ps[i+this.width])*0.5*(this.V[k_c][i]+this.V[k_1][i])*(this.T[k][i]-this.T[k][i+this.width]))/(4*this.dy)
-                                )/this.ps[i];
-
-
-                            if (k>0)
-                            {
-                                adv = (d_ktilde*(t_k_plus_1-t_k_moins_1)) / (this.ps[i]*2*this.dsigma[k-1]);
-
-                                part2 = Model.R*this.T[k][i]*m2*(this.gamma[k-1]*integ_dtlds)
-                                        /(Model.Cp*this.ps[i]*this.dsigma[k-1]);
-                            }
-                            else
-                            {
-                                adv = 0;
-                                part2 = 0 ;
-                            }
-
-                            part3 = Model.R*m2 *(
-                                    (
-                                        (this.ps[i]+this.ps[i+1])*0.5*(this.U[k_c][i]+this.U[k_1][i])*(this.T[k][i]+this.T[k][i+1])*(this.Z[i+1]-this.Z[i])
-                                        +(this.ps[i]+this.ps[i-1])*0.5*(this.U[k_c][i-1]+this.U[k_1][i-1])*(this.T[k][i]+this.T[k][i-1])*(this.Z[i]-this.Z[i-1])                                    
-                                    )/(8*this.dx[y])
-                                +
-                                    ( 
-                                        (this.ps[i]+this.ps[i-this.width])*0.5*(this.V[k_c][i-this.width]*this.V[k_1][i-this.width])*(this.T[k][i]+this.T[k][i-this.width])*(this.Z[i-this.width]-this.Z[i])
-                                        +(this.ps[i]+this.ps[i+this.width])*0.5*(this.V[k_c][i]*this.V[k_1][i])*(this.T[k][i]+this.T[k][i+this.width])*(this.Z[i]-this.Z[i+this.width])
-                                    )/(8*this.dy)
-
-                                ) / (Model.Cp*this.ps[i]);
-                        }
-                    
-                        this.St[k][i] = - part1 - adv - part2 + part3 /* PLUIE + dcpt/cp*/;
-                    }
-                    i+=2;
-                }
-            }
-        }
-       
-        BaroclinicModel.prototype.calcSt = function()
-        {
-            var n = this.nbcouches;
-            if (this.verticalType=="CP") n++;
-            for (var k=0;k<n;k++)
-            {
-                this.calcStCouche(k);
-            }
-        }
-        
-        BaroclinicModel.prototype.calcSz = function()
-        {
-            var n = this.DtildeDs.length-1;
-            var i = 0;
-            var x, y;
-            for (y=1;y<this.height-1;y++)
-            {
-                for (x=1;x<this.width-1;x++)
-                {
-                    i = x+y*this.width;
-                    this.Sz[i] = -this.m[i]*this.m[i]*this.DtildeDs[n][i]/this.ps[i];
-                }
-            }
-        }
-
         BaroclinicModel.prototype.calcPs = function()
         {
             var n = this.p.length;
@@ -702,22 +276,29 @@ export var BaroclinicModel = function ()
             var l;  
             var acc = 0;
             var i=0, k=0;
-            for (k=0;k<n;k++)
+            if (this.verticalType=="L")
             {
-                for (i=0;i<nb;i++)
+                for (k=0;k<n;k++)
                 {
-                    // Verif Ok 16/06/2018
-                    acc=0;
-                    if (this.verticalType=="L")
+                    for (i=0;i<nb;i++)
                     {
+                        // Verif Ok 16/06/2018
+                        acc=0;
                         for (l=k+1;l<n;l++)
                         {
                             acc += this.gamma[l]*Model.R*this.T[l][i];
                         }
                         this.phi[k][i] = this.sfcgeop[i]+acc+this.alpha[k]*Model.R*this.T[k][i];
                     }
-                    else
+                }
+            }
+            else
+            {
+                for (k=0;k<n;k++)
+                {
+                    for (i=0;i<nb;i++)
                     {
+                        acc=0;
                         for (l=k+1;l<n;l++)
                         {
                             acc += this.gamma[l]*Model.R*0.5*(this.T[l][i]+this.T[l+1][i]);
@@ -888,90 +469,7 @@ export var BaroclinicModel = function ()
             }
         }
 
-        /**
-         * Calcule le transport d'une variable sur une couche
-         * 
-         * @param q la variable d'humidité à transporter
-         * @param pc pseudo flux de conversion (évaporation, condentation...)
-         * @param sq variable de sortie contenant la dérivée
-         * @param k couche à calculer
-         */
-        BaroclinicModel.prototype.calcTransportCouche = function(q, Pc, sq, k)
-        {
-            if (this.gridType=="C")
-            {
-                var part1=0, adv=0, dqv=0;
-                var d_ktilde, d_ktilde_moins_1;
-                var q_k_plus_1, q_k, q_k_moins_1;
-
-                var m2 = 0;
-                var i;
-                var x, y;
-                for (y=1;y<this.height-1;y++)
-                {
-                    i = this.width+1;
-                    for(x=1;x<this.width-1;x++,i++)
-                    {
-                        m2 = this.m[i]*this.m[i];
-
-                        if (k<q.length-1)
-                        {
-                            d_ktilde = this.sigmaf[k+1][i];
-                            q_k_plus_1 = q[k+1][i];                        
-                        }
-                        else
-                        {
-                            d_ktilde = 0;
-                            q_k_plus_1 = 0;
-                        }
-                        
-                        d_ktilde_moins_1 = this.sigmaf[k][i];
-                        q_k = q[k][i];
-                        
-
-                        if (k>0)
-                        {
-                            q_k_moins_1 = q[k-1][i];
-                        }
-                        else
-                        {
-                            q_k_moins_1 = 0;
-                        }
-                        
-                        // Terme de transport horizontal
-                        part1 = m2*(
-                                ((this.ps[i+1]+this.ps[i])*this.U[k][i]*(q[k][i+1]-q[k][i])
-                                +(this.ps[i]+this.ps[i-1])*this.U[k][i-1]*(q[k][i]-q[k][i-1]))/(4*this.dx[y])
-                                
-                                +((this.ps[i-this.width]+this.ps[i])*this.V[k][i-this.width]*(q[k][i-this.width]-q[k][i])
-                                +(this.ps[i]+this.ps[i+this.width])*this.V[k][i]*(q[k][i]-q[k][i+this.width]))/(4*this.dy)
-                            )/this.ps[i];
-                    
-                        // Terme d'advection verticale
-                        adv = (d_ktilde*(q_k_plus_1-q_k)+d_ktilde_moins_1*(q_k-q_k_moins_1)) / (this.ps[i]*2*this.dsigma[k]);
-                        
-                        // Couplage avec la physique
-                        dqv = Model.g*m2/(this.ps[i]*this.dsigma[k])*(-Pc[k][i] + q[k][i]*(this.Pl[k+1][i])/* 1-qr-qs ?*/);
-                        
-                        sq[k][i] = - part1 - adv + dqv;
-                    }
-                    i+=2;
-                }
-            }
-        }
-        
-        /**
-         * Calcule le transport des valeurs d'humidité, etc...
-         */
-        BaroclinicModel.prototype.calcTransports = function()
-        {
-            var n = this.nbcouches;
-            for (var k=0;k<n;k++)
-            {
-                this.calcTransportCouche(this.qv, this.P_evap, this.Sqv, k);
-            }
-        }
-              
+             
         /**
          * Filtre les champs pour éliminer ses fréquences parasites.
          * @param {type} a
@@ -1232,20 +730,8 @@ BaroclinicModel.prototype.step = function()
     //this.calcConvection();
     // PLUIE this.calcPrecip();
 
-    // *** Calcul des tendances ****
-    this.calcSz();
-    this.calcSu();
-    this.calcSv();
-    this.calcSt();
-    this.calcTransports();   
-
-    // *** Calcul des variables pronostiques ***
-    if (this.time==0){
-        this.avanceEuler();
-    }
-    else {
-        this.avanceExpliciteCentre();
-    }
+    // *** Calcul de l'évolution dynamique ***
+    this.dynamicsCore.step();
     
     // Gestion de cycling
     if (this.global)
@@ -1333,10 +819,7 @@ BaroclinicModel.prototype.init = function()
     this.Sv = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.St = Variable.createVariable(this.verticalType=="CP"?this.nbcouches+1:this.nbcouches, this.width, this.height, true);
     this.Sqv = Variable.createVariable(this.nbcouches, this.width, this.height, true);
-    
-    this.X_tmp = Variable.createVariable(this.nbcouches, this.width, this.height, true);
-    this.X2d_tmp = Variable.createVariable(1, this.width, this.height);
-    
+       
     this.Dtilde = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.DtildeDs = Variable.createVariable(this.nbcouches, this.width, this.height, true);
 
@@ -1443,6 +926,8 @@ BaroclinicModel.prototype.init = function()
         lat -= this.dlat*(Math.PI/180);
     }
    
+    this.dynamicsCore.init(this);
+    
     // *** Filtrage des champs, pour que ce soit lissé dès le début ***
     this.applyFilter();
 
