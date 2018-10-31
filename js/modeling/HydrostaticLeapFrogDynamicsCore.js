@@ -141,14 +141,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
                     kphi = (this.model.K[k][i+1]+this.model.phi[k][i+1]-this.model.K[k][i]-this.model.phi[k][i])/this.model.dx[y];
 
                     // Verif Ok 14/06/2018
-                    if (this.model.verticalType=="L")
-                    {
-                        rtz = Model.R*0.5*(this.model.T[k][i]+this.model.T[k][i+1])*(this.model.Z[i+1]-this.model.Z[i])/this.model.dx[y];
-                    }
-                    else
-                    {
-                        rtz = Model.R*0.25*(this.model.T[k][i]+this.model.T[k][i+1]+this.model.T[k+1][i]+this.model.T[k+1][i+1])*(this.model.Z[i+1]-this.model.Z[i])/this.model.dx[y];
-                    }
+                    rtz = Model.R*0.5*(this.model.T[k][i]+this.model.T[k][i+1])*(this.model.Z[i+1]-this.model.Z[i])/this.model.dx[y];
 
                     this.model.Su[k][i] = xi*psvk - adv - kphi - rtz;
                 }
@@ -225,14 +218,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
                     kphi = (this.model.K[k][i]+this.model.phi[k][i]-this.model.K[k][i+this.model.width]-this.model.phi[k][i+this.model.width])/this.model.dy;
 
                     // Verif Ok 14/06/2018
-                    if (this.model.verticalType=="L")
-                    {
-                        rtz = Model.R*0.5*(this.model.T[k][i]+this.model.T[k][i+this.model.width])*(this.model.Z[i]-this.model.Z[i+this.model.width])/this.model.dy;
-                    }
-                    else
-                    {
-                        rtz = Model.R*0.25*(this.model.T[k][i]+this.model.T[k][i+this.width]+this.model.T[k+1][i]+this.model.T[k+1][i+this.model.width])*(this.model.Z[i]-this.model.Z[i+this.model.width])/this.model.dy;
-                    }
+                    rtz = Model.R*0.5*(this.model.T[k][i]+this.model.T[k][i+this.model.width])*(this.model.Z[i]-this.model.Z[i+this.model.width])/this.model.dy;
 
                     this.model.Sv[k][i] = -xi*psuk - adv - kphi - rtz;                        
                 }
