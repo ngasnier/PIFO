@@ -1,0 +1,514 @@
+/* 
+ * Copyright (C) 2018 Nicolas GASNIER (http://www.meteo-blois.fr/contact/)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+import { Model } from './Model.js';
+import { Variable } from './Variable.js';
+import { DynamicsCore } from './DynamicsCore.js';
+
+
+/**
+ * Coeur dynamique en différences centrales pour modèle hydrostatique.
+ * Grille C, niveaux sigma, arrangement de Lorentz.
+ *          
+ * @returns {BaroclinicModel}
+ */
+export var HydrostaticLeapFrogDynamicsCore = function ()
+{
+    DynamicsCore.call(this);
+    
+    // Variables temporaires pour le filtrage temporel
+    this.X_tmp = [];
+    this.X2d_tmp = [];
+    
+    // Méthodes privées du modèle
+    if( typeof HydrostaticLeapFrogDynamicsCore.initialized == "undefined" ) 
+    {
+        // ********************************************************************
+        // COEUR DYNAMIQUE DU MODELE
+        // ********************************************************************
+        
+        HydrostaticLeapFrogDynamicsCore.prototype.avanceEuler = function()
+        {       
+            Variable.a_bc(this.model.U, this.model.Su, this.model.dt, this.model.U_t);
+            Variable.a_bc(this.model.V, this.model.Sv, this.model.dt, this.model.V_t);
+            Variable.a_bc(this.model.T, this.model.St, this.model.dt, this.model.T_t);
+            Variable.a_bc(this.model.qv, this.model.Sqv, this.model.dt, this.model.qv_t);
+            Variable.a_bc2d(this.model.Z, this.model.Sz, this.model.dt, this.model.Z_t);
+        }
+
+        HydrostaticLeapFrogDynamicsCore.prototype.avanceExpliciteCentre = function()
+        {                 
+            Variable.a_bc(this.model.U_t, this.model.Su, 2.0*this.model.dt, this.X_tmp);
+            Variable.a_bc(this.model.U_t, this.model.U, -2.0, this.model.U_t);
+            Variable.sum(this.X_tmp, this.model.U_t, this.model.U_t);
+            Variable.a_bc(this.model.U, this.model.U_t, 0.5, this.model.U_t);
+
+            Variable.a_bc(this.model.V_t, this.model.Sv, 2.0*this.model.dt, this.X_tmp);
+            Variable.a_bc(this.model.V_t, this.model.V, -2.0, this.model.V_t);
+            Variable.sum(this.X_tmp, this.model.V_t, this.model.V_t);
+            Variable.a_bc(this.model.V, this.model.V_t, 0.5, this.model.V_t);
+            
+            Variable.a_bc(this.model.T_t, this.model.St, 2.0*this.model.dt, this.X_tmp);
+            Variable.a_bc(this.model.T_t, this.model.T, -2.0, this.model.T_t);
+            Variable.sum(this.X_tmp, this.model.T_t, this.model.T_t);
+            Variable.a_bc(this.model.T, this.model.T_t, 0.5, this.model.T_t);
+            
+            Variable.a_bc(this.model.qv_t, this.model.Sqv, 2.0*this.model.dt, this.X_tmp);
+            Variable.a_bc(this.model.qv_t, this.model.qv, -2.0, this.model.qv_t);
+            Variable.sum(this.X_tmp, this.model.qv_t, this.model.qv_t);
+            Variable.a_bc(this.model.qv, this.model.qv_t, 0.5, this.model.qv_t);
+            
+            Variable.a_bc2d(this.model.Z_t, this.model.Sz, 2.0*this.model.dt, this.X2d_tmp);
+            Variable.a_bc2d(this.model.Z_t, this.model.Z, -2.0, this.model.Z_t);
+            Variable.sum(this.X2d_tmp, this.model.Z_t, this.model.Z_t);
+            Variable.a_bc2d(this.model.Z, this.model.Z_t, 0.5, this.model.Z_t);
+        }
+              
+              
+        HydrostaticLeapFrogDynamicsCore.prototype.calcSuCouche = function(k)
+        {
+            var xi = 0;
+            var psvk = 0;
+            var d_ktilde_1, d_ktilde_2, d_ktilde_moins_1_1, d_ktilde_moins_1_2;
+            var u_k_plus_1, u_k, u_k_moins_1;
+            var adv=0, rtz=0;
+            var kphi=0;
+            var i = this.model.width+1;
+            var x, y;
+            for (y=1;y<this.model.height-1;y++)
+            {
+                for (x=1;x<this.model.width-1;x++,i++)
+                {
+                    if (k<this.model.U.length-1)
+                    {
+                        d_ktilde_1 = this.model.sigmaf[k+1][i];
+                        d_ktilde_2 = this.model.sigmaf[k+1][i+1];
+                        u_k_plus_1 = this.model.U[k+1][i];
+                    }
+                    else
+                    {
+                        d_ktilde_1 = 0;
+                        d_ktilde_2 = 0;
+                        u_k_plus_1 = 0;
+                    }
+
+                    d_ktilde_moins_1_1 = this.model.sigmaf[k][i];
+                    d_ktilde_moins_1_2 = this.model.sigmaf[k][i+1];
+
+                    u_k = this.model.U[k][i];
+
+                    if (k>0)
+                    {
+                        u_k_moins_1 = this.model.U[k-1][i];                        
+                    }
+                    else 
+                    {
+                        u_k_moins_1 = 0;
+                    }                        
+
+                    // Verif Ok 14/06/2018
+                    xi = 0.5*(this.model.tourbillon[k][i]+this.model.tourbillon[k][i-this.model.width]); 
+
+                    // Verif Ok 14/06/2018
+                    psvk = (
+                            (this.model.ps[i]+this.model.ps[i-this.model.width])*this.model.V[k][i-this.model.width]
+                            +(this.model.ps[i+1]+this.model.ps[i+1-this.model.width])*this.model.V[k][i+1-this.model.width]
+                            +(this.model.ps[i+1]+this.model.ps[i+1+this.model.width])*this.model.V[k][i+1]
+                            +(this.model.ps[i]+this.model.ps[i+this.model.width])*this.model.V[k][i]
+                        )/8; 
+
+                    // Verif Ok 14/06/2018
+                    adv = (1/((this.model.ps[i+1]+this.model.ps[i])*this.model.dsigma[k]))
+                        *(
+                           0.5*(d_ktilde_1+d_ktilde_2)*(u_k_plus_1-u_k)+0.5*(d_ktilde_moins_1_1+d_ktilde_moins_1_2)*(u_k-u_k_moins_1)
+                         );
+
+                    // Verif Ok 14/06/2018
+                    kphi = (this.model.K[k][i+1]+this.model.phi[k][i+1]-this.model.K[k][i]-this.model.phi[k][i])/this.model.dx[y];
+
+                    // Verif Ok 14/06/2018
+                    if (this.model.verticalType=="L")
+                    {
+                        rtz = Model.R*0.5*(this.model.T[k][i]+this.model.T[k][i+1])*(this.model.Z[i+1]-this.model.Z[i])/this.model.dx[y];
+                    }
+                    else
+                    {
+                        rtz = Model.R*0.25*(this.model.T[k][i]+this.model.T[k][i+1]+this.model.T[k+1][i]+this.model.T[k+1][i+1])*(this.model.Z[i+1]-this.model.Z[i])/this.model.dx[y];
+                    }
+
+                    this.model.Su[k][i] = xi*psvk - adv - kphi - rtz;
+                }
+                i+=2;
+            }
+        }
+               
+        HydrostaticLeapFrogDynamicsCore.prototype.calcSu = function()
+        {
+            var n = this.model.nbcouches;
+            for (var k=0;k<n;k++)
+            {
+                this.calcSuCouche(k);
+            }
+        }
+               
+        HydrostaticLeapFrogDynamicsCore.prototype.calcSvCouche = function(k)
+        {
+            var xi = 0;
+            var psuk = 0;
+            var d_ktilde_1, d_ktilde_2, d_ktilde_moins_1_1, d_ktilde_moins_1_2;
+            var v_k_plus_1, v_k, v_k_moins_1;
+            var adv=0, rtz=0;
+            var kphi=0;
+            var i = this.model.width+1;
+            var x, y;
+            for (y=1;y<this.model.height-1;y++)
+            {
+                for(x=1;x<this.model.width-1;x++,i++)
+                {
+                    if (k<this.model.V.length-1)
+                    {
+                        d_ktilde_1 = this.model.sigmaf[k+1][i+this.model.width];
+                        d_ktilde_2 = this.model.sigmaf[k+1][i];
+                        v_k_plus_1 = this.model.V[k+1][i];
+                    }
+                    else
+                    {
+                        d_ktilde_1 = 0;
+                        d_ktilde_2 = 0;
+                        v_k_plus_1 = 0;
+                    }
+
+                    d_ktilde_moins_1_1 = this.model.sigmaf[k][i+this.model.width];
+                    d_ktilde_moins_1_2 = this.model.sigmaf[k][i];
+
+                    v_k = this.model.V[k][i];
+
+                    if (k>0)
+                    {
+                        v_k_moins_1 = this.model.V[k-1][i];
+                    }
+                    else
+                    {
+                        v_k_moins_1 = 0;
+                    }
+
+                    // Verif Ok 14/06/2018
+                    xi = 0.5*(this.model.tourbillon[k][i]+this.model.tourbillon[k][i-1]);
+
+                    // Verif Ok 14/06/2018
+                    psuk = (
+                            (this.model.ps[i-1]+this.model.ps[i])*this.model.U[k][i-1]
+                            +(this.model.ps[i]+this.model.ps[i+1])*this.model.U[k][i]
+                            +(this.model.ps[i+this.model.width]+this.model.ps[i+this.model.width+1])*this.model.U[k][i+this.model.width]
+                            +(this.model.ps[i-1+this.model.width]+this.model.ps[i+this.model.width])*this.model.U[k][i-1+this.model.width]
+                        )/8;
+
+                    // Verif Ok 14/06/2018
+                    adv = (1/((this.model.ps[i]+this.model.ps[i+this.model.width])*this.model.dsigma[k]))*(
+                           0.5*(d_ktilde_1+d_ktilde_2)*(v_k_plus_1-v_k)+0.5*(d_ktilde_moins_1_1+d_ktilde_moins_1_2)*(v_k-v_k_moins_1));
+
+                    // Verif Ok 14/06/2018
+                    kphi = (this.model.K[k][i]+this.model.phi[k][i]-this.model.K[k][i+this.model.width]-this.model.phi[k][i+this.model.width])/this.model.dy;
+
+                    // Verif Ok 14/06/2018
+                    if (this.model.verticalType=="L")
+                    {
+                        rtz = Model.R*0.5*(this.model.T[k][i]+this.model.T[k][i+this.model.width])*(this.model.Z[i]-this.model.Z[i+this.model.width])/this.model.dy;
+                    }
+                    else
+                    {
+                        rtz = Model.R*0.25*(this.model.T[k][i]+this.model.T[k][i+this.width]+this.model.T[k+1][i]+this.model.T[k+1][i+this.model.width])*(this.model.Z[i]-this.model.Z[i+this.model.width])/this.model.dy;
+                    }
+
+                    this.model.Sv[k][i] = -xi*psuk - adv - kphi - rtz;                        
+                }
+                i+=2;
+            }
+        }
+        
+        HydrostaticLeapFrogDynamicsCore.prototype.calcSv = function()
+        {
+            var n = this.model.nbcouches;
+            for (var k=0;k<n;k++)
+            {
+                this.calcSvCouche(k);
+            }            
+        }
+               
+        HydrostaticLeapFrogDynamicsCore.prototype.calcStCouche = function(k)
+        {
+            var part1=0, part2=0, part3=0, adv=0;
+            var d_ktilde, d_ktilde_moins_1;
+            var t_k_plus_1, t_k, t_k_moins_1;
+            var integ_dtlds=0;
+            var c_chapo = 0;
+            var cp = 0;
+            var dcpt = 0;
+            var k_1 = 0;
+            var k_c = 0;
+
+            var m2 = 0;
+            var i= this.model.width+1;
+            var x, y;
+            for (y=1;y<this.model.height-1;y++)
+            {
+                for (x=1;x<this.model.width-1;x++,i++)
+                {                       
+                    m2 = this.model.m[i]*this.model.m[i];
+
+                    if (k<this.model.T.length-1)
+                    {
+                        d_ktilde = this.model.sigmaf[k+1][i];
+                        t_k_plus_1 = this.model.T[k+1][i]; 
+                    }
+                    else
+                    {
+                        d_ktilde = 0;
+                        t_k_plus_1 = 0;
+                    }
+
+                    d_ktilde_moins_1 = this.model.sigmaf[k][i];
+                    t_k = this.model.T[k][i];
+
+
+                    if (k>0)
+                    {
+                        t_k_moins_1 = this.model.T[k-1][i];
+                        integ_dtlds = this.model.DtildeDs[k-1][i];
+                    }
+                    else
+                    {
+                        t_k_moins_1 = 0;
+                        integ_dtlds = 0;
+                    }
+
+                    part1 = m2*(
+                            ((this.model.ps[i+1]+this.model.ps[i])*this.model.U[k][i]*(this.model.T[k][i+1]-this.model.T[k][i])
+                            +(this.model.ps[i]+this.model.ps[i-1])*this.model.U[k][i-1]*(this.model.T[k][i]-this.model.T[k][i-1]))/(4*this.model.dx[y])
+
+                            +((this.model.ps[i-this.model.width]+this.model.ps[i])*this.model.V[k][i-this.model.width]*(this.model.T[k][i-this.model.width]-this.model.T[k][i])
+                            +(this.model.ps[i]+this.model.ps[i+this.model.width])*this.model.V[k][i]*(this.model.T[k][i]-this.model.T[k][i+this.model.width]))/(4*this.model.dy)
+                        )/this.model.ps[i];
+
+                    // Verif Ok 14/06/2018
+                    // TODO : y'a une coquille dans ce terme, c'est lui qui cause l'instabilité
+                    adv = (d_ktilde*(t_k_plus_1-t_k)+d_ktilde_moins_1*(t_k-t_k_moins_1)) / (this.model.ps[i]*2*this.model.dsigma[k]);
+
+                    // Verif Ok 15/06/2018
+                    part2 = Model.R*this.model.T[k][i]*m2
+                                *(this.model.gamma[k]*integ_dtlds+this.model.alpha[k]*this.model.Dtilde[k][i]*this.model.dsigma[k])
+                            /(Model.Cp*this.model.ps[i]*this.model.dsigma[k]);
+
+                    // Verif Ok 15/06/2018
+                    part3 = Model.R*m2 *(
+                            (
+                                (this.model.ps[i]+this.model.ps[i+1])*this.model.U[k][i]*(this.model.T[k][i]+this.model.T[k][i+1])*(this.model.Z[i+1]-this.model.Z[i])
+                                +(this.model.ps[i]+this.model.ps[i-1])*this.model.U[k][i-1]*(this.model.T[k][i]+this.model.T[k][i-1])*(this.model.Z[i]-this.model.Z[i-1])                                    
+                            )/(8*this.model.dx[y])
+                        +
+                            ( 
+                                (this.model.ps[i]+this.model.ps[i-this.model.width])*this.model.V[k][i-this.model.width]*(this.model.T[k][i]+this.model.T[k][i-this.model.width])*(this.model.Z[i-this.model.width]-this.model.Z[i])
+                                +(this.model.ps[i]+this.model.ps[i+this.model.width])*this.model.V[k][i]*(this.model.T[k][i]+this.model.T[k][i+this.model.width])*(this.model.Z[i]-this.model.Z[i+this.model.width])
+                            )/(8*this.model.dy)
+
+                        ) / (Model.Cp*this.model.ps[i]);
+
+                    // Couplage avec les paramètres physiques
+
+                    // Calcule la capacité thermique massique du mélange
+                    // TODO : est-ce que ça devrait être utilisé dans les équations ci-dessus ?
+/* PLUIE                            cp = Model.Cp+Model.Cp_v*this.model.qv[k][i];
+
+                    // Calcul de la variation d'enthalpie
+                    // Nb : divisé 1-qr-qs, mais qr=qs=0 vu que tout 
+                    // précipite direct en pied de couche
+                    //c_chapo = (Model.Cp+Model.Cp_v*this.model.qv[k][i]); 
+                    dcpt = -Model.g*m2/(this.model.ps[i]*this.model.dsigma[k])
+                        *(
+                            // Terme de contribution du changement de pression dûe au changement de 
+                            // masse à cause du flux de précipitation
+                            // (si j'ai bien tout compris...)
+                            // Nb : rend le modèle instable, terme trop fort par endroit...
+                            // Je préfère le négliger en attendant de comprendre
+//                                    (
+//                                        (Model.Cp_l-Model.Cp)*this.Pl[k+1][i]*this.model.T[k][i] 
+//                            
+//                                        //-(c_chapo-cp)*this.Pl[k+1][i]*this.model.T[k][i]) // Sans qr ni qs ce terme est toujours nul...
+//                                                                                  // Pas la peine de gaspiller du temps de calcul
+//                                    )
+
+                            // Terme de contribution de la chaleur latente
+                            +(-Model.Ll*(this.P_evap[k][i]))
+                        );*/
+
+                    this.model.St[k][i] = - part1 - adv - part2 + part3 /* PLUIE + dcpt/cp*/;
+                }
+                i+=2;
+            }
+        }
+       
+        HydrostaticLeapFrogDynamicsCore.prototype.calcSt = function()
+        {
+            var n = this.model.nbcouches;
+            for (var k=0;k<n;k++)
+            {
+                this.calcStCouche(k);
+            }
+        }
+        
+        HydrostaticLeapFrogDynamicsCore.prototype.calcSz = function()
+        {
+            var n = this.model.DtildeDs.length-1;
+            var i = 0;
+            var x, y;
+            for (y=1;y<this.model.height-1;y++)
+            {
+                for (x=1;x<this.model.width-1;x++)
+                {
+                    i = x+y*this.model.width;
+                    this.model.Sz[i] = -this.model.m[i]*this.model.m[i]*this.model.DtildeDs[n][i]/this.model.ps[i];
+                }
+            }
+        }
+
+        /**
+         * Calcule le transport d'une variable sur une couche
+         * 
+         * @param q la variable d'humidité à transporter
+         * @param pc pseudo flux de conversion (évaporation, condentation...)
+         * @param sq variable de sortie contenant la dérivée
+         * @param k couche à calculer
+         */
+        HydrostaticLeapFrogDynamicsCore.prototype.calcTransportCouche = function(q, Pc, sq, k)
+        {
+            var part1=0, adv=0, dqv=0;
+            var d_ktilde, d_ktilde_moins_1;
+            var q_k_plus_1, q_k, q_k_moins_1;
+
+            var m2 = 0;
+            var i = this.model.width+1;
+            var x, y;
+            for (y=1;y<this.model.height-1;y++)
+            {
+                for(x=1;x<this.model.width-1;x++,i++)
+                {
+                    m2 = this.model.m[i]*this.model.m[i];
+
+                    if (k<q.length-1)
+                    {
+                        d_ktilde = this.model.sigmaf[k+1][i];
+                        q_k_plus_1 = q[k+1][i];                        
+                    }
+                    else
+                    {
+                        d_ktilde = 0;
+                        q_k_plus_1 = 0;
+                    }
+
+                    d_ktilde_moins_1 = this.model.sigmaf[k][i];
+                    q_k = q[k][i];
+
+
+                    if (k>0)
+                    {
+                        q_k_moins_1 = q[k-1][i];
+                    }
+                    else
+                    {
+                        q_k_moins_1 = 0;
+                    }
+
+                    // Terme de transport horizontal
+                    part1 = m2*(
+                            ((this.model.ps[i+1]+this.model.ps[i])*this.model.U[k][i]*(q[k][i+1]-q[k][i])
+                            +(this.model.ps[i]+this.model.ps[i-1])*this.model.U[k][i-1]*(q[k][i]-q[k][i-1]))/(4*this.model.dx[y])
+
+                            +((this.model.ps[i-this.model.width]+this.model.ps[i])*this.model.V[k][i-this.model.width]*(q[k][i-this.model.width]-q[k][i])
+                            +(this.model.ps[i]+this.model.ps[i+this.model.width])*this.model.V[k][i]*(q[k][i]-q[k][i+this.model.width]))/(4*this.model.dy)
+                        )/this.model.ps[i];
+
+                    // Terme d'advection verticale
+                    adv = (d_ktilde*(q_k_plus_1-q_k)+d_ktilde_moins_1*(q_k-q_k_moins_1)) / (this.model.ps[i]*2*this.model.dsigma[k]);
+
+                    // Couplage avec la physique
+                    dqv = Model.g*m2/(this.model.ps[i]*this.model.dsigma[k])*(-Pc[k][i] + q[k][i]*(this.model.Pl[k+1][i])/* 1-qr-qs ?*/);
+                    
+                    sq[k][i] = - part1 - adv + dqv;
+                }
+                i+=2;
+            }
+        }
+        
+        /**
+         * Calcule le transport des valeurs d'humidité, etc...
+         */
+        HydrostaticLeapFrogDynamicsCore.prototype.calcTransports = function()
+        {
+            var n = this.model.nbcouches;
+            for (var k=0;k<n;k++)
+            {
+                this.calcTransportCouche(this.model.qv, this.model.P_evap, this.model.Sqv, k);
+            }
+        }
+    }
+}
+
+HydrostaticLeapFrogDynamicsCore.prototype = Object.create(DynamicsCore.prototype);
+HydrostaticLeapFrogDynamicsCore.prototype.constructor = HydrostaticLeapFrogDynamicsCore;
+
+
+/**
+ * Initialise le coeur dynamique
+ * @returns {undefined}
+ */
+HydrostaticLeapFrogDynamicsCore.prototype.init = function(model)
+{
+    this.model = model;
+    
+    if (this.model.gridType!="C")
+    {
+        throw "type de grille non supporté par ce coeur dynamique.";
+    }
+
+    if (this.model.verticalType!="L")
+    {
+        throw "type de niveau non supporté par ce coeur dynamique.";
+    }
+   
+    this.X_tmp = Variable.createVariable(this.model.nbcouches, this.model.width, this.model.height, true);
+    this.X2d_tmp = Variable.createVariable(1, this.model.width, this.model.height);
+}
+
+/**
+ * Calcule une avancée du modèle du pas de temps dt.
+ */
+HydrostaticLeapFrogDynamicsCore.prototype.step = function()
+{
+    this.calcSz();
+    this.calcSu();
+    this.calcSv();
+    this.calcSt();
+    this.calcTransports();   
+
+    // *** Calcul des variables pronostiques ***
+    if (this.time==0){
+        this.avanceEuler();
+    }
+    else {
+        this.avanceExpliciteCentre();
+    }
+}
