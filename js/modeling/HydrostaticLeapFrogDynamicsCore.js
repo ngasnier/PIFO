@@ -71,7 +71,12 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
             Variable.a_bc(this.model.qv_t, this.model.qv, -2.0, this.model.qv_t);
             Variable.sum(this.X_tmp, this.model.qv_t, this.model.qv_t);
             Variable.a_bc(this.model.qv, this.model.qv_t, 0.5, this.model.qv_t);
-            
+
+            Variable.a_bc(this.model.qr_t, this.model.Sqr, 2.0*this.model.dt, this.X_tmp);
+            Variable.a_bc(this.model.qr_t, this.model.qr, -2.0, this.model.qr_t);
+            Variable.sum(this.X_tmp, this.model.qr_t, this.model.qr_t);
+            Variable.a_bc(this.model.qr, this.model.qr_t, 0.5, this.model.qr_t);
+
             Variable.a_bc2d(this.model.Z_t, this.model.Sz, 2.0*this.model.dt, this.X2d_tmp);
             Variable.a_bc2d(this.model.Z_t, this.model.Z, -2.0, this.model.Z_t);
             Variable.sum(this.X2d_tmp, this.model.Z_t, this.model.Z_t);
@@ -241,11 +246,6 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
             var d_ktilde, d_ktilde_moins_1;
             var t_k_plus_1, t_k, t_k_moins_1;
             var integ_dtlds=0;
-            var c_chapo = 0;
-            var cp = 0;
-            var dcpt = 0;
-            var k_1 = 0;
-            var k_c = 0;
 
             var m2 = 0;
             var i= this.model.width+1;
@@ -417,6 +417,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
             for (var k=0;k<n;k++)
             {
                 this.calcTransportCouche(this.model.qv, this.model.dQv, this.model.Sqv, k);
+                this.calcTransportCouche(this.model.qr, this.model.dQr, this.model.Sqr, k);
             }
         }
     }

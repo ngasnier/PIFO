@@ -164,17 +164,18 @@ export var BaroclinicModel = function ()
     this.qv_couplage = [];
     
     // Pseudo-flux d'évaporation/condentation
-    this.P_evap = []; 
+    this.Pl_1 = []; 
+    this.Pl_2 = []; 
+    this.Pl_3 = []; 
    
 /*    this.ql = []; // eau de nuage
     this.ql_t = [];
-    this.ql_couplage = [];
+    this.ql_couplage = [];*/
 
     this.qr = []; // eau précipitante
     this.qr_t = [];
-    this.qr_couplage = [];
 
-    this.qi = []; // glace de nuage
+/*    this.qi = []; // glace de nuage
     this.qi_t = [];
     this.qi_couplage = [];
 
@@ -244,11 +245,13 @@ export var BaroclinicModel = function ()
     this.Sv = [];
     this.St = [];
     this.Sqv = [];
+    this.Sqr = [];
     
     // Tendances temporelles dûes aux variables physiques
     this.dPs = [];
     this.dSigmaf = [];
     this.dQv = [];
+    this.dQr = [];
 
     // Méthodes privées du modèle
     if (typeof BaroclinicModel.initialized == "undefined" ) 
@@ -393,9 +396,8 @@ export var BaroclinicModel = function ()
                         
                             (this.sigma[kg]*this.DtildeDs[n][i]
                             -this.DtildeDs[k-1][i])
-                    
-                           +this.dSigmaf[k][i]
-                        );
+                        )
+                        +this.dSigmaf[k][i];
                 }
            }           
         }
@@ -501,7 +503,7 @@ export var BaroclinicModel = function ()
             var nb = this.width*this.height;
             var k = 1, i=0;
             // Commence à 1 car sommet toujours zero
-            for (k=1;k<this.sigmaf.length-1;k++)
+            for (k=1;k<this.sigmaf.length;k++)
             {
                 for (i=0;i<nb;i++)
                 {
@@ -528,13 +530,44 @@ export var BaroclinicModel = function ()
                     for(x=1;x<this.width-1;x++,i++)
                     {
                         m2 = this.m[i]*this.m[i];
-                        this.dQv[k][i] = Model.g*m2/(this.ps[i]*this.dsigma[k])*(-this.P_evap[k][i] + this.qv[k][i]*(this.Pl[k+1][i])/* 1-qr-qs ?*/);
+                        this.dQv[k][i] = Model.g*m2/(this.ps[i]*this.dsigma[k])
+                                *(this.Pl_3[k][i] - this.Pl_1[k][i] 
+                                + this.qv[k][i]*(this.Pl[k+1][i] /*+Pi */) / (1-this.qr[k][i])); // 1-qr-qs
                     }
                     i+=2;
                 }
             }
         }
-        
+
+        /**
+         * Calcul d'évolution de l'eau précipitante
+         */
+        BaroclinicModel.prototype.calcDqr = function()
+        {
+            var i = 0;
+            var x, y;
+            var m2;
+            var n = this.nbcouches;
+            for (var k=0;k<n;k++)
+            {
+                i = this.width+1;
+                for (y=1;y<this.height-1;y++)
+                {
+                    for(x=1;x<this.width-1;x++,i++)
+                    {
+                        m2 = this.m[i]*this.m[i];
+                        this.dQr[k][i] = 
+                                +Model.g*m2/(this.ps[i]*this.dsigma[k])
+                                *(this.Pl_2[k][i] - this.Pl_3[k][i] - this.Pl[k+1][i])
+
+                            // HACK : Annule le taux précédent car précipitation instantanée
+                            -this.dQr[k][i];
+                    }
+                    i+=2;
+                }
+            }
+        }
+
         /**
          * Calcule la variation d'enthalpie
          */
@@ -544,6 +577,7 @@ export var BaroclinicModel = function ()
             var x, y;
             var n = this.nbcouches;
             var m2 = 0;
+            var c_chapo = 0;
             for (var k=0;k<n;k++)
             {
                 i = this.width+1;
@@ -555,7 +589,7 @@ export var BaroclinicModel = function ()
                         
                         // Nb : divisé 1-qr-qs, mais qr=qs=0 vu que tout 
                         // précipite direct en pied de couche
-                        //c_chapo = (Model.Cp+Model.Cp_v*this.model.qv[k][i]); 
+                        c_chapo = (Model.Cp+Model.Cp_v*this.qv[k][i])/(1-this.qr[k][i]); 
                         this.Q[k][i] = -Model.g*m2/(this.ps[i]*this.dsigma[k])
                             *(
                                 // Terme de contribution du changement de pression dûe au changement de 
@@ -563,16 +597,17 @@ export var BaroclinicModel = function ()
                                 // (si j'ai bien tout compris...)
                                 // Nb : rend le modèle instable, terme trop fort par endroit...
                                 // Je préfère le négliger en attendant de comprendre
-                                        (
-                                            (Model.Cp_l-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] 
+                                (
+                                    (Model.Cp_l-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] 
 
-                                            //-(c_chapo-cp)*this.Pl[k+1][i]*this.model.T[k][i]) // Sans qr ni qs ce terme est toujours nul...
-                                                                                      // Pas la peine de gaspiller du temps de calcul
-                                        )
+                                    -(c_chapo-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] // Sans qr ni qs ce terme est toujours nul...
+                                                                              // Pas la peine de gaspiller du temps de calcul
+                                )
 
                                 // Terme de contribution de la chaleur latente
-                                //+(-Model.Ll*(this.P_evap[k][i]))
+                                +(-Model.Ll*(-this.Pl_3[k][i]))
                             );
+                        if (k==7 && i==(22+61*this.width)) console.log(this.Q[k][i], this.Cph[k][i]);
                     }
                     i+=2;
                 }
@@ -678,7 +713,6 @@ BaroclinicModel.prototype.step = function()
 {
     // *** Calcul des variables diagnostiques ***    
     this.calcDtilde();
-    this.calcSigmaf();
     this.calcGeop();
     this.calcEnergie();
     this.calcTourbillon();
@@ -691,13 +725,19 @@ BaroclinicModel.prototype.step = function()
     }
  
     // *** Calcul des processus physiques ***
+    Variable.init(this.Pl, 0);
+    Variable.init(this.Pl_1, 0);
+    Variable.init(this.Pl_2, 0);
+    Variable.init(this.Pl_3, 0);
     if (this.precipitationScheme!=null) this.precipitationScheme.step();
     if (this.convectionScheme!=null) this.convectionScheme.step();
     
     // *** Couplage des équations physiques/dynamiques ***
     this.calcDPs();
     this.calcDSigmaf();
+    this.calcSigmaf();
     this.calcDqv();
+    this.calcDqr();
     
     this.calcCph();
     this.calcQ();
@@ -733,6 +773,7 @@ BaroclinicModel.prototype.step = function()
     tmp = this.V_t; this.V_t = this.V; this.V = tmp;
     tmp = this.T_t; this.T_t = this.T; this.T = tmp;
     tmp = this.qv_t; this.qv_t = this.qv; this.qv = tmp; 
+    tmp = this.qr_t; this.qr_t = this.qr; this.qr = tmp; 
     var tmp2d = this.Z_t; this.Z_t = this.Z; this.Z = tmp2d; 
 
     // Recalcule la pression des différentes surfaces s
@@ -791,10 +832,12 @@ BaroclinicModel.prototype.init = function()
     this.Sv = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.St = Variable.createVariable(this.verticalType=="CP"?this.nbcouches+1:this.nbcouches, this.width, this.height, true);
     this.Sqv = Variable.createVariable(this.nbcouches, this.width, this.height, true);
+    this.Sqr = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     
     this.dPs = Variable.createVariable(1, this.width, this.height);
     this.dSigmaf = Variable.createVariable(this.nbcouches+1, this.width, this.height, true);
     this.dQv = Variable.createVariable(this.nbcouches, this.width, this.height, true);
+    this.dQr = Variable.createVariable(this.nbcouches, this.width, this.height, true);
        
     this.Dtilde = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.DtildeDs = Variable.createVariable(this.nbcouches, this.width, this.height, true);
@@ -804,6 +847,9 @@ BaroclinicModel.prototype.init = function()
     this.T_t = Variable.createVariable(this.verticalType=="CP"?this.nbcouches+1:this.nbcouches, this.width, this.height, true);
     this.qv_t = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.Z_t = Variable.createVariable(1, this.width, this.height);  
+
+    this.qr = Variable.createVariable(this.nbcouches, this.width, this.height, true);
+    this.qr_t = Variable.createVariable(this.nbcouches, this.width, this.height, true);
 
     this.U_couplage = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.V_couplage = Variable.createVariable(this.nbcouches, this.width, this.height, true);
@@ -815,7 +861,9 @@ BaroclinicModel.prototype.init = function()
     this.Pl = Variable.createVariable(this.nbcouches+1, this.width, this.height, true);
     this.Pi = Variable.createVariable(this.nbcouches+1, this.width, this.height, true);
     this.E = Variable.createVariable(1, this.width, this.height);
-    this.P_evap = Variable.createVariable(this.nbcouches, this.width, this.height, true);
+    this.Pl_1 = Variable.createVariable(this.nbcouches, this.width, this.height, true);
+    this.Pl_2 = Variable.createVariable(this.nbcouches, this.width, this.height, true);
+    this.Pl_3 = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.Q = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.Cph = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     
@@ -834,6 +882,7 @@ BaroclinicModel.prototype.init = function()
     Variable.copy(this.V, this.V_t);
     Variable.copy(this.T, this.T_t);
     Variable.copy(this.qv, this.qv_t);
+    Variable.copy(this.qr, this.qr_t);
 
     Variable.copy(this.U, this.U_couplage);
     Variable.copy(this.V, this.V_couplage);
@@ -928,7 +977,8 @@ BaroclinicModel.prototype.getHistoricVariables = function()
             {"name":"V", "description":"V component of wind", "units":"m.s^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
             {"name":"T", "description":"Temperature", "units":"K", "type":(this.verticalType=="CP"?Variable.VARIABLE_TYPE_SURFACE:Variable.VARIABLE_TYPE_LAYER), "levels": (this.levelType=="CP"?this.getSurfaceLevels():layers)},
             {"name":"ps", "description":"Surface pressure", "units":"pa", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"qv", "description":"Specific humidity", "units":"kg/kg", "type":Variable.VARIABLE_LAYER, "levels": layers}
+            {"name":"qv", "description":"Specific humidity", "units":"kg/kg", "type":Variable.VARIABLE_LAYER, "levels": layers},
+            {"name":"qr", "description":"Rain mixing ratio", "units":"kg/kg", "type":Variable.VARIABLE_LAYER, "levels": layers}
         ];
 }
 
@@ -971,6 +1021,7 @@ BaroclinicModel.prototype.getDiagnosticVariables = function()
 BaroclinicModel.prototype.getInternalVariables = function()
 {
     var layers = this.getLayerLevels();
+    var surfaces = this.getSurfaceLevels();
     return [
             {"name":"f", "description":"coriolis factor", "units":"", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
             {"name":"m", "description":"scaling factor", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
@@ -984,7 +1035,16 @@ BaroclinicModel.prototype.getInternalVariables = function()
             {"name":"Sv", "description":"v component of wind tendency", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
             {"name":"St", "description":"temperature tendency", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
             {"name":"Sqv", "description":"specific humidity tendency", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"P_evap", "description":"evaporation/condensation pseudo-flux", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
+            {"name":"Sqr", "description":"tendance eau précipitante", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
+            {"name":"dQv", "description":"variation de qv dûe aux processus physiques", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
+            {"name":"dQr", "description":"variation de qr dûe aux processus physiques", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
+            {"name":"dPs", "description":"variation de Ps dûe aux processus physiques", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
+            {"name":"dSigmaf", "description":"variation de Sigmaf dûe aux processus physiques", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces},
+            {"name":"Cph", "description":"enthalpie totale du mélange", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
+            {"name":"Q", "description":"variation d'enthalapie", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
+            {"name":"Pl_1", "description":"pseudo-flux vapeur->eau de nuage", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
+            {"name":"Pl_2", "description":"pesudo-flux eau de nuage->eau précipitante", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
+            {"name":"Pl_3", "description":"pseudo-flux eau précipitante->vapeur", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers}
         ];
 }
 

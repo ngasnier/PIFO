@@ -103,6 +103,28 @@ Variable.clone = function(a)
     return c;
 }
 
+Variable.init = function(a, v)
+{
+    if (a.length>0 && (a[0].constructor===Array || a[0].constructor===Float64Array))
+    {
+        for (var k=0;k<a.length;k++)
+        {
+            for(var i=0;i<a[k].length;i++)
+            {
+                a[k][i] = v;
+            }
+        }
+    }
+    else
+    {
+        for(var i=0;i<a.length;i++)
+        {
+            a[i] = v;
+        }       
+    }
+}
+
+
 // ********************************************************************
 // OPERATEURS DE CALCUL
 // ********************************************************************
