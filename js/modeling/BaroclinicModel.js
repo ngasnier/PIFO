@@ -210,8 +210,11 @@ export var BaroclinicModel = function ()
     // Accumulation de précipitations à la surface
     this.apcp = [];
     
-    // Flux de chaleur sur les couches
+    // Variation d'enthalpie
     this.Q = [];
+
+    // Enthalpie totale
+    this.Cph = [];
               
     // ---- VARIABLES INTERNES
     
@@ -527,11 +530,78 @@ export var BaroclinicModel = function ()
                         m2 = this.m[i]*this.m[i];
                         this.dQv[k][i] = Model.g*m2/(this.ps[i]*this.dsigma[k])*(-this.P_evap[k][i] + this.qv[k][i]*(this.Pl[k+1][i])/* 1-qr-qs ?*/);
                     }
+                    i+=2;
                 }
             }
         }
         
+        /**
+         * Calcule la variation d'enthalpie
+         */
+        BaroclinicModel.prototype.calcQ = function()
+        {
+            var i = 0;
+            var x, y;
+            var n = this.nbcouches;
+            var m2 = 0;
+            for (var k=0;k<n;k++)
+            {
+                i = this.width+1;
+                for (y=1;y<this.height-1;y++)
+                {
+                    for(x=1;x<this.width-1;x++,i++)
+                    {
+                        m2 = this.m[i]*this.m[i];
+                        
+                        // Nb : divisé 1-qr-qs, mais qr=qs=0 vu que tout 
+                        // précipite direct en pied de couche
+                        //c_chapo = (Model.Cp+Model.Cp_v*this.model.qv[k][i]); 
+                        this.Q[k][i] = -Model.g*m2/(this.ps[i]*this.dsigma[k])
+                            *(
+                                // Terme de contribution du changement de pression dûe au changement de 
+                                // masse à cause du flux de précipitation
+                                // (si j'ai bien tout compris...)
+                                // Nb : rend le modèle instable, terme trop fort par endroit...
+                                // Je préfère le négliger en attendant de comprendre
+                                        (
+                                            (Model.Cp_l-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] 
+
+                                            //-(c_chapo-cp)*this.Pl[k+1][i]*this.model.T[k][i]) // Sans qr ni qs ce terme est toujours nul...
+                                                                                      // Pas la peine de gaspiller du temps de calcul
+                                        )
+
+                                // Terme de contribution de la chaleur latente
+                                //+(-Model.Ll*(this.P_evap[k][i]))
+                            );
+                    }
+                    i+=2;
+                }
+            
+            }
+        }
         
+        /**
+         * Calcule la chaleur spécifique du mélange
+         */
+        BaroclinicModel.prototype.calcCph = function()
+        {
+            var i = 0;
+            var x, y;
+            var n = this.nbcouches;
+            for (var k=0;k<n;k++)
+            {
+                i = this.width+1;
+                for (y=1;y<this.height-1;y++)
+                {
+                    for(x=1;x<this.width-1;x++,i++)
+                    {
+                        this.Cph[k][i] = Model.Cp+Model.Cp_v*this.qv[k][i];
+                    }
+                    i+=2;
+                }
+            }
+        }
+       
         // ********************************************************************
         // GESTION DU COUPLAGE
         // ********************************************************************
@@ -628,6 +698,9 @@ BaroclinicModel.prototype.step = function()
     this.calcDPs();
     this.calcDSigmaf();
     this.calcDqv();
+    
+    this.calcCph();
+    this.calcQ();
 
     // *** Calcul de l'évolution dynamique ***
     this.dynamicsCore.step();
@@ -743,6 +816,8 @@ BaroclinicModel.prototype.init = function()
     this.Pi = Variable.createVariable(this.nbcouches+1, this.width, this.height, true);
     this.E = Variable.createVariable(1, this.width, this.height);
     this.P_evap = Variable.createVariable(this.nbcouches, this.width, this.height, true);
+    this.Q = Variable.createVariable(this.nbcouches, this.width, this.height, true);
+    this.Cph = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     
     this.apcp = Variable.createVariable(1, this.width, this.height);
     

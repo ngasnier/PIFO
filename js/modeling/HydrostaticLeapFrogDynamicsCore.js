@@ -313,36 +313,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
 
                         ) / (Model.Cp*this.model.ps[i]);
 
-                    // Couplage avec les paramètres physiques
-                    // PLUIE
-
-                    // Calcule la capacité thermique massique du mélange
-                    // TODO : est-ce que ça devrait être utilisé dans les équations ci-dessus ?
-                    cp = Model.Cp+Model.Cp_v*this.model.qv[k][i];
-
-                    // Calcul de la variation d'enthalpie
-                    // Nb : divisé 1-qr-qs, mais qr=qs=0 vu que tout 
-                    // précipite direct en pied de couche
-                    //c_chapo = (Model.Cp+Model.Cp_v*this.model.qv[k][i]); 
-                    dcpt = -Model.g*m2/(this.model.ps[i]*this.model.dsigma[k])
-                        *(
-                            // Terme de contribution du changement de pression dûe au changement de 
-                            // masse à cause du flux de précipitation
-                            // (si j'ai bien tout compris...)
-                            // Nb : rend le modèle instable, terme trop fort par endroit...
-                            // Je préfère le négliger en attendant de comprendre
-                                    (
-                                        (Model.Cp_l-Model.Cp)*this.model.Pl[k+1][i]*this.model.T[k][i] 
-                            
-                                        //-(c_chapo-cp)*this.Pl[k+1][i]*this.model.T[k][i]) // Sans qr ni qs ce terme est toujours nul...
-                                                                                  // Pas la peine de gaspiller du temps de calcul
-                                    )
-
-                            // Terme de contribution de la chaleur latente
-                            +(-Model.Ll*(this.model.P_evap[k][i]))
-                        );
-
-                    this.model.St[k][i] = - part1 - adv - part2 + part3  + dcpt/cp;
+                    this.model.St[k][i] = - part1 - adv - part2 + part3  + this.model.Q[k][i]/this.model.Cph[k][i];
                 }
                 i+=2;
             }
