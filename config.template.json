@@ -4,6 +4,8 @@
     "projection": 1,
     "gridType": "C",
     "verticalType":  "L",
+    "enablePrecipitationScheme" : true,
+    "enableConvectionScheme" : false,
     
     "width": 92,
     "height": 44,

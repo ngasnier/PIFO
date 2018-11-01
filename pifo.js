@@ -25,6 +25,8 @@ import { BaroclinicModel } from "./js/modeling/BaroclinicModel.js";
 import { Variable } from "./js/modeling/Variable.js";
 import { HydrostaticLeapFrogDynamicsCore } from "./js/modeling/HydrostaticLeapFrogDynamicsCore.js";
 import { HydrostaticLeapFrogDynamicsCore_CP } from "./js/modeling/HydrostaticLeapFrogDynamicsCore_CP.js";
+import { PrecipitationScheme } from './js/modeling/PrecipitationScheme.js';
+import { ConvectionScheme } from './js/modeling/ConvectionScheme.js';
 
 import { WindHTMLRenderer } from "./js/ui/WindHTMLRenderer.js";
 import { TourbillonHTMLRenderer } from "./js/ui/TourbillonHTMLRenderer.js";
@@ -122,6 +124,10 @@ if (ui.model.verticalType == "CP")
     ui.model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore_CP();
 else
     ui.model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore();
+
+// Paramétrages physiques
+if (config.enablePrecipitationScheme) ui.model.precipitationScheme = new PrecipitationScheme();
+if (config.enableConvectionScheme) ui.model.convectionScheme = new ConvectionScheme();
 
 // Configuration du domaine géographique
 ui.model.width = config.width;

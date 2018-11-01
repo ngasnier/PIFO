@@ -314,10 +314,11 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
                         ) / (Model.Cp*this.model.ps[i]);
 
                     // Couplage avec les paramètres physiques
+                    // PLUIE
 
                     // Calcule la capacité thermique massique du mélange
                     // TODO : est-ce que ça devrait être utilisé dans les équations ci-dessus ?
-/* PLUIE                            cp = Model.Cp+Model.Cp_v*this.model.qv[k][i];
+                    cp = Model.Cp+Model.Cp_v*this.model.qv[k][i];
 
                     // Calcul de la variation d'enthalpie
                     // Nb : divisé 1-qr-qs, mais qr=qs=0 vu que tout 
@@ -330,18 +331,18 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
                             // (si j'ai bien tout compris...)
                             // Nb : rend le modèle instable, terme trop fort par endroit...
                             // Je préfère le négliger en attendant de comprendre
-//                                    (
-//                                        (Model.Cp_l-Model.Cp)*this.Pl[k+1][i]*this.model.T[k][i] 
-//                            
-//                                        //-(c_chapo-cp)*this.Pl[k+1][i]*this.model.T[k][i]) // Sans qr ni qs ce terme est toujours nul...
-//                                                                                  // Pas la peine de gaspiller du temps de calcul
-//                                    )
+                                    (
+                                        (Model.Cp_l-Model.Cp)*this.model.Pl[k+1][i]*this.model.T[k][i] 
+                            
+                                        //-(c_chapo-cp)*this.Pl[k+1][i]*this.model.T[k][i]) // Sans qr ni qs ce terme est toujours nul...
+                                                                                  // Pas la peine de gaspiller du temps de calcul
+                                    )
 
                             // Terme de contribution de la chaleur latente
-                            +(-Model.Ll*(this.P_evap[k][i]))
-                        );*/
+                            +(-Model.Ll*(this.model.P_evap[k][i]))
+                        );
 
-                    this.model.St[k][i] = - part1 - adv - part2 + part3 /* PLUIE + dcpt/cp*/;
+                    this.model.St[k][i] = - part1 - adv - part2 + part3  + dcpt/cp;
                 }
                 i+=2;
             }
@@ -379,9 +380,9 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
          * @param sq variable de sortie contenant la dérivée
          * @param k couche à calculer
          */
-        HydrostaticLeapFrogDynamicsCore.prototype.calcTransportCouche = function(q, Pc, sq, k)
+        HydrostaticLeapFrogDynamicsCore.prototype.calcTransportCouche = function(q, dq, sq, k)
         {
-            var part1=0, adv=0, dqv=0;
+            var part1=0, adv=0;
             var d_ktilde, d_ktilde_moins_1;
             var q_k_plus_1, q_k, q_k_moins_1;
 
@@ -430,10 +431,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
                     // Terme d'advection verticale
                     adv = (d_ktilde*(q_k_plus_1-q_k)+d_ktilde_moins_1*(q_k-q_k_moins_1)) / (this.model.ps[i]*2*this.model.dsigma[k]);
 
-                    // Couplage avec la physique
-                    dqv = Model.g*m2/(this.model.ps[i]*this.model.dsigma[k])*(-Pc[k][i] + q[k][i]*(this.model.Pl[k+1][i])/* 1-qr-qs ?*/);
-                    
-                    sq[k][i] = - part1 - adv + dqv;
+                    sq[k][i] = - part1 - adv + dq[k][i];
                 }
                 i+=2;
             }
@@ -447,7 +445,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
             var n = this.model.nbcouches;
             for (var k=0;k<n;k++)
             {
-                this.calcTransportCouche(this.model.qv, this.model.P_evap, this.model.Sqv, k);
+                this.calcTransportCouche(this.model.qv, this.model.dQv, this.model.Sqv, k);
             }
         }
     }

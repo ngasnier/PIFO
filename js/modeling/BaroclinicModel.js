@@ -70,7 +70,7 @@ export var BaroclinicModel = function ()
     this.projection = this.PROJ_CARTESIEN;
     
     // Type de grille
-    this.gridType = "A";
+    this.gridType = "C";
     
     // Type d'arrangement vertical (L=Lorenz, CP=Charney-Phillips)
     this.verticalType = "L";
@@ -119,8 +119,15 @@ export var BaroclinicModel = function ()
     // Indices de tous les niveaux
     this.niveaux_s = [];
     
+    // Coeur dynamique du modèle
     this.dynamicsCore = new DynamicsCore();
-       
+    
+    // Schema de paramétrisation des precipitations
+    this.precipitationScheme = null;
+
+    // Schema de paramétrisation de la convection
+    this.convectionScheme = null;
+
     // **** VARIABLES DE LA SIMULATION ****
 
     // ---- VARIABLES HISTORIQUES
@@ -200,15 +207,12 @@ export var BaroclinicModel = function ()
     // Flux d'évaporation en surface
     this.E = [];
     
-    // Accumulation de précipitations à la surfae
+    // Accumulation de précipitations à la surface
     this.apcp = [];
     
-    // CAPE
-    this.CAPE = [];
-    
-    // CIN
-    this.CIN = [];
-          
+    // Flux de chaleur sur les couches
+    this.Q = [];
+              
     // ---- VARIABLES INTERNES
     
     // Paramètre de Coriolis.
@@ -231,27 +235,29 @@ export var BaroclinicModel = function ()
     this.Dtilde = [];
     this.DtildDs = [];
         
-    // Tendances temporelles
+    // Tendances temporelles du coeur dynamique
     this.Sz = [];
     this.Su = [];
     this.Sv = [];
     this.St = [];
     this.Sqv = [];
-                        
+    
+    // Tendances temporelles dûes aux variables physiques
+    this.dPs = [];
+    this.dSigmaf = [];
+    this.dQv = [];
+
     // Méthodes privées du modèle
-    if( typeof BaroclinicModel.initialized == "undefined" ) 
+    if (typeof BaroclinicModel.initialized == "undefined" ) 
     {
         // ********************************************************************
         // COEUR DYNAMIQUE DU MODELE
         // ********************************************************************
         BaroclinicModel.prototype.calcPs = function()
         {
-            var n = this.p.length;
-            var flux = 0;
             for (var i=0;i<this.width*this.height-1;i++)
             {
-// PLUIE                flux = -Model.g * (this.Pl[this.nbcouches][i]); // +Pi-E
-                this.ps[i] = Math.exp(this.Z[i])+flux;
+                this.ps[i] = Math.exp(this.Z[i])+this.dPs[i];
             }
             this.calcPressureLevels();
         }
@@ -311,66 +317,60 @@ export var BaroclinicModel = function ()
 
         BaroclinicModel.prototype.calcEnergie = function()
         {
-            if (this.gridType=="C")
+            var i = 0;
+            var u1 = 0, u2 = 0;
+            var v1 = 0, v2 = 0;
+            var x, y;
+            for (var k=0;k<this.U.length;k++)
             {
-                var i = 0;
-                var u1 = 0, u2 = 0;
-                var v1 = 0, v2 = 0;
-                var x, y;
-                for (var k=0;k<this.U.length;k++)
+                i = this.width+1;
+                for (y=1;y<this.height-1;y++)
                 {
-                    i = this.width+1;
-                    for (y=1;y<this.height-1;y++)
+                    for (x=1;x<this.width-1;x++,i++)
                     {
-                        for (x=1;x<this.width-1;x++,i++)
-                        {
-                            // Verif Ok 15/06/2018
-                            u1 = this.U[k][i-1];
-                            u2 = this.U[k][i];
-                            v1 = this.V[k][i];
-                            v2 = this.V[k][i-this.width]
-                            this.K[k][i] = this.m[i]*this.m[i]*(
-                                    0.5*(u1*u1 + u2*u2)
-                                    +0.5*(v1*v1 + v2*v2))/2;
-                        }
-                        i+=2;
+                        // Verif Ok 15/06/2018
+                        u1 = this.U[k][i-1];
+                        u2 = this.U[k][i];
+                        v1 = this.V[k][i];
+                        v2 = this.V[k][i-this.width]
+                        this.K[k][i] = this.m[i]*this.m[i]*(
+                                0.5*(u1*u1 + u2*u2)
+                                +0.5*(v1*v1 + v2*v2))/2;
                     }
+                    i+=2;
                 }
             }
         }
 
         BaroclinicModel.prototype.calcTourbillon = function()
         {
-            if (this.gridType=="C")
-            {
-                var i = 0;
-                var m1=0, m2=0, m3=0, m4=0;
-                var x, y;
-                
-                for (var k=0;k<this.U.length;k++)
-                {
-                    i = this.width+1;
-                    for (y=1;y<this.height-1;y++)
-                    {
-                        for (x=1;x<this.width-1;x++,i++)
-                        {
-                            m1 = this.m[i+this.width];
-                            m2 = this.m[i+1+this.width];
-                            m3 = this.m[i];
-                            m4 = this.m[i+1];
+            var i = 0;
+            var m1=0, m2=0, m3=0, m4=0;
+            var x, y;
 
-                            // Verif Ok 13/06/2018
-                            this.tourbillon[k][i] = (
-                                    0.25*(m1*m1+m2*m2+m3*m3+m4*m4)
-                                    *(
-                                         (this.V[k][i+1]-this.V[k][i])/this.dx[y] - (this.U[k][i]-this.U[k][i+this.width])/this.dy
-                                     )
-                                    +this.f[i]
-                                )
-                                /(0.25*(this.ps[i]+this.ps[i+1]+this.ps[i+this.width]+this.ps[i+this.width+1]));
-                        }
-                        i+=2;
+            for (var k=0;k<this.U.length;k++)
+            {
+                i = this.width+1;
+                for (y=1;y<this.height-1;y++)
+                {
+                    for (x=1;x<this.width-1;x++,i++)
+                    {
+                        m1 = this.m[i+this.width];
+                        m2 = this.m[i+1+this.width];
+                        m3 = this.m[i];
+                        m4 = this.m[i+1];
+
+                        // Verif Ok 13/06/2018
+                        this.tourbillon[k][i] = (
+                                0.25*(m1*m1+m2*m2+m3*m3+m4*m4)
+                                *(
+                                     (this.V[k][i+1]-this.V[k][i])/this.dx[y] - (this.U[k][i]-this.U[k][i+this.width])/this.dy
+                                 )
+                                +this.f[i]
+                            )
+                            /(0.25*(this.ps[i]+this.ps[i+1]+this.ps[i+this.width]+this.ps[i+this.width+1]));
                     }
+                    i+=2;
                 }
             }
         }
@@ -381,7 +381,7 @@ export var BaroclinicModel = function ()
             var nb = this.width*this.height;
             var k = 1, i=0;
             // Commence à 1 car sommet toujours zero
-            for (k=1;k<this.sigmaf.length-1;k++)
+            for (k=1;k<this.sigmaf.length;k++)
             {
                 var kg = this.surfaces[k];
                 for (i=0;i<nb;i++)
@@ -391,19 +391,10 @@ export var BaroclinicModel = function ()
                             (this.sigma[kg]*this.DtildeDs[n][i]
                             -this.DtildeDs[k-1][i])
                     
-                            // Terme de conservation pour les flux précipitants
-/* PLUIE                           +Model.g/(this.ps[i]*this.dsigma[k-1])
-                                *(this.Pl[k][i])*/
+                           +this.dSigmaf[k][i]
                         );
                 }
-           } 
-          
-           // A la base applique la conservation pour les termes précipitants
-/* PLUIE          k = this.sigmaf.length-1;
-           for (var i=0;i<nb;i++)
-           {
-               this.sigmaf[k][i] = Model.g*(this.Pl[k][i]); // + Pi - E
-           }*/
+           }           
         }
 
 /*
@@ -436,21 +427,18 @@ export var BaroclinicModel = function ()
             var i = 0;
             var x, y, k;
             var nb = this.width*this.height;
-            if (this.gridType=="C")
-            {           
-                for (k=0;k<this.nbcouches;k++)
+            for (k=0;k<this.nbcouches;k++)
+            {
+                i = this.width+1;
+                for (y=1;y<this.height-1;y++)
                 {
-                    i = this.width+1;
-                    for (y=1;y<this.height-1;y++)
+                    for(x=1;x<this.width-1;x++,i++)
                     {
-                        for(x=1;x<this.width-1;x++,i++)
-                        {
-                            // Verif Ok 15/06/2018
-                            this.Dtilde[k][i] = ((this.ps[i]+this.ps[i+1])*this.U[k][i]-(this.ps[i-1]+this.ps[i])*this.U[k][i-1])*0.5/this.dx[y]
-                                +((this.ps[i-this.width]+this.ps[i])*this.V[k][i-this.width]-(this.ps[i]+this.ps[i+this.width])*this.V[k][i])*0.5/this.dy;
-                        }
-                        i+=2;
+                        // Verif Ok 15/06/2018
+                        this.Dtilde[k][i] = ((this.ps[i]+this.ps[i+1])*this.U[k][i]-(this.ps[i-1]+this.ps[i])*this.U[k][i-1])*0.5/this.dx[y]
+                            +((this.ps[i-this.width]+this.ps[i])*this.V[k][i-this.width]-(this.ps[i]+this.ps[i+this.width])*this.V[k][i])*0.5/this.dy;
                     }
+                    i+=2;
                 }
             }
             
@@ -485,159 +473,65 @@ export var BaroclinicModel = function ()
                 this.filter.applyFilter2D(this.Z_t);
             }            
         }
-        
+
         // ********************************************************************
-        // PARAMETRISATIONS PHYSIQUES
+        // CALCUL DES TERMES DE COUPLAGE PHYSIQUE
         // ********************************************************************
         
         /**
-         * Calcul de l'humidité spécifique saturante.
+         * Calcul du terme d'évolution de surface dû aux flux de surface
          */
-        BaroclinicModel.prototype.qsat = function(p, t)
+        BaroclinicModel.prototype.calcDPs = function()
         {
-            // Formule de Clapeyron
-            var e = 101325*Math.exp(2.47e6/(8.3144621/0.01801)*(1/373.15-1/t));
-            return 0.622*e/(p-0.378*e);
-        }
-        
-        BaroclinicModel.prototype.calcPrecip = function()
-        {
-            // Nb : le flux de précip sera toujours 0 au sommet.
-            var nb = this.nbcouches;
-            for (var k=0;k<nb;k++)
+            var n = this.p.length;
+            for (var i=0;i<this.width*this.height-1;i++)
             {
-                this.calcPrecipCouche(k);
-            }
-        }
-
-        BaroclinicModel.prototype.calcPrecipCouche = function(k)
-        {
-            var qsat;
-            var k_tilde = this.surfaces[k];
-            var k_couche = this.couches[k];
-            var k_tilde1 = this.surfaces[k+1];
-            var P_temp = 0;
-            for (var i=0;i<this.Pl[k].length;i++)
-            {
-                qsat = this.qsat(this.p[k_couche][i], this.T[k][i]);
-                this.Pl[k+1][i] = 0;
-                if (this.qv[k][i]>qsat)
-                {
-                    // Ajout de flux de précipitations
-                    this.P_evap[k][i] = this.qv[k][i]-qsat;
-                    this.Pl[k+1][i] = this.Pl[k][i] + (this.P_evap[k][i])*(this.p[k_tilde][i]-this.p[k_tilde1][i])/(this.dt*Model.g);
-                }
-                else
-                {
-                    // Evaporation....
-                    if (this.Pl[k+1][i]>0)
-                    {
-                        this.P_evap[k][i] = this.qv[k][i]-qsat;
-                        P_temp = Math.sqrt(this.Pl[k][i]) + 4.8e6*(this.P_evap[k][i])*(1/this.p[k_tilde][i]-1/this.p[k_tilde1][i]);
-                        this.Pl[k+1][i] = P_temp*P_temp;
-                    }
-                }
+                this.dPs[i] = -Model.g * (this.Pl[this.nbcouches][i]); // +Pi-E
             }
         }
         
-        BaroclinicModel.prototype.calcConvection = function()
+        /**
+         * Calcul du terme d'évolution de VV dû aux schémas physiques
+         */
+        BaroclinicModel.prototype.calcDSigmaf = function()
         {
-/*            var dwc2_2 = 0;
-            var wc = 0;
-            var size = this.qv[0].length;
-            var a = 1, b = 1; // Valeurs à ajuster...
-            var B = 0;
-            var tn = 0;
-            var theta_n = 0, theta_e = 0;
-            var k_couche;
-            var dz = 0;
-            var m2 = 0;
-            var epsilon = 0;
-            var cape = 0, cin = 0;
-            var Tvpar = 0, Tvenv = 0;
-            var p_prec = 0, z_prec = 0;
-            var qsat = 0, qv_p = 0;
-            var e, r;
-            var conv = false;
-            for (var i=0;i<size;i++)
+            var nb = this.width*this.height;
+            var k = 1, i=0;
+            // Commence à 1 car sommet toujours zero
+            for (k=1;k<this.sigmaf.length-1;k++)
             {
-                // Température initiale du nuage ramenée à la température de surface
-                // et humidité du dernier niveau
-                p_prec = this.ps[i];
-                z_prec = this.sfcgeop[i]/Model.g;
-                tn = this.T[this.nbcouches-1][i] * Math.pow(this.ps[i]/this.p[this.nbcouches*2][i], Model.R / Model.Cp);
-                qv_p = this.qv[this.nbcouches-1][i];
-                conv = false;
-                
-                if (i==4714) console.log(tn);
-                wc = 0;
-                cape = 0;
-                cin = 0;
-                for (var k=this.nbcouches-1;k>=0;k--)
+                for (i=0;i<nb;i++)
                 {
-                    m2 = this.m[i]*this.m[i];
-                    k_couche = this.couches[k];
-                    dz = this.phi[k][i]/Model.g - z_prec;
-                    
-                    qsat = this.qsat(this.p[k_couche][i], this.T[k][i]);
-                    // Suivre l'adiabatique saturée
-                    if (qv_p>qsat)
-                    {
-                        conv = true;
-                        qv_p = qsat; 
-                    }
-                    
-                    if (conv)
-                    {
-                        // Suivre l'adiabatique saturée
-                        tn -= Model.g * (287*tn*tn+2501000*qv_p)/(1003.5*287*tn*tn+2501000*2501000*qv_p*0.622)*dz;
-                    }
-                    else
-                    {  
-                        // Suivre l'adiabatique sèche
-                        tn = tn * Math.pow(this.p[k_couche][i]/p_prec, Model.R / Model.Cp);
-                    }
-                                                           
-                    theta_e = this.T[k][i]*Math.pow(100000/this.p[k_couche][i], 2.0/7.0);
-                    theta_n = tn*Math.pow(100000/this.p[k_couche][i], 2.0/7.0);
-                    k_couche = this.couches[k];
-                    B = Model.g*(theta_n-theta_e)/theta_e;
-                    epsilon = 0.1; // Heu bah là je sait pas trop...
-                    dwc2_2 =a*B - b*epsilon*wc*wc*dz;
-                    wc += dwc2_2;
-                    
-                    Tvpar = tn * (1+0.61*this.qv[k][i]);
-                    Tvenv = this.T[k][i] * (1+0.61*this.qv[k][i]);
-                   
-                    if (conv)
-                    {
-                        if (tn<this.T[k][i])
-                        {
-                            // Calculer la CIN
-                            cin += Model.g*(Tvpar-Tvenv)/Tvenv*dz;
-                        }
-                        else if (tn>this.T[k][i])
-                        {
-                            // Calculer la CAPE et déclencher le schema
-                            cape += Model.g*(Tvpar-Tvenv)/Tvenv*dz;
-                        }
-                        else
-                        {
-                            // Niveau d'équilibre atteint
-                            conv = false;
-                        }
-                    }
-                    
-                    if (i==4714) console.log("i="+i+" k="+k+" tn="+tn+" Te="+this.T[k][i]+" Tvpar"+Tvpar+" Tvenv="+Tvenv+" dz="+dz+" B="+B+" conv="+conv+" cape="+cape);
-                    
-                    p_prec = this.p[k_couche][i];
-                    z_prec = this.phi[k][i]/Model.g;
+                    this.dSigmaf[k][i] = Model.g/(this.ps[i]*this.dsigma[k-1])
+                                *(this.Pl[k][i]); // +Pi+E
                 }
-                this.CIN[i] = cin;
-                this.CAPE[i] = cape;
-            }*/
+           } 
         }
-
+        
+        /**
+         * Calcul du terme d'évolution d'humidité dû aux schemas physiques
+         */
+        BaroclinicModel.prototype.calcDqv = function()
+        {
+            var i = 0;
+            var x, y;
+            var m2;
+            var n = this.nbcouches;
+            for (var k=0;k<n;k++)
+            {
+                i = this.width+1;
+                for (y=1;y<this.height-1;y++)
+                {
+                    for(x=1;x<this.width-1;x++,i++)
+                    {
+                        m2 = this.m[i]*this.m[i];
+                        this.dQv[k][i] = Model.g*m2/(this.ps[i]*this.dsigma[k])*(-this.P_evap[k][i] + this.qv[k][i]*(this.Pl[k+1][i])/* 1-qr-qs ?*/);
+                    }
+                }
+            }
+        }
+        
+        
         // ********************************************************************
         // GESTION DU COUPLAGE
         // ********************************************************************
@@ -727,8 +621,13 @@ BaroclinicModel.prototype.step = function()
     }
  
     // *** Calcul des processus physiques ***
-    //this.calcConvection();
-    // PLUIE this.calcPrecip();
+    if (this.precipitationScheme!=null) this.precipitationScheme.step();
+    if (this.convectionScheme!=null) this.convectionScheme.step();
+    
+    // *** Couplage des équations physiques/dynamiques ***
+    this.calcDPs();
+    this.calcDSigmaf();
+    this.calcDqv();
 
     // *** Calcul de l'évolution dynamique ***
     this.dynamicsCore.step();
@@ -819,6 +718,10 @@ BaroclinicModel.prototype.init = function()
     this.Sv = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.St = Variable.createVariable(this.verticalType=="CP"?this.nbcouches+1:this.nbcouches, this.width, this.height, true);
     this.Sqv = Variable.createVariable(this.nbcouches, this.width, this.height, true);
+    
+    this.dPs = Variable.createVariable(1, this.width, this.height);
+    this.dSigmaf = Variable.createVariable(this.nbcouches+1, this.width, this.height, true);
+    this.dQv = Variable.createVariable(this.nbcouches, this.width, this.height, true);
        
     this.Dtilde = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.DtildeDs = Variable.createVariable(this.nbcouches, this.width, this.height, true);
@@ -842,8 +745,6 @@ BaroclinicModel.prototype.init = function()
     this.P_evap = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     
     this.apcp = Variable.createVariable(1, this.width, this.height);
-    this.CIN = Variable.createVariable(1, this.width, this.height);
-    this.CAPE = Variable.createVariable(1, this.width, this.height);
     
     if (this.global)
     {
@@ -926,7 +827,10 @@ BaroclinicModel.prototype.init = function()
         lat -= this.dlat*(Math.PI/180);
     }
    
+    // *** Initialisation des schemas ***
     this.dynamicsCore.init(this);
+    if (this.precipitationScheme!=null) this.precipitationScheme.init(this);
+    if (this.convectionScheme!=null) this.convectionScheme.init(this);
     
     // *** Filtrage des champs, pour que ce soit lissé dès le début ***
     this.applyFilter();

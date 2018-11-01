@@ -25,6 +25,8 @@ import { BaroclinicModel } from "./modeling/BaroclinicModel.js";
 import { Variable } from "./modeling/Variable.js";
 import { HydrostaticLeapFrogDynamicsCore } from "./modeling/HydrostaticLeapFrogDynamicsCore.js";
 import { HydrostaticLeapFrogDynamicsCore_CP } from "./modeling/HydrostaticLeapFrogDynamicsCore_CP.js";
+import { PrecipitationScheme } from './modeling/PrecipitationScheme.js';
+import { ConvectionScheme } from './modeling/ConvectionScheme.js';
 
 import { WindHTMLRenderer } from "./ui/WindHTMLRenderer.js";
 import { TourbillonHTMLRenderer } from "./ui/TourbillonHTMLRenderer.js";
@@ -97,6 +99,8 @@ $(document).ready(function() {
         ui.model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore_CP();
     else
         ui.model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore();
+    
+    ui.model.precipitationScheme = new PrecipitationScheme();
 
     ui.model.width = 144;
     ui.model.height = 72;
