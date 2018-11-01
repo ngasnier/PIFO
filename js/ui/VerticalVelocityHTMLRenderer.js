@@ -73,7 +73,7 @@ VerticalVelocityHTMLRenderer.prototype.render = function()
             if (range>25) range = 25;
             if (isNaN(range)) range = 25;
 
-            str += "<td style='background:rgb("+colors[range][0]+","+colors[range][1]+","+colors[range][2]+")'>&nbsp;</td>";
+            str += "<td title='("+x.toString()+","+y.toString()+") "+this.variable[x + y * this.width].toString()+"' style='background:rgb("+colors[range][0]+","+colors[range][1]+","+colors[range][2]+")'>&nbsp;</td>";
         }
         str +="</tr>";
     }

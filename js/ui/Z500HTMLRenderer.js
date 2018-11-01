@@ -77,7 +77,7 @@ Z500HTMLRenderer.prototype.render = function()
             else
                 range = range + 1;
 
-            str += "<td style='background:rgb(" + colors[range][0] + "," + colors[range][1] + "," + colors[range][2] + ")'>" + Math.floor((this.variable[i] / Model.g) / 100) + "</td>";
+            str += "<td title='("+x.toString()+","+y.toString()+") "+this.variable[i].toString()+"m'style='background:rgb(" + colors[range][0] + "," + colors[range][1] + "," + colors[range][2] + ")'>" + Math.floor(this.variable[i] / 1000) + "</td>";
         }
         str += "</tr>";
     }

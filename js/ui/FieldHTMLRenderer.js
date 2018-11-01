@@ -37,7 +37,7 @@ FieldHTMLRenderer.prototype.render = function()
         str += "<tr><th>" + y.toString() + "</th>";
         for (var x = 0; x < this.width; x++)
         {
-            str += "<td>" + this.variable[x + y * this.width].toString() + "</td>";
+            str += "<td title='("+x.toString()+","+y.toString()+") "+this.variable[x + y * this.width].toString()+"'>" + this.variable[x + y * this.width].toString() + "</td>";
         }
         str += "</tr>";
     }

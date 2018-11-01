@@ -70,6 +70,7 @@ WindHTMLRenderer.prototype.render=function()
             var i = x+y*this.width;
             var angle = 0;
             var w = Math.sqrt(this.U[i]*this.U[i]+this.V[i]*this.V[i])*3.6;
+            var wd = w;
             var scale = 0;
             if (w>150) w=150;
             if (w<90) scale = Math.floor(w/5);
@@ -95,11 +96,11 @@ WindHTMLRenderer.prototype.render=function()
             
                 angle = Math.floor(angle/(2*Math.PI) * 8) % 8;
                 if (isNaN(angle)) angle = 8;
-                str += "<td style='background:rgb("+r+","+g+","+b+")'>"+symbols[angle]+"</td>";
+                str += "<td title='("+x.toString()+","+y.toString()+") "+wd.toString()+"km/h' style='background:rgb("+r+","+g+","+b+")'>"+symbols[angle]+"</td>";
             }
             else
             {
-                str += "<td>0</td>";
+                str += "<td title='("+x.toString()+","+y.toString()+") "+wd.toString()+"km/h'>0</td>";
             }
         }
         str +="</tr>";

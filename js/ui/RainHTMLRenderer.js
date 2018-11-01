@@ -111,7 +111,7 @@ RainHTMLRenderer.prototype.render = function()
                 }
             }
             
-            str += "<td style='background:rgb("+colors[range][0]+","+colors[range][1]+","+colors[range][2]+")'> </td>";
+            str += "<td title='("+x.toString()+","+y.toString()+") "+this.variable[x + y * this.width].toString()+"' style='background:rgb("+colors[range][0]+","+colors[range][1]+","+colors[range][2]+")'> </td>";
         }
         str +="</tr>";
     }

@@ -42,7 +42,7 @@ QvHTMLRenderer.prototype.render = function()
             color = Math.floor(this.variable[i]*50*255);
             if (color>255) color = 255;
             
-            str += "<td style='background:rgb("+color+","+color+","+color+")'> </td>";
+            str += "<td title='("+x.toString()+","+y.toString()+") "+this.variable[x + y * this.width].toString()+"' style='background:rgb("+color+","+color+","+color+")'> </td>";
         }
         str +="</tr>";
     }

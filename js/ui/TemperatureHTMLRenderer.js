@@ -75,7 +75,7 @@ TemperatureHTMLRenderer.prototype.render = function()
             if (range>25) range = 25;
             if (isNaN(range)) range = 25;
 
-            str += "<td style='background:rgb("+colors[range][0]+","+colors[range][1]+","+colors[range][2]+")'>"+(Math.floor(this.variable[i]-273.15)).toString()+"</td>";
+            str += "<td title='("+x.toString()+","+y.toString()+") "+(this.variable[x + y * this.width]-273.15).toString()+"°C'style='background:rgb("+colors[range][0]+","+colors[range][1]+","+colors[range][2]+")'>"+(Math.floor(this.variable[i]-273.15)).toString()+"</td>";
             //str += "<td style='background:rgb("+colors[range][0]+","+colors[range][1]+","+colors[range][2]+")'>"+(t[i]).toString()+"</td>";
         }
         str +="</tr>";
