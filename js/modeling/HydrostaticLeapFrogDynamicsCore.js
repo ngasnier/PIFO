@@ -297,7 +297,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
                     // Verif Ok 15/06/2018
                     part2 = Model.R*this.model.T[k][i]*m2
                                 *(this.model.gamma[k]*integ_dtlds+this.model.alpha[k]*this.model.Dtilde[k][i]*this.model.dsigma[k])
-                            /(Model.Cp*this.model.ps[i]*this.model.dsigma[k]);
+                            /(this.model.Cph[k][i]*this.model.ps[i]*this.model.dsigma[k]); // Model.Cp
 
                     // Verif Ok 15/06/2018
                     part3 = Model.R*m2 *(
@@ -311,9 +311,9 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
                                 +(this.model.ps[i]+this.model.ps[i+this.model.width])*this.model.V[k][i]*(this.model.T[k][i]+this.model.T[k][i+this.model.width])*(this.model.Z[i]-this.model.Z[i+this.model.width])
                             )/(8*this.model.dy)
 
-                        ) / (Model.Cp*this.model.ps[i]);
+                        ) / (this.model.Cph[k][i]*this.model.ps[i]);
 
-                    this.model.St[k][i] = - part1 - adv - part2 + part3  + this.model.Q[k][i]/this.model.Cph[k][i];
+                    this.model.St[k][i] = - part1 - adv - part2 + part3  + m2*this.model.Q[k][i]/(this.model.Cph[k][i]*this.model.ps[i]*this.model.dsigma[k]);
                 }
                 i+=2;
             }
@@ -402,7 +402,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
                     // Terme d'advection verticale
                     adv = (d_ktilde*(q_k_plus_1-q_k)+d_ktilde_moins_1*(q_k-q_k_moins_1)) / (this.model.ps[i]*2*this.model.dsigma[k]);
 
-                    sq[k][i] = - part1 - adv + dq[k][i];
+                    sq[k][i] = - part1 - adv + m2*dq[k][i]/(this.model.ps[i]*this.model.dsigma[k]);
                 }
                 i+=2;
             }
@@ -417,7 +417,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
             for (var k=0;k<n;k++)
             {
                 this.calcTransportCouche(this.model.qv, this.model.dQv, this.model.Sqv, k);
-                this.calcTransportCouche(this.model.qr, this.model.dQr, this.model.Sqr, k);
+                //this.calcTransportCouche(this.model.qr, this.model.dQr, this.model.Sqr, k);
             }
         }
     }

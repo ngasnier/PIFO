@@ -39,24 +39,22 @@ export var PrecipitationScheme = function ()
                 if (this.model.qv[k][i]>qsat)
                 {
                     // Ajout de flux de précipitations
-                    this.model.Pl_3[k][i] = qsat-this.model.qv[k][i];
+                    this.model.Pl_1[k][i] = this.model.qv[k][i]-qsat;
                     this.model.Pl[k+1][i] = this.model.Pl[k][i] // Flux couche supérieure
-                            // Moins le pseudo-flux (attention au signe)
-                            -(this.model.Pl_3[k][i])*(this.model.p[k_tilde][i]-this.model.p[k_tilde1][i])/(this.model.dt*Model.g);
+                            +(this.model.Pl_1[k][i])*(this.model.p[k_tilde][i]-this.model.p[k_tilde1][i])/(this.model.dt*Model.g);
                 }
                 else
                 {
                     // Evaporation....
                     if (this.model.Pl[k+1][i]>0)
                     {
-                        this.model.Pl_3[k][i] = 4.8e6*(qsat-this.model.qv[k][i]);
+                        this.model.Pl_3[k][i] = (qsat-this.model.qv[k][i]);
                         P_temp = Math.sqrt(this.model.Pl[k][i]) 
                                 - (this.model.Pl_3[k][i])
                                 *(1/this.model.p[k_tilde][i]-1/this.model.p[k_tilde1][i]);
                         this.model.Pl[k+1][i] = P_temp*P_temp;
                     }
                 }
-                if (k==7 && i==(22+61*this.model.width)) console.log(this.model.p[k_couche][i], this.model.T[k][i], qsat, this.model.qv[k][i], this.model.Pl_3[k][i], this.model.Pl[k+1][i]);
             }
         }
     }

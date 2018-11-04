@@ -607,7 +607,7 @@ export var BaroclinicModel = function ()
                                 // Terme de contribution de la chaleur latente
                                 +(-Model.Ll*(-this.Pl_3[k][i]))
                             );
-                        if (k==7 && i==(22+61*this.width)) console.log(this.Q[k][i], this.Cph[k][i]);
+                        //if (k==7 && i==(22+61*this.width)) console.log(this.Q[k][i], this.Cph[k][i]);
                     }
                     i+=2;
                 }
@@ -737,7 +737,7 @@ BaroclinicModel.prototype.step = function()
     this.calcDSigmaf();
     this.calcSigmaf();
     this.calcDqv();
-    this.calcDqr();
+ //   this.calcDqr();
     
     this.calcCph();
     this.calcQ();
@@ -1009,9 +1009,7 @@ BaroclinicModel.prototype.getDiagnosticVariables = function()
             {"name":"Pl", "description":"liquid precipitation flux", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces},
             {"name":"Pi", "description":"solid precipitation flux", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces},
             {"name":"E", "description":"surface evaporation flux", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"apcp", "description":"precipitation accumulation", "units": "kg.m^2", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"CAPE", "description":"CAPE", "units": "J.kg^-1", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"CIN", "description":"CIN", "units": "J.kg^-1", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]}
+            {"name":"apcp", "description":"precipitation accumulation", "units": "kg.m^2", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]}
         ];
 }
 

@@ -22,16 +22,18 @@ if [ ! -d "$METEO_DIR" ]; then METEO_DIR="$PWD"; fi
 cd $METEO_DIR
 echo $METEO_DIR
 
+export NCL_ROOT="/home/nicolas/NetBeansProjects/MbTools/ncl"
+
 fileinfo=$1
 echo $1
 #while read fileinfo 
 #do
 runvalid=$(echo $fileinfo | cut -d ";" -f 5)
 
-cmdline="p_fileinfo=\""$fileinfo"\""
-
+cmdline="input_dir=\"/home/nicolas/Meteo/scripts/pifo\" europe_dir=\"/home/nicolas/Meteo/scripts/pifo/images\""
+echo $cmdline
 # *** Cartes PIFO
-ncl pifo_all.ncl "$cmdline"
+ncl pifo_all.ncl $cmdline
 for f in $(ls pifo/images/*.ps)
 do
 	outfile="pifo/images/$(basename $f .ps).png"
