@@ -44,10 +44,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         #slice {
             overflow-x: scroll;
         }
+        #dump {
+            font-size:medium;
+            overflow-x: scroll;
+        }
         #separateur {
             clear:left;
         }
-        #runHours, #historyInterval {
+        #runHours, #historyInterval, #row, #column {
             width: 3em;
         }
         fieldset {
@@ -81,7 +85,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <label for="runHours">Nombre d'heures du run</label> <input type="text" name="runHours" id="runHours" value="48"/> | 
             <input type="checkbox" name="history" id="history" title="Active la génération de fichiers d'historique au cours du run."/><label for="history">Générer l'historique</label> |
             <label for="historyInterval">Intervalle d'historique (en h)</label> <input type="text" name="historyInterval" id="historyInterval" value="3"/> | 
-            <a href="#" id="downloadHistoryButton" title="Télécharger.">[Télécharger l'historique]</a>
+            <a href="#" id="downloadHistoryButton" title="Télécharger.">[Télécharger l'historique]</a> |
+            <label for="column">Colonne</label> <input type="text" name="column" id="column" value=""/>
+            <label for="row">Ligne</label> <input type="text" name="row" id="row" value=""/>
+            <a href="#" id="extractColumn" title="Colonne.">[Extraire colonne]</a>
         </p>
         <p>
             <fieldset>
@@ -94,6 +101,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </p>
     </form>
     <div id="separateur"></div>
+    <div id="dump">
+    </div>
     <div id="result">
     </div>
     <div id="slice">
