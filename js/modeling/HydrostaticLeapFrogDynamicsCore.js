@@ -313,7 +313,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
 
                         ) / (this.model.Cph[k][i]*this.model.ps[i]);
 
-                    this.model.St[k][i] = - part1 - adv - part2 + part3  + m2*this.model.Q[k][i]/(this.model.Cph[k][i]*this.model.ps[i]*this.model.dsigma[k]);
+                    this.model.St[k][i] = - part1 - adv - part2 + part3  + this.model.Q[k][i]/this.model.Cph[k][i];
                 }
                 i+=2;
             }
@@ -402,7 +402,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
                     // Terme d'advection verticale
                     adv = (d_ktilde*(q_k_plus_1-q_k)+d_ktilde_moins_1*(q_k-q_k_moins_1)) / (this.model.ps[i]*2*this.model.dsigma[k]);
 
-                    sq[k][i] = - part1 - adv + m2*dq[k][i]/(this.model.ps[i]*this.model.dsigma[k]);
+                    sq[k][i] = - part1 - adv + dq[k][i];
                 }
                 i+=2;
             }

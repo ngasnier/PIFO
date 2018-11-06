@@ -530,7 +530,7 @@ export var BaroclinicModel = function ()
                     for(x=1;x<this.width-1;x++,i++)
                     {
                         m2 = this.m[i]*this.m[i];
-                        this.dQv[k][i] = Model.g*m2/(this.ps[i]*this.dsigma[k])
+                        this.dQv[k][i] = /*Model.g**/m2/(this.ps[i]*this.dsigma[k]*this.dt)
                                 *(this.Pl_3[k][i] - this.Pl_1[k][i] 
                                 + this.qv[k][i]*(this.Pl[k+1][i] /*+Pi */) / (1-this.qr[k][i])); // 1-qr-qs
                     }
@@ -557,7 +557,7 @@ export var BaroclinicModel = function ()
                     {
                         m2 = this.m[i]*this.m[i];
                         this.dQr[k][i] = 
-                                +Model.g*m2/(this.ps[i]*this.dsigma[k])
+                                +/*Model.g**/m2/(this.ps[i]*this.dsigma[k])
                                 *(this.Pl_2[k][i] - this.Pl_3[k][i] - this.Pl[k+1][i])
 
                             // HACK : Annule le taux précédent car précipitation instantanée
@@ -589,8 +589,8 @@ export var BaroclinicModel = function ()
                         
                         // Nb : divisé 1-qr-qs, mais qr=qs=0 vu que tout 
                         // précipite direct en pied de couche
-                        c_chapo = (Model.Cp+Model.Cp_v*this.qv[k][i])/(1-this.qr[k][i]); 
-                        this.Q[k][i] = -Model.g*m2/(this.ps[i]*this.dsigma[k])
+                        //c_chapo = (Model.Cp+Model.Cp_v*this.qv[k][i])/(1-this.qr[k][i]); 
+                        this.Q[k][i] = -/*Model.g* */m2/(this.ps[i]*this.dsigma[k]*this.dt)
                             *(
                                 // Terme de contribution du changement de pression dûe au changement de 
                                 // masse à cause du flux de précipitation
@@ -600,8 +600,8 @@ export var BaroclinicModel = function ()
                                 (
                                     (Model.Cp_l-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] 
 
-                                    -(c_chapo-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] // Sans qr ni qs ce terme est toujours nul...
-                                                                              // Pas la peine de gaspiller du temps de calcul
+/*                                    -(c_chapo-Model.Cp)*this.Pl[k+1][i]*this.T[k][i] // Sans qr ni qs ce terme est toujours nul...
+                                                                              // Pas la peine de gaspiller du temps de calcul*/
                                 )
 
                                 // Terme de contribution de la chaleur latente
