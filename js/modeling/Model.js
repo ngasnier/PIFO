@@ -151,6 +151,9 @@ Model.Ll = 2264760;
 //** Chaleur latente de la glace
 Model.Li = 334000;
 
+//** Température du point triple de l'eau
+Model.T00 = 273.15;
+
 //** Masse volumique de l'air
 Model.rho = 1.225;
 
