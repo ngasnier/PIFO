@@ -143,7 +143,7 @@ Model.Cp_v = 1850;
 Model.Cp_l = 4185;
 
 //** Capacité thermique massique de la glace
-Model.Cp_l = 2060;
+Model.Cp_i = 2060;
 
 //** Chaleur latente de l'eau liquide
 Model.Ll = 2264760;
