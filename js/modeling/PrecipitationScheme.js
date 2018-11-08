@@ -76,7 +76,7 @@ export var PrecipitationScheme = function ()
                         // Ajout de flux de précipitations
                         P_tot = P_tot_save +(this.model.qv[k][i]-qsat)*(this.model.p[k_tilde1][i]-this.model.p[k_tilde][i])/(this.model.dt*Model.g);
                         
-                        /*if (this.model.T[k][i]<Model.T00)
+                        if (this.model.T[k][i]<Model.T00)
                         {
                             ri_tmp = (ri*P_tot_save+P_tot-P_tot_save)/P_tot;
                             rf_tmp = (rf*P_tot_save+this.h(this.model.T[k][i])*(P_tot-P_tot_save))/P_tot;
@@ -94,23 +94,30 @@ export var PrecipitationScheme = function ()
                                 ri = 1;
                                 rf = this.h(this.model.T[k][i]);
                             }
+                            else
+                            {
+                                ri = 0;
+                                rf = 0;
+                            }
                             init = false;
                         }
                         else
                         {
-                            C_star = 2.4e4 * (1-rf_tmp)+2.4e4*0.5*rf_tmp;
-                            melt = C_star*((this.model.T[k][i]-Model.T00)/(0.5*(Math.sqrt(P_tot_save)+Math.sqrt(P_tot))))
-                                *(1/this.model.p[k_tilde][i]-1/this.model.p[k_tilde1][i]);
-                            ri = ri_tmp - melt;
-                            rf = rf_tmp - melt;
-//                            if (i==9+70*144) console.log(k, C_star, melt, rf_tmp, P_tot_save, P_tot, Math.sqrt(P_tot_save), Math.sqrt(P_tot));
-                        }*/
+                            /*if (this.model.T[k][i]>=Model.T00)
+                            {
+                                C_star = 2.4e4 * (1-rf_tmp)+2.4e4*80*rf_tmp;
+                                melt = C_star*((this.model.T[k][i]-Model.T00)/(0.5*(Math.sqrt(P_tot_save)+Math.sqrt(P_tot))))
+                                    *(1/this.model.p[k_tilde][i]-1/this.model.p[k_tilde1][i]);
+                                ri = ri_tmp + melt;
+                                rf = rf_tmp + melt;
+                            }*/
+                        }
                         this.model.Pl_1[k][i] = (this.model.qv[k][i]-qsat)*(1-ri_tmp);
                         this.model.Pi_1[k][i] = (this.model.qv[k][i]-qsat)*ri_tmp;
                     }
                     else if (this.model.Pl[k+1][i]>0)
                     {
-                        C_star = 4.8e6*(1-rf_tmp)+4.8e6*0.5*rf_tmp;
+                        C_star = 4.8e6*(1-rf_tmp)+4.8e6*80*rf_tmp;
                         P_temp = Math.sqrt(P_tot_save) 
                                 + C_star*(this.model.qv[k][i]-qsat)
                                 *(1/this.model.p[k_tilde][i]-1/this.model.p[k_tilde1][i]);
@@ -121,7 +128,6 @@ export var PrecipitationScheme = function ()
                         this.model.Pl_3[k][i] = C_star*(this.model.qv[k][i]-qsat)*(1-ri_tmp);
                         this.model.Pi_3[k][i] = C_star*(this.model.qv[k][i]-qsat)*ri_tmp;
                     }
-                    
                     
                     this.model.Pl[k+1][i] = (1-ri)*P_tot;
                     this.model.Pi[k+1][i] = ri*P_tot;
