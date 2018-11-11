@@ -161,6 +161,7 @@ $(document).ready(function() {
         Tourbillon : {group:"DiagnosticVariables", name:"Tourbillon", levels:ui.model.getLayerLevels(), renderer: tourbillonRenderer},
         VV : {group:"DiagnosticVariables", name:"VV", levels:ui.model.getSurfaceLevels(), renderer: verticalVelocityRenderer},
         Pluie : {group:"DiagnosticVariables", name:"Pluie", levels:[1], renderer: rainRenderer},
+        Neige : {group:"DiagnosticVariables", name:"Neige", levels:[1], renderer: rainRenderer},
         latitudes : {group:"InternalVariables", name:"latitudes", levels:[1], data:latitudes},
         longitudes : {group:"InternalVariables", name:"longitudes", levels:[1], data:longitudes}
     };
@@ -303,6 +304,11 @@ $(document).ready(function() {
                 rainRenderer.width = ui.model.width;
                 rainRenderer.height = ui.model.height;
                 rainRenderer.variable = ui.model.getVariable("apcp");
+                break;
+            case "Neige":
+                rainRenderer.width = ui.model.width;
+                rainRenderer.height = ui.model.height;
+                rainRenderer.variable = ui.model.getVariable("acsnow");
                 break;
         }
     };

@@ -212,6 +212,7 @@ export var BaroclinicModel = function ()
     
     // Accumulation de précipitations à la surface
     this.apcp = [];
+    this.acsnow = [];
     
     // Variation d'enthalpie
     this.Q = [];
@@ -749,6 +750,7 @@ BaroclinicModel.prototype.step = function()
     
     // *** Calcule des diagnostiques finaux ***
     Variable.a_bc2d(this.apcp, this.Pl[this.nbcouches], 1, this.apcp);
+    Variable.a_bc2d(this.acsnow, this.Pi[this.nbcouches], 1, this.acsnow);
 
     // *** Calculs de vérification ***
     //this.calcVerifs();
@@ -834,6 +836,7 @@ BaroclinicModel.prototype.init = function()
     this.Cph = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     
     this.apcp = Variable.createVariable(1, this.width, this.height);
+    this.acsnow = Variable.createVariable(1, this.width, this.height);
     
     if (this.global)
     {
@@ -966,14 +969,15 @@ BaroclinicModel.prototype.getDiagnosticVariables = function()
     var surfaces = this.getSurfaceLevels();
     var layers = this.getLayerLevels();
     return [
-            {"name":"sigmaf", "description":"vertical velocity", "units":"sigma.s^-1", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces},
-            {"name":"phi", "description":"geopotential height of the layer", "units":"m^2.s^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"K", "description":"kinetic energy", "units":"J", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"tourbillon", "description":"absolute vorticity potential", "units": "S^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"Pl", "description":"liquid precipitation flux", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces},
-            {"name":"Pi", "description":"solid precipitation flux", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces},
-            {"name":"E", "description":"surface evaporation flux", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"apcp", "description":"precipitation accumulation", "units": "kg.m^2", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]}
+            {"name":"sigmaf", "description":"vitesse verticale généralisée", "units":"sigma.s^-1", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces},
+            {"name":"phi", "description":"géopotentiel de la couche", "units":"m^2.s^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
+            {"name":"K", "description":"énergie cinétique", "units":"J", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
+            {"name":"tourbillon", "description":"tourbillon absolu potentiel", "units": "S^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
+            {"name":"Pl", "description":"flux de précipitations liquides", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces},
+            {"name":"Pi", "description":"flux de précipitations solides", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces},
+            {"name":"E", "description":"flux d'évaporation de surface", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
+            {"name":"apcp", "description":"accumulation totale de pluie", "units": "kg.m^2", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
+            {"name":"acsnow", "description":"accumulation totale de neige", "units": "kg.m^2", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]}
         ];
 }
 

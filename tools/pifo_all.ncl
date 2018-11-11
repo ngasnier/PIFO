@@ -172,6 +172,9 @@ begin
         ; ************************************************************************
 
         apcp = loadField("apcp_"+grfile)
+        acsnow = loadField("acsnow_"+grfile)
+
+        apcp = apcp+acsnow
 
         if (isvar("apcp_prec")) then
             apcp_ech = apcp - apcp_prec
@@ -180,6 +183,28 @@ begin
         end if
 
         apcp_prec = apcp
+
+        print("    Precipitations neige Europe");
+        outfile = europe_dir+"/pifo_acsnow_"+valid
+        wks = gsn_open_wks(device, outfile)
+        mb_set_colormap(wks)
+
+        rain_res = True
+        rain_res@sfXArray = lon2U
+        rain_res@sfYArray = lat2U
+        rain_res@gsnAddCyclic = False
+        rain_res@gsnPaperOrientation = "portrait"
+
+        plot_precip = mb_precipitations(wks, acsnow, rain_res)
+
+        eur_res = True
+        eur_res@mpFillOn			= False
+        eur_res@mpNationalLineColor = "Black"
+        eur_res@mpGeophysicalLineColor = "Black"
+        mapid = mb_map_europe(wks, "Accumulation neige", globalRes@validDate, globalRes@runInfo, eur_res)
+        overlay(mapid, plot_precip)
+        draw(mapid)
+        frame(wks)
 
 
         print("    Precipitations cumulées Europe");
@@ -203,7 +228,6 @@ begin
         overlay(mapid, plot_precip)
         draw(mapid)
         frame(wks)
-
 
         print("    Precipitations Europe");
         outfile = europe_dir+"/pifo_apcp_"+valid
