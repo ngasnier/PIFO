@@ -130,7 +130,7 @@ begin
         ; Z500 + PRMSL
         ; ************************************************************************
 
-        print("    Z500 + PRSML");
+        print("Z500 + PRSML");
         outfile = europe_dir+"/pifo_prmsl_hgt500_"+valid
 
         wks = gsn_open_wks(device, outfile)
@@ -163,7 +163,6 @@ begin
         draw(mapid)
 
         delete(hgt500)
-        delete(prmsl)
 
         frame(wks)
 
@@ -184,7 +183,7 @@ begin
 
         apcp_prec = apcp
 
-        print("    Precipitations neige Europe");
+        print("Precipitations neige Europe");
         outfile = europe_dir+"/pifo_acsnow_"+valid
         wks = gsn_open_wks(device, outfile)
         mb_set_colormap(wks)
@@ -207,7 +206,7 @@ begin
         frame(wks)
 
 
-        print("    Precipitations cumulées Europe");
+        print("Precipitations cumulées Europe");
         outfile = europe_dir+"/pifo_apcp_acc_"+valid
         wks = gsn_open_wks(device, outfile)
         mb_set_colormap(wks)
@@ -229,7 +228,7 @@ begin
         draw(mapid)
         frame(wks)
 
-        print("    Precipitations Europe");
+        print("Precipitations Europe");
         outfile = europe_dir+"/pifo_apcp_"+valid
         wks = gsn_open_wks(device, outfile)
         mb_set_colormap(wks)
@@ -266,7 +265,7 @@ begin
 ;		theta = t850*1.04758 - 273.15
 ;		copy_VarCoords(t850, theta)
 
-        print("    Température 850 hPa Europe");
+        print("Température 850 hPa Europe");
         outfile = europe_dir+"/pifo_tmp850_"+valid
         wks = gsn_open_wks(device, outfile)
         mb_set_colormap(wks)
@@ -296,7 +295,7 @@ begin
         vstream = loadField("V_2_"+grfile)
 
         ; Carte europe
-        print("    Jet Stream 300 hPa");
+        print("Jet Stream 300 hPa");
         outfile = europe_dir+"/pifo_jet_stream_"+valid
         wks = gsn_open_wks(device,outfile)
         mb_set_colormap(wks)
@@ -329,7 +328,7 @@ begin
         ; ************************************************************************
         ; Humidite relative
         ; ************************************************************************
-        print("    RH 700 hpa Europe");
+        print("RH 700 hpa Europe");
 
         qv = loadField("qv_5_"+grfile)
         t = loadField("T_5_"+grfile)
@@ -356,6 +355,28 @@ begin
         delete(psat)
         delete(qsat)
         delete(rh700)
+
+        ; ************************************************************************
+        ; Vitesse verticale
+        ; ************************************************************************
+        print("Vent vertical 700 hPa")
+
+        outfile = europe_dir+"/pifo_vv700_"+valid
+        wks = gsn_open_wks(device, outfile)
+        mb_set_colormap(wks)
+
+        vvel700 = loadField("sigmaf_6_"+grfile)
+        vvel700 = vvel700 * 36
+        plot_vv = mb_vent_vertical(wks, vvel700, gen_res)
+
+        mapid = mb_map_europe(wks, "Vent vertical 700 hPa", globalRes@validDate, globalRes@runInfo, eur_res)
+        overlay(mapid, plot_vv)
+        draw(mapid)
+        frame(wks)
+
+        delete(vvel700)
+        delete(prmsl)
+
     end do        ; END OF TIME LOOP
 end
 
