@@ -47,6 +47,7 @@ export var PrecipitationScheme = function ()
             var k_tilde1 = 0;
             var prems = false;
             var dq = 0;
+            var flux = 0;
             var ri, ri_tmp;
             var rf, rf_tmp;
             var C_star, mevap;
@@ -69,14 +70,15 @@ export var PrecipitationScheme = function ()
                     this.model.Pl[k+1][i] = 0;
                     this.model.Pi[k+1][i] = 0;
                     qsat = Utility.qsat(this.model.p[k_couche][i], this.model.T[k][i]);
-                    dq = qsat - this.model.qv[k][i];
+                    dq = this.model.qv[k][i] - qsat;
                     P_tot_save = P_tot;
                      
                     // Saturation
                     if (this.model.qv[k][i]>=qsat)
                     {
                         // Ajout de flux de précipitations
-                        P_tot = P_tot_save +(this.model.qv[k][i]-qsat)*(this.model.p[k_tilde1][i]-this.model.p[k_tilde][i])/(this.model.dt*Model.g);
+                        flux = (dq)*(this.model.p[k_tilde1][i]-this.model.p[k_tilde][i])/(this.model.dt*Model.g)
+                        P_tot = P_tot_save + flux;
                         
                         // Calcul de la proportion provitionnelle
                         if (this.model.T[k][i]<Model.T00)
@@ -125,8 +127,10 @@ export var PrecipitationScheme = function ()
 
                         // Flux de vapeur vers liquide/solide dépend de ce qui 
                         // est produit dans la couche
-                        this.model.Pl_1[k][i] = (this.model.qv[k][i]-qsat)*(1-ri_tmp);
-                        this.model.Pi_1[k][i] = (this.model.qv[k][i]-qsat)*ri_tmp;
+                        flux = flux / this.model.dt;
+                        this.model.Pl_1[k+1][i] = flux*(1-ri_tmp);
+                        this.model.Pi_1[k+1][i] = flux*ri_tmp;
+                        //this.model.Pl_1[k][i] = (this.model.qv[k][i]-qsat);
                     }
                     else if (this.model.Pl[k+1][i]>0)
                     {
@@ -140,8 +144,9 @@ export var PrecipitationScheme = function ()
                         rf_tmp = rf;
                         
                         // Flux de liquide/solide vers vapeur
-                        this.model.Pl_3[k][i] = mevap*(1-rf_tmp);
-                        this.model.Pi_3[k][i] = mevap*ri_tmp;
+                        flux = (P_tot-P_tot_save) / this.model.dt;
+                        this.model.Pl_3[k+1][i] = flux*(1-rf_tmp);
+                        this.model.Pi_3[k+1][i] = flux*ri_tmp;
                         
                         // Reste a modifier proportion neige/eau comme ci-dessus
                         C_star = 2.4e4 * (1-rf_tmp)+2.4e4*80*rf_tmp;

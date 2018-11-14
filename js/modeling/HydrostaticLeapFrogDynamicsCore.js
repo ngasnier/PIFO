@@ -308,7 +308,13 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
 
                         ) / (this.model.Cph[k][i]*this.model.ps[i]);
 
-                    this.model.St[k][i] = - part1 - adv - part2 + part3  + this.model.Q[k][i]/this.model.Cph[k][i];
+                    this.model.St[k][i] = - part1 - adv - part2 + part3  
+                            + this.model.Q[k][i]/this.model.Cph[k][i]
+                    // Si j'ai bien compris, l'équation thermodynamique contient
+                    // ce terme en RT*dln(p)/dt. Sauf qu'il semble avoir un effet destructeur
+                    // sur la T° 850hPa. 
+                    // Pas sur donc de sa réelle utilité, ou alors je le calcule mal.
+                            /*+ Model.R * this.model.T[k][i] * this.model.Sz[i]/this.model.dt*/;
                 }
                 i+=2;
             }
