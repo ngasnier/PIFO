@@ -113,9 +113,9 @@ export var PrecipitationScheme = function ()
                             C_star = 2.4e4 * (1-rf_tmp)+2.4e4*80*rf_tmp;
                             mevap = C_star*((this.model.T[k][i]-Model.T00)/(0.5*(Math.sqrt(P_tot_save)+Math.sqrt(P_tot))))
                                 *(1/this.model.p[k_tilde][i]-1/this.model.p[k_tilde1][i]);
-                            ri = ri_tmp - mevap;
+                            ri = ri_tmp - mevap*(P_tot-P_tot_save);
                             ri *= ri;
-                            rf = rf_tmp - mevap;
+                            rf = rf_tmp - mevap*(P_tot-P_tot_save);
                             rf *= rf;
                             
                             // On ne peut pas fondre ou geler plus que 100% 
@@ -152,9 +152,9 @@ export var PrecipitationScheme = function ()
                         C_star = 2.4e4 * (1-rf_tmp)+2.4e4*80*rf_tmp;
                         mevap = C_star*((this.model.T[k][i]-Model.T00)/(0.5*(Math.sqrt(P_tot_save)+Math.sqrt(P_tot))))
                             *(1/this.model.p[k_tilde][i]-1/this.model.p[k_tilde1][i]);
-                        ri = ri_tmp - mevap;
+                        ri = ri_tmp - mevap*(P_tot-P_tot_save);
                         ri *= ri;
-                        rf = rf_tmp - mevap;
+                        rf = rf_tmp - mevap*(P_tot-P_tot_save);
                         rf *= rf;
                         
                         // On ne peut pas fondre ou geler plus que 100% 
