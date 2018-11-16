@@ -927,7 +927,7 @@ BaroclinicModel.prototype.init = function()
 
             // Paramètre de coriolis et facteur d'échelle en fonction de la latitude
             this.f[i] = 2 * Model.omega * Math.sin(lat);
-            this.dx[y] = Model.Rterre*Math.cos(lat+(this.dlat/2)*(Math.PI/180))*2*this.dlon*Math.PI/180;
+            this.dx[y] = Model.Rterre*Math.cos(lat+(this.dlat/2)*(Math.PI/180))*this.dlon*Math.PI/180;
        
             switch (this.projection)
             {
