@@ -42,11 +42,12 @@ begin
     nblig = dimsizes(data)
     width = stringtoint(str_get_field(data(0), 1, ","))
     height = stringtoint(str_get_field(data(0), 2, ","))
-    field = new((/height, width/), double)
+    field = new((/height, width/), float)
     i = 0
     j = 0
     do lig = 1, nblig-1
-        n = stringtodouble(data(lig))
+        ;n = stringtodouble(data(lig))
+        n = stringtofloat(data(lig))
         field(j, i) = n
         i = i+1
         if (i .ge. width) then
@@ -58,19 +59,19 @@ begin
     return (field)
 end
 
-function load3DField(f, t, levs)
+function load3DField(f, t, levs, lat, lon)
 begin
     nblev = dimsizes(levs)
     i = 0
     j = 0
     data = loadField(f+"_0_"+t)
     dims = dimsizes(data)
-    field = new((/1, dims(0), dims(1)/), double)
+    field = new((/1, dims(0), dims(1)/), float)
     field(0,:,:) = data
     delete(data)
     do lev = 1, nblev-1
         data = loadField(f+"_"+lev+"_"+t)
-        data_tmp = new((/1, dims(0), dims(1)/), double)
+        data_tmp = new((/1, dims(0), dims(1)/), float)
         data_tmp(0,:,:) = data
         delete(data)
 
@@ -82,6 +83,16 @@ begin
 
         delete(field_tmp)
     end do
+
+    field!0 = "lev"
+    field!1 = "lat"
+    field!2 = "lon"
+    field&lev = levs
+    field&lev@units = "sigma"
+    field&lat = lat
+    field&lat@units = "degrees-north"
+    field&lon = lon
+    field&lon@units = "degrees-east"
     
     return (field)
 end
@@ -94,6 +105,7 @@ begin
 end
 
 begin
+    slice_levels = (/ 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 925, 950, 975, 1000 /)
     days_of_week = (/ "dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"/)
     months = (/"janvier", "fevrier", "mars", "avril", "mai", "juin", "juillet", "aout", "septembre", "octobre", "novembre", "decembre"/)
 
@@ -147,7 +159,7 @@ begin
         ; ************************************************************************
         lat2U = loadField("latitudes_"+grfile)	; latitudes pour chaque point de grille
         lon2U = loadField("longitudes_"+grfile)	; longitudes pour chaque point de grille
-
+        
         lat2d = lat2U(:,0)
         lon2d = lon2U(0,:)
 
@@ -183,7 +195,7 @@ begin
         gen_res@gsnAddCyclic = False
         gen_res@gsnPaperOrientation = "portrait"
 
-        phi = load3DField("phi", grfile, sigma_couches)/9.81;
+        phi = load3DField("phi", grfile, sigma_couches, lat2d, lon2d)/9.81;
         ps = loadField("ps_"+grfile)
         prmsl = ps / 100.0
         hgt500 = vinth2p(phi, hyba_couches, sigma_couches, (/ 500 /), ps, 1 , 1000 , 1 , True)
@@ -302,7 +314,7 @@ begin
         ; Temperature 850 hPa
         ; ************************************************************************
 
-        T = load3DField("T", grfile, sigma_couches);
+        T = load3DField("T", grfile, sigma_couches, lat2d, lon2d);
 
         tt850 = vinth2p(T, hyba_couches, sigma_couches, (/ 850 /), ps, 1 , 1000 , 1 , True)
         t850 = tt850(0,:,:) - 273.15
@@ -332,11 +344,36 @@ begin
         delete(plot_temp)
 
         ; ************************************************************************
+        ; Temperature en coupe
+        ; ************************************************************************
+        
+        print("Temperature coupe");
+        T_hpa = vinth2p(T, hyba_couches, sigma_couches, slice_levels, ps, 1 , 1000 , 1 , True)
+
+        ; Coupe lon
+        slice = T_hpa(:, {47.5931}, {-7:13})
+        slice = slice - 273.15
+        slice&lev_p@units = "hpa"
+        slice&lon@units = "degrees-east"
+
+	outfile = coupes_dir+"/pifo_t_lon_"+valid
+	wks = gsn_open_wks(device, outfile)
+	mb_set_colormap(wks)
+
+	plot = mb_temp_coupe(wks, slice, globalRes@validDate, globalRes@runInfo)
+
+	draw(plot)
+	frame(wks)
+
+	delete(slice)
+
+
+        ; ************************************************************************
         ; Jet stream + tropopause
         ; ************************************************************************
 
-        U = load3DField("U", grfile, sigma_couches);
-        V = load3DField("V", grfile, sigma_couches);
+        U = load3DField("U", grfile, sigma_couches, lat2d, lon2d);
+        V = load3DField("V", grfile, sigma_couches, lat2d, lon2d);
 
         ; Obtient le vent sur le niveau ~300 hPa
         u_int = vinth2p(U, hyba_couches, sigma_couches, (/ 300 /), ps, 1 , 1000 , 1 , True)
@@ -377,12 +414,42 @@ begin
         delete(ustream)
         delete(vstream)
 
+
+        ; ************************************************************************
+        ; Coupes de vent
+        ; ************************************************************************
+
+        print("Vent coupe");
+        U_hpa = vinth2p(U, hyba_couches, sigma_couches, slice_levels, ps, 1 , 1000 , 1 , True)
+        V_hpa = vinth2p(V, hyba_couches, sigma_couches, slice_levels, ps, 1 , 1000 , 1 , True)
+
+        ; Coupe lon
+        u_slice = U_hpa(:, {47.5931}, {-7:13})
+        u_slice&lev_p@units = "hpa"
+        u_slice&lon@units = "degrees-east"
+
+        v_slice = V_hpa(:, {47.5931}, {-7:13})
+        v_slice&lev_p@units = "hpa"
+        v_slice&lon@units = "degrees-east"
+
+	outfile = coupes_dir+"/pifo_vent_lon_"+valid
+	wks = gsn_open_wks(device, outfile)
+	mb_set_colormap(wks)
+
+        plot = mb_vent_coupe(wks, u_slice, v_slice, globalRes@validDate, globalRes@runInfo)
+
+	draw(plot)
+	frame(wks)
+
+	delete(u_slice)
+        delete(v_slice)
+
         ; ************************************************************************
         ; Humidite relative
         ; ************************************************************************
-        print("RH 700 hpa Europe");
 
-        qv = load3DField("qv", grfile, sigma_couches);
+        print("RH 700 hpa Europe");
+        qv = load3DField("qv", grfile, sigma_couches, lat2d, lon2d);
 
         qv700 = vinth2p(qv, hyba_couches, sigma_couches, (/ 700 /), ps, 1 , 1000 , 1 , True)
         t700 = vinth2p(T, hyba_couches, sigma_couches, (/ 700 /), ps, 1 , 1000 , 1 , True)
@@ -411,16 +478,53 @@ begin
         delete(rh700)
 
         ; ************************************************************************
+        ; Humidite coupe
+        ; ************************************************************************
+
+        print("RH coupe");
+        qv_hpa = vinth2p(qv, hyba_couches, sigma_couches, slice_levels, ps, 1 , 1000 , 1 , True)
+
+        ; Coupe lon
+        qv_slice = qv_hpa(:, {47.5931}, {-7:13})
+        t_slice = T_hpa(:, {47.5931}, {-7:13})
+
+        plevels = conform_dims(dimsizes(qv_slice), slice_levels * 100, 0)
+        psat = exp(13.7-5120/t_slice) * 101325
+        qsat = 0.622*psat/(plevels - 0.378*psat)
+        rh_slice = qv_slice/qsat*100
+
+        copy_VarCoords(qv_slice, rh_slice)
+        rh_slice&lev_p@units = "hpa"
+        rh_slice&lon@units = "degrees-east"
+
+	outfile = coupes_dir+"/pifo_rh_lon_"+valid
+	wks = gsn_open_wks(device, outfile)
+	mb_set_colormap(wks)
+
+	plot = mb_rh_coupe(wks, rh_slice, globalRes@validDate, globalRes@runInfo)
+
+	draw(plot)
+	frame(wks)
+
+	delete(qv_slice)
+        delete(t_slice)
+        delete(rh_slice)
+        delete(psat)
+        delete(qsat)
+        delete(plevels)
+
+        ; ************************************************************************
         ; Vitesse verticale
         ; ************************************************************************
+
         print("Vent vertical 700 hPa")
 
         outfile = europe_dir+"/pifo_vv700_"+valid
         wks = gsn_open_wks(device, outfile)
         mb_set_colormap(wks)
 
-        sigmaf = load3DField("sigmaf", grfile, sigma_surfaces);
-        vv700_tmp = vinth2p(sigmaf, hyba_couches, sigma_surfaces, (/ 700 /), ps, 1 , 1000 , 1 , True)
+        sigmaf = load3DField("sigmaf", grfile, sigma_surfaces, lat2d, lon2d);
+        vv700_tmp = vinth2p(sigmaf, hyba_surfaces, sigma_surfaces, (/ 700 /), ps, 1 , 1000 , 1 , True)
 
         vvel700 = vv700_tmp(0,:,:) * 36
         plot_vv = mb_vent_vertical(wks, vvel700, gen_res)
@@ -433,6 +537,33 @@ begin
         delete(vvel700)
         delete(vv700_tmp)
 
+        ; ************************************************************************
+        ; Vitesse verticale coupe
+        ; ************************************************************************
+
+        print("Vent vertical coupe");
+        sigmaf_hpa = vinth2p(sigmaf, hyba_surfaces, sigma_surfaces, slice_levels, ps, 1 , 1000 , 1 , True)
+
+        ; Coupe lon
+        sigmaf_slice = sigmaf_hpa(:, {47.5931}, {-7:13})
+        sigmaf_slice = sigmaf_slice * 36
+        sigmaf_slice&lev_p@units = "hpa"
+        sigmaf_slice&lon@units = "degrees-east"
+
+	outfile = coupes_dir+"/pifo_vv_lon_"+valid
+	wks = gsn_open_wks(device, outfile)
+	mb_set_colormap(wks)
+
+	plot = mb_vent_vertical_coupe(wks, sigmaf_slice, globalRes@validDate, globalRes@runInfo)
+
+	draw(plot)
+	frame(wks)
+
+	delete(sigmaf_slice)
+
+        ; ************************************************************************
+        ; Cleanup
+        ; ************************************************************************
 
         delete(T)
         delete(U)
@@ -440,6 +571,12 @@ begin
         delete(qv)
         delete(sigmaf)
         delete(ps)
+
+        delete(T_hpa)
+        delete(U_hpa)
+        delete(V_hpa)
+        delete(qv_hpa)
+        delete(sigmaf_hpa)
 
     end do        ; END OF TIME LOOP
 end
