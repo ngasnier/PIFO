@@ -356,7 +356,7 @@ begin
         slice&lev_p@units = "hpa"
         slice&lon@units = "degrees-east"
 
-	outfile = coupes_dir+"/pifo_lon_t"+valid
+	outfile = coupes_dir+"/pifo_lon_t_"+valid
 	wks = gsn_open_wks(device, outfile)
 	mb_set_colormap(wks)
 
