@@ -233,6 +233,17 @@ ModelUI.prototype.initVariableList = function()
         if (me.zip!=null)
         {
             me.zip.file("fileinfo.txt", me.historyInfo);
+           
+            if ("sigma" in me.model)
+            {
+                var str = "";
+                for (var i = 0; i < me.model.sigma.length; i++)
+                {
+                    str += me.model.sigma[i].toString()+"\n";
+                }
+                me.zip.file("sigma.txt", str)
+            }
+
             me.zip.generateAsync({type:"blob"})
                 .then(function(content) {
                     saveAs(content, "run.zip");

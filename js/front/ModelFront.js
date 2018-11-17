@@ -366,7 +366,19 @@ ModelFront.prototype.checkHistory = function()
         {
             var filename = this.historyDir+"/fileinfo.txt";
             console.log("exporting "+filename);
-            fs.writeFileSync(filename, this.historyInfo);            
+            fs.writeFileSync(filename, this.historyInfo);
+            
+            if ("sigma" in this.model)
+            {
+                var str = "";
+                filename = this.historyDir+"/sigma.txt";
+                for (var i = 0; i < this.model.sigma.length; i++)
+                {
+                    str += this.model.sigma[i].toString()+"\n";
+                }
+                console.log("exporting "+filename);
+                fs.writeFileSync(filename, str);
+            }
         }
 
         this.nextHistory += this.historyInterval*3600;
