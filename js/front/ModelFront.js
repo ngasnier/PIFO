@@ -174,12 +174,13 @@ ModelFront.prototype.reset = function()
  
     if (this.historyInterval>0)
     {
+        this.precHistory = "";
+        this.historyInfo = "";
+
         this.nextHistory = 0;
         this.checkHistory();
         
         //this.nextHistory = 3600*this.historyInterval;
-        this.precHistory = "";
-        this.historyInfo = "";
     }
 
     this.afterResetCallback();
