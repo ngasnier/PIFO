@@ -356,7 +356,7 @@ begin
         slice&lev_p@units = "hpa"
         slice&lon@units = "degrees-east"
 
-	outfile = coupes_dir+"/pifo_t_lon_"+valid
+	outfile = coupes_dir+"/pifo_lon_t"+valid
 	wks = gsn_open_wks(device, outfile)
 	mb_set_colormap(wks)
 
@@ -432,7 +432,7 @@ begin
         v_slice&lev_p@units = "hpa"
         v_slice&lon@units = "degrees-east"
 
-	outfile = coupes_dir+"/pifo_vent_lon_"+valid
+	outfile = coupes_dir+"/pifo_lon_vent_"+valid
 	wks = gsn_open_wks(device, outfile)
 	mb_set_colormap(wks)
 
@@ -497,7 +497,7 @@ begin
         rh_slice&lev_p@units = "hpa"
         rh_slice&lon@units = "degrees-east"
 
-	outfile = coupes_dir+"/pifo_rh_lon_"+valid
+	outfile = coupes_dir+"/pifo_lon_rh_"+valid
 	wks = gsn_open_wks(device, outfile)
 	mb_set_colormap(wks)
 
@@ -550,7 +550,7 @@ begin
         sigmaf_slice&lev_p@units = "hpa"
         sigmaf_slice&lon@units = "degrees-east"
 
-	outfile = coupes_dir+"/pifo_vv_lon_"+valid
+	outfile = coupes_dir+"/pifo_lon_vv_"+valid
 	wks = gsn_open_wks(device, outfile)
 	mb_set_colormap(wks)
 
