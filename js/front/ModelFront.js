@@ -164,13 +164,6 @@ ModelFront.prototype.reset = function()
     if (this.status != "ready")
         return;
         
-    if (this.historyInterval>0)
-    {
-        this.nextHistory = 3600*this.historyInterval;
-        this.precHistory = "";
-        this.historyInfo = "";
-    }
-
     this.model.init();
     
     this.initVariableList();
@@ -178,7 +171,17 @@ ModelFront.prototype.reset = function()
     this.model.totalTime = 0;
     this.model.totalStep = 0;
     this.firstExecTime = new Date();
-    
+ 
+    if (this.historyInterval>0)
+    {
+        this.nextHistory = 0;
+        this.checkHistory();
+        
+        //this.nextHistory = 3600*this.historyInterval;
+        this.precHistory = "";
+        this.historyInfo = "";
+    }
+
     this.afterResetCallback();
 }
 
