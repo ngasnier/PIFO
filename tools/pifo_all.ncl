@@ -54,7 +54,43 @@ begin
             j = j+1 
         end if
     end do
+    delete(data)
     return (field)
+end
+
+function load3DField(f, t, levs)
+begin
+    nblev = dimsizes(levs)
+    i = 0
+    j = 0
+    data = loadField(f+"_0_"+t)
+    dims = dimsizes(data)
+    field = new((/1, dims(0), dims(1)/), double)
+    field(0,:,:) = data
+    delete(data)
+    do lev = 1, nblev-1
+        data = loadField(f+"_"+lev+"_"+t)
+        data_tmp = new((/1, dims(0), dims(1)/), double)
+        data_tmp(0,:,:) = data
+        delete(data)
+
+        field_tmp = array_append_record(field, data_tmp, 0)
+        delete(field)
+        delete(data_tmp)
+
+        field = field_tmp
+
+        delete(field_tmp)
+    end do
+    
+    return (field)
+end
+
+
+function loadSigma()
+begin
+    data = asciiread(input_dir+"/sigma.txt", -1, "string")
+    return (stringtodouble(data))
 end
 
 begin
@@ -76,9 +112,14 @@ begin
             idxend = dims-1
     end if
 
-    ; We generate plots, but what kind do we prefer?
     ;device = "x11"
     device = "ps"
+
+    sigma = loadSigma()
+    sigma_couches = sigma(1::2)
+    sigma_surfaces = sigma(0::2)
+    hyba_couches = fspan(0.,0.,dimsizes(sigma_couches))
+    hyba_surfaces = fspan(0.,0.,dimsizes(sigma_surfaces))
 
     ; Parcours des previsions
     do filenum = idxstart, idxend
@@ -142,11 +183,12 @@ begin
         gen_res@gsnAddCyclic = False
         gen_res@gsnPaperOrientation = "portrait"
 
-        hgt500 = loadField("Z500_"+grfile)
-        prmsl = loadField("ps_"+grfile)
-        prmsl = prmsl / 100.0
+        phi = load3DField("phi", grfile, sigma_couches)/9.81;
+        ps = loadField("ps_"+grfile)
+        prmsl = ps / 100.0
+        hgt500 = vinth2p(phi, hyba_couches, sigma_couches, (/ 500 /), ps, 1 , 1000 , 1 , True)
 
-        plot_hgt500 = mb_geop_z500_fill(wks, hgt500, gen_res)
+        plot_hgt500 = mb_geop_z500_fill(wks, hgt500(0,:,:), gen_res)
         prmsl_res = gen_res
         prmsl_res@cnLevelSpacingF = 2.
         prmsl_res@cnLineThicknessF = 2.0
@@ -163,6 +205,8 @@ begin
         draw(mapid)
 
         delete(hgt500)
+        delete(prmsl)
+        delete(phi)
 
         frame(wks)
 
@@ -258,8 +302,11 @@ begin
         ; Temperature 850 hPa
         ; ************************************************************************
 
-        t850 = loadField("T850_"+grfile)
-        t850 = t850 - 273.15
+        T = load3DField("T", grfile, sigma_couches);
+
+        tt850 = vinth2p(T, hyba_couches, sigma_couches, (/ 850 /), ps, 1 , 1000 , 1 , True)
+        t850 = tt850(0,:,:) - 273.15
+        delete(tt850)
 
 ; theta = T*(1000/P)^(Ra/Cp)
 ;		theta = t850*1.04758 - 273.15
@@ -288,11 +335,16 @@ begin
         ; Jet stream + tropopause
         ; ************************************************************************
 
-        ; Obtient le vent sur le niveau ~300 hPa
-        ; TODO : il faudra un moyen d'interpoler ou récupérer la liste des niveaux
-        ustream = loadField("U_2_"+grfile)
+        U = load3DField("U", grfile, sigma_couches);
+        V = load3DField("V", grfile, sigma_couches);
 
-        vstream = loadField("V_2_"+grfile)
+        ; Obtient le vent sur le niveau ~300 hPa
+        u_int = vinth2p(U, hyba_couches, sigma_couches, (/ 300 /), ps, 1 , 1000 , 1 , True)
+        v_int= vinth2p(V, hyba_couches, sigma_couches, (/ 300 /), ps, 1 , 1000 , 1 , True)
+        ustream = u_int(0,:,:)
+        vstream = v_int(0,:,:)
+        delete(u_int)
+        delete(v_int)
 
         ; Carte europe
         print("Jet Stream 300 hPa");
@@ -330,11 +382,13 @@ begin
         ; ************************************************************************
         print("RH 700 hpa Europe");
 
-        qv = loadField("qv_5_"+grfile)
-        t = loadField("T_5_"+grfile)
-        psat = exp(13.7-5120/t) * 101325
+        qv = load3DField("qv", grfile, sigma_couches);
+
+        qv700 = vinth2p(qv, hyba_couches, sigma_couches, (/ 700 /), ps, 1 , 1000 , 1 , True)
+        t700 = vinth2p(T, hyba_couches, sigma_couches, (/ 700 /), ps, 1 , 1000 , 1 , True)
+        psat = exp(13.7-5120/t700(0,:,:)) * 101325
         qsat = 0.622*psat/(70000 - 0.378*psat)
-        rh700 = qv/qsat*100
+        rh700 = qv700(0,:,:)/qsat*100
 
         outfile = europe_dir+"/pifo_rh700_"+valid
         wks = gsn_open_wks(device,outfile)
@@ -350,10 +404,10 @@ begin
         draw(mapid)
         frame(wks)
 
-        delete(qv)
-        delete(t)
         delete(psat)
         delete(qsat)
+        delete(qv700)
+        delete(t700)
         delete(rh700)
 
         ; ************************************************************************
@@ -365,8 +419,10 @@ begin
         wks = gsn_open_wks(device, outfile)
         mb_set_colormap(wks)
 
-        vvel700 = loadField("sigmaf_6_"+grfile)
-        vvel700 = vvel700 * 36
+        sigmaf = load3DField("sigmaf", grfile, sigma_surfaces);
+        vv700_tmp = vinth2p(sigmaf, hyba_couches, sigma_surfaces, (/ 700 /), ps, 1 , 1000 , 1 , True)
+
+        vvel700 = vv700_tmp(0,:,:) * 36
         plot_vv = mb_vent_vertical(wks, vvel700, gen_res)
 
         mapid = mb_map_europe(wks, "Vent vertical 700 hPa", globalRes@validDate, globalRes@runInfo, eur_res)
@@ -375,7 +431,15 @@ begin
         frame(wks)
 
         delete(vvel700)
-        delete(prmsl)
+        delete(vv700_tmp)
+
+
+        delete(T)
+        delete(U)
+        delete(V)
+        delete(qv)
+        delete(sigmaf)
+        delete(ps)
 
     end do        ; END OF TIME LOOP
 end
