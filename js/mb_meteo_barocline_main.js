@@ -104,7 +104,7 @@ $(document).ready(function() {
 
     ui.model.width = 144;
     ui.model.height = 72;
-    ui.model.dt = 90;
+    ui.model.dt = 60;
     ui.model.dlat = 1;
     ui.model.dlon = 1;
     ui.model.nlat = 80;

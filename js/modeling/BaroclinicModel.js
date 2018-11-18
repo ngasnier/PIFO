@@ -781,11 +781,17 @@ BaroclinicModel.prototype.step = function()
     // Couplage des variables historiques avec le domaine global
     if (this.relaxation>0)
     {
-        this.couple(this.U_t, this.U_couplage);
+/*        this.couple(this.U, this.U_couplage);
+        this.couple(this.V, this.V_couplage);
+        this.couple(this.T, this.T_couplage);
+        this.couple(this.qv, this.qv_couplage);
+        this.couple2D(this.Z, this.Z_couplage);*/
+        
+/*        this.couple(this.U_t, this.U_couplage);
         this.couple(this.V_t, this.V_couplage);
         this.couple(this.T_t, this.T_couplage);
         this.couple(this.qv_t, this.qv_couplage);
-        this.couple2D(this.Z_t, this.Z_couplage);
+        this.couple2D(this.Z_t, this.Z_couplage);*/
     }
 
     // Transfère le résultat du calcul dans les bonnes variables

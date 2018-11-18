@@ -173,7 +173,7 @@ ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", lev
     longitudes : {group:"InternalVariables", name:"longitudes", levels:[1], data:longitudes}
 };
 
-ui.historyList = ["U", "V", "T", "ps", "qv", "phi", "Z500", "T850", "latitudes", "longitudes", "apcp", "acsnow", "sigmaf", "tourbillon"];
+ui.historyList = ["U", "V", "T", "ps", "qv", "phi", "Z500", "T850", "latitudes", "longitudes", "apcp", "acsnow", "sigmaf", "tourbillon", "f"];
 
 // Options de traitement
 switch (config.filter)

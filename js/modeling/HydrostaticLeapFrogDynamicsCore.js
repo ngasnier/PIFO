@@ -52,7 +52,43 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
 
         HydrostaticLeapFrogDynamicsCore.prototype.avanceExpliciteCentre = function()
         {                 
-            Variable.a_bc(this.model.U_t, this.model.Su, 2.0*this.model.dt, this.X_tmp);
+            Variable.a_bc(this.model.U_t, this.model.Su, 2.0*this.model.dt, this.X_tmp);// X(t+dt)
+            this.model.couple(this.model.U_t, this.model.U_couplage);
+            Variable.a_bc(this.model.U_t, this.model.U, -2.0, this.model.U_t);          // X(t-dt)-2X(t)
+            Variable.sum(this.X_tmp, this.model.U_t, this.model.U_t);                   // X(t+dt)+(X(t-dt)-2X(t))
+            Variable.a_bc(this.model.U, this.model.U_t, 0.5, this.model.U);             // X(t) + gamma*[X(t+dt)+(X(t-dt)-2X(t))]
+            Variable.copy(this.X_tmp, this.model.U_t);                                  // Restaure le X(t+dt) non filtré
+
+            Variable.a_bc(this.model.V_t, this.model.Sv, 2.0*this.model.dt, this.X_tmp);
+            this.model.couple(this.model.V_t, this.model.V_couplage);
+            Variable.a_bc(this.model.V_t, this.model.V, -2.0, this.model.V_t);
+            Variable.sum(this.X_tmp, this.model.V_t, this.model.V_t);
+            Variable.a_bc(this.model.V, this.model.V_t, 0.5, this.model.V);
+            Variable.copy(this.X_tmp, this.model.V_t);
+            
+            Variable.a_bc(this.model.T_t, this.model.St, 2.0*this.model.dt, this.X_tmp);
+            this.model.couple(this.model.T_t, this.model.T_couplage);
+            Variable.a_bc(this.model.T_t, this.model.T, -2.0, this.model.T_t);
+            Variable.sum(this.X_tmp, this.model.T_t, this.model.T_t);
+            Variable.a_bc(this.model.T, this.model.T_t, 0.5, this.model.T);
+            Variable.copy(this.X_tmp, this.model.T_t);
+            
+            Variable.a_bc(this.model.qv_t, this.model.Sqv, 2.0*this.model.dt, this.X_tmp);
+            this.model.couple(this.model.qv_t, this.model.qv_couplage);
+            Variable.a_bc(this.model.qv_t, this.model.qv, -2.0, this.model.qv_t);
+            Variable.sum(this.X_tmp, this.model.qv_t, this.model.qv_t);
+            Variable.a_bc(this.model.qv, this.model.qv_t, 0.5, this.model.qv);
+            Variable.copy(this.X_tmp, this.model.qv_t);
+
+            Variable.a_bc2d(this.model.Z_t, this.model.Sz, 2.0*this.model.dt, this.X2d_tmp);
+            this.model.couple2D(this.model.Z_t, this.model.Z_couplage);
+            Variable.a_bc2d(this.model.Z_t, this.model.Z, -2.0, this.model.Z_t);
+            Variable.sum(this.X2d_tmp, this.model.Z_t, this.model.Z_t);
+            Variable.a_bc2d(this.model.Z, this.model.Z_t, 0.5, this.model.Z);
+            Variable.copy(this.X2d_tmp, this.model.Z_t);
+                        
+            // Implémentation d'origine du filtre Robert Asselin
+            /*Variable.a_bc(this.model.U_t, this.model.Su, 2.0*this.model.dt, this.X_tmp);
             Variable.a_bc(this.model.U_t, this.model.U, -2.0, this.model.U_t);
             Variable.sum(this.X_tmp, this.model.U_t, this.model.U_t);
             Variable.a_bc(this.model.U, this.model.U_t, 0.5, this.model.U_t);
@@ -75,7 +111,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
             Variable.a_bc2d(this.model.Z_t, this.model.Sz, 2.0*this.model.dt, this.X2d_tmp);
             Variable.a_bc2d(this.model.Z_t, this.model.Z, -2.0, this.model.Z_t);
             Variable.sum(this.X2d_tmp, this.model.Z_t, this.model.Z_t);
-            Variable.a_bc2d(this.model.Z, this.model.Z_t, 0.5, this.model.Z_t);
+            Variable.a_bc2d(this.model.Z, this.model.Z_t, 0.5, this.model.Z_t);*/
         }
               
               
