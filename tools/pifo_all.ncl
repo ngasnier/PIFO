@@ -562,6 +562,36 @@ begin
 	delete(sigmaf_slice)
 
         ; ************************************************************************
+        ; Tourbillon absolu
+        ; ************************************************************************
+
+        print("Tourbillon absolu 500hPa");
+        ta = load3DField("tourbillon", grfile, sigma_couches, lat2d, lon2d);
+        ftmp = loadField("f_"+grfile);
+        f = conform_dims(dimsizes(ta), ftmp, (/1, 2/))
+        pstmp = conform_dims(dimsizes(ta), ps, (/1, 2/))
+        ta = (ta*pstmp - f) * 10e5
+        delete(ftmp)
+        delete(pstmp)
+
+        ta500 = vinth2p(ta, hyba_surfaces, sigma_surfaces, (/ 500 /), ps, 1 , 1000 , 1 , True)
+
+        outfile = europe_dir+"/pifo_ta500_"+valid
+        wks = gsn_open_wks(device, outfile)
+        mb_set_colormap(wks)		
+
+        plot_ta = mb_ta(wks, ta500(0,:,:), gen_res)
+
+        mapid = mb_map_europe(wks, "Tourbillon Absolu 500 hPa", globalRes@validDate, globalRes@runInfo, fr_res_cape)
+        overlay(mapid, plot_ta)
+        draw(mapid)
+        frame(wks)
+
+        delete(plot_ta)
+        delete(ta500)
+
+
+        ; ************************************************************************
         ; Cleanup
         ; ************************************************************************
 
@@ -571,6 +601,8 @@ begin
         delete(qv)
         delete(sigmaf)
         delete(ps)
+        delete(ta)
+        delete(f)
 
         delete(T_hpa)
         delete(U_hpa)
