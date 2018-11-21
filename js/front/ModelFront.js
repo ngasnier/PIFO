@@ -285,6 +285,7 @@ ModelFront.prototype.exportField = function(field, level)
     {
         exporter = this.variableRepresentations[this.currentField].exporter;
         data = this.variableRepresentations[this.currentField].data;
+        if (exporter!=null) exporter.variable = data;
     }
     if (exporter==null)
     {

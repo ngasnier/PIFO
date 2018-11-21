@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { Model } from './Model.js';
 import { Variable } from './Variable.js';
 import { DynamicsCore } from './DynamicsCore.js';
+import { MercatorProjection } from "./MercatorProjection.js";
 
 /**
  * Modèle coordonnée vertical sigma pure en grille C
@@ -81,6 +82,7 @@ export var BaroclinicModel = function ()
     // Facteur d'échelle. m=1 constant parfait pour map cartésienne
     // A préciser pour les projections autres que CARTESIEN et MERCATOR
     this.m = [];  
+    this.inv_m = [];  
     
     // Pas de grille en degré dans la direction des latitudes.
     this.dlat = 10;
@@ -89,10 +91,16 @@ export var BaroclinicModel = function ()
     this.dlon = 10;
     
     // Pas de grille en X. 1° = 111.11km. Recalculé à partir de dlon.
-    this.dx = [];
+    this.dx = 111100;
     
     // Pas de grille en Y. 1° = 111.11km. Recalculé à partir de dlat.
     this.dy = 111100;
+    
+    // Latitudes des points de grille
+/*    this.latitudes = [];
+    
+    // Longitudes des points de grille
+    this.longitudes = [];*/
        
     // Niveaux de pression des données à interpoler sur hybride
     // Ne doit pas nécessairement correspondre aux nombre de niveaux
@@ -375,7 +383,7 @@ export var BaroclinicModel = function ()
                         this.tourbillon[k][i] = (
                                 0.25*(m1*m1+m2*m2+m3*m3+m4*m4)
                                 *(
-                                     (this.V[k][i+1]-this.V[k][i])/this.dx[y] - (this.U[k][i]-this.U[k][i+this.width])/this.dy
+                                     (this.V[k][i+1]-this.V[k][i])/this.dx - (this.U[k][i]-this.U[k][i+this.width])/this.dy
                                  )
                                 +this.f[i]
                             )
@@ -445,7 +453,7 @@ export var BaroclinicModel = function ()
                     for(x=1;x<this.width-1;x++,i++)
                     {
                         // Verif Ok 15/06/2018
-                        this.Dtilde[k][i] = ((this.ps[i]+this.ps[i+1])*this.U[k][i]-(this.ps[i-1]+this.ps[i])*this.U[k][i-1])*0.5/this.dx[y]
+                        this.Dtilde[k][i] = ((this.ps[i]+this.ps[i+1])*this.U[k][i]-(this.ps[i-1]+this.ps[i])*this.U[k][i-1])*0.5/this.dx
                             +((this.ps[i-this.width]+this.ps[i])*this.V[k][i-this.width]-(this.ps[i]+this.ps[i+this.width])*this.V[k][i])*0.5/this.dy;
                     }
                     i+=2;
@@ -538,9 +546,6 @@ export var BaroclinicModel = function ()
                     for(x=1;x<this.width-1;x++,i++)
                     {
                         m2 = this.m[i]*this.m[i];
-                        /*this.dQv[k][i] = Model.g/(this.ps[i]*this.dsigma[k])
-                                *(this.Pl_3[k][i]+this.Pi_3[k][i] - this.Pl_1[k][i] - this.Pi_1[k][i]
-                                + this.qv[k][i]*(this.Pl[k+1][i] + this.Pi[k+1][i])/this.dt); // / 1-qr-qs */
                         
                         // Différentiel sur la verticale ????
                         this.dQv[k][i] = Model.g*m2/(2*this.ps[i]*this.dsigma[k])
@@ -580,29 +585,11 @@ export var BaroclinicModel = function ()
                     {
                         m2 = this.m[i]*this.m[i];
                         
-                        /*this.Q[k][i] = -Model.g*m2/(this.ps[i]*this.dsigma[k])
-                            *(
-                                // Terme de contribution du changement de pression dûe au changement de 
-                                // masse à cause du flux de précipitation
-                                // (si j'ai bien tout compris...)
-                                // Nb : rend le modèle instable, terme trop fort par endroit...
-                                // Je préfère le négliger en attendant de comprendre
-                                (
-                                    (Model.Cp_l-Model.Cp)*this.Pl[k+1][i]/this.dt*this.T[k][i] 
-
-                                    +(Model.Cp_i-Model.Cp)*this.Pi[k+1][i]/this.dt*this.T[k][i] 
-                                )
-
-                                // Terme de contribution de la chaleur latente
-                                +(-Model.Ll*(this.Pl_1[k][i]-this.Pl_3[k][i]) - -Model.Li*(this.Pi_1[k][i]-this.Pi_3[k][i]))
-                            );*/
                         this.Q[k][i] = -Model.g*m2/(2*this.ps[i]*this.dsigma[k])
                             *(
                                 // Terme de contribution du changement de pression dûe au changement de 
                                 // masse à cause du flux de précipitation
                                 // (si j'ai bien tout compris...)
-                                // Nb : rend le modèle instable, terme trop fort par endroit...
-                                // Je préfère le négliger en attendant de comprendre
                                 ((
                                     0.5*(Model.Cp_l-Model.Cp)*this.Pl[k+1][i]/this.dt*(this.T[k1][i]+this.T[k][i])
 
@@ -781,12 +768,6 @@ BaroclinicModel.prototype.step = function()
     // Couplage des variables historiques avec le domaine global
     if (this.relaxation>0)
     {
-/*        this.couple(this.U, this.U_couplage);
-        this.couple(this.V, this.V_couplage);
-        this.couple(this.T, this.T_couplage);
-        this.couple(this.qv, this.qv_couplage);
-        this.couple2D(this.Z, this.Z_couplage);*/
-        
 /*        this.couple(this.U_t, this.U_couplage);
         this.couple(this.V_t, this.V_couplage);
         this.couple(this.T_t, this.T_couplage);
@@ -822,12 +803,14 @@ BaroclinicModel.prototype.init = function()
 {
     // *** Quelques calculs de dimensions... ***
     var nbs = this.nbcouches*2+1;
-    var lat = this.nlat*(Math.PI/180);
-    if (this.gridType=="C") lat -= (this.dlat/2)*(Math.PI/180);
+
+    // *** Initialises les variables de grille ***
+    if (this.projection!=Model.PROJ_MERCATOR) throw "Projection non supportée.";
+    var proj = new MercatorProjection(Model.Rterre);
     
-    // *** Initialises les variables de repérage ***
-    this.dx = [];    
-    this.dy = Model.Rterre*this.dlat*Math.PI/180;
+    this.dx = (proj.lonToX(this.elon)-proj.lonToX(this.wlon))/this.width;
+    this.dy = (proj.latToY(this.nlat)-proj.latToY(this.slat))/this.height;
+    this.calcCoords();
     this.time = 0;
     this.dsigma = [];
 
@@ -906,20 +889,13 @@ BaroclinicModel.prototype.init = function()
         this.wrap2d(this.Z);
     }
     
-    Variable.copy(this.U, this.U_t);
-    Variable.copy(this.V, this.V_t);
-    Variable.copy(this.T, this.T_t);
-    Variable.copy(this.qv, this.qv_t);
-
-    Variable.copy(this.U, this.U_couplage);
-    Variable.copy(this.V, this.V_couplage);
-    Variable.copy(this.T, this.T_couplage);
-    Variable.copy(this.qv, this.qv_couplage);
-
     // *** Initialise les variables 2D utilisées pour coordonnées, relaxation etc ***
     this.f = Variable.createVariable(1, this.width, this.height);
     this.alpha_couplage = Variable.createVariable(1, this.width, this.height);
     this.m = Variable.createVariable(1, this.width, this.height);
+    this.inv_m = Variable.createVariable(1, this.width, this.height);
+    var yplan = proj.latToY(this.nlat);
+    var lat = 0;
     for (var y=0;y<this.height;y++)
     {
         for(var x=0;x<this.width;x++)
@@ -931,21 +907,14 @@ BaroclinicModel.prototype.init = function()
             this.Z_t[i] = this.Z[i];
             this.Z_couplage[i] = this.Z[i];
 
-            // Paramètre de coriolis et facteur d'échelle en fonction de la latitude
-            this.f[i] = 2 * Model.omega * Math.sin(lat);
-            this.dx[y] = Model.Rterre*Math.cos(lat+(this.dlat/2)*(Math.PI/180))*this.dlon*Math.PI/180;
-       
-            switch (this.projection)
-            {
-                case Model.PROJ_CARTESIEN:
-                    this.m[i] = 1;
-                    break;
-                case Model.PROJ_MERCATOR:
-                    this.m[i] = Math.cos(lat+(this.dlat/2)*(Math.PI/180));
-                    break;
-                default:
-                    //supposé fourni par l'appelant
-            }
+            // Paramètre de coriolis pris en décalé d'une demi cellule
+            lat = proj.yToLat(yplan-0.5*this.dy);
+            this.f[i] = 2 * Model.omega * Math.sin(lat*Math.PI/180);
+
+            // Facteur d'échelle
+            lat = proj.yToLat(yplan);
+            this.m[i] = proj.scaleFactor(0, lat);
+            this.inv_m[i] = 1/this.m[i];
 
             // Initialisation du couplage
             if (y==0 || y==this.height-1 || ((x==0 || x==this.width-1) && !this.global))
@@ -975,9 +944,22 @@ BaroclinicModel.prototype.init = function()
             }
         }
 
-        lat -= this.dlat*(Math.PI/180);
+        yplan -= this.dy;
     }
-   
+
+    // Copie des données
+    Variable.product_c(this.U, this.inv_m, this.U);
+    Variable.product_c(this.V, this.inv_m, this.V);
+    Variable.copy(this.U, this.U_t);
+    Variable.copy(this.V, this.V_t);
+    Variable.copy(this.T, this.T_t);
+    Variable.copy(this.qv, this.qv_t);
+
+    Variable.copy(this.U, this.U_couplage);
+    Variable.copy(this.V, this.V_couplage);
+    Variable.copy(this.T, this.T_couplage);
+    Variable.copy(this.qv, this.qv_couplage);
+
     // *** Initialisation des schemas ***
     this.dynamicsCore.init(this);
     if (this.precipitationScheme!=null) this.precipitationScheme.init(this);
@@ -1050,6 +1032,7 @@ BaroclinicModel.prototype.getInternalVariables = function()
     return [
             {"name":"f", "description":"facteur de coriolis", "units":"", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
             {"name":"m", "description":"facteur d'échelle", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
+            {"name":"inv_m", "description":"inverse du facteur d'échelle", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
             {"name":"alpha_couplage", "description":"coefficient de couplage alpha", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
             {"name":"Dtilde", "description":"divergence de quantité de mouvement", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
             {"name":"DtildeDs", "description":"intégration de dtilde*ds sur la verticale", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
@@ -1071,6 +1054,8 @@ BaroclinicModel.prototype.getInternalVariables = function()
             {"name":"Pi_1", "description":"pseudo-flux vapeur->glace", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers},
             {"name":"Pi_2", "description":"pesudo-flux glace->neige", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers},
             {"name":"Pi_3", "description":"pseudo-flux neige->vapeur", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers},
+            /*{"name":"latitudes", "description":"latitudes des points de grille", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
+            {"name":"longitudes", "description":"longitudes des points", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},*/
             {"name":"debug3d", "description":"variable cotenant du debug", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers}
         ];
 }
@@ -1132,4 +1117,26 @@ BaroclinicModel.prototype.getLayerLevels = function()
 BaroclinicModel.prototype.getName = function()
 {
     return "PIFO BAROCLINE";
+}
+
+BaroclinicModel.prototype.calcCoords = function()
+{
+    var proj = new MercatorProjection(Model.Rterre);
+    var xmap = 0, ymap = proj.latToY(this.nlat);
+    var i = 0;
+    this.latitudes = Variable.createVariable(1, this.width, this.height);
+    this.longitudes = Variable.createVariable(1, this.width, this.height);
+    
+    for (var y=0;y<this.height;y++)
+    {
+        xmap = proj.lonToX(this.wlon);
+        for (var x=0;x<this.width;x++)
+        {
+            this.latitudes[i] =  proj.yToLat(ymap);
+            this.longitudes[i] = proj.xToLon(xmap);
+            xmap += this.dx;
+            i++;
+        }
+        ymap -= this.dy;
+    }
 }

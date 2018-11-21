@@ -44,15 +44,35 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
         HydrostaticLeapFrogDynamicsCore.prototype.avanceEuler = function()
         {       
             Variable.a_bc(this.model.U, this.model.Su, this.model.dt, this.model.U_t);
+            this.model.couple(this.model.U_t, this.model.U_couplage);
             Variable.a_bc(this.model.V, this.model.Sv, this.model.dt, this.model.V_t);
+            this.model.couple(this.model.V_t, this.model.V_couplage);
             Variable.a_bc(this.model.T, this.model.St, this.model.dt, this.model.T_t);
+            this.model.couple(this.model.T_t, this.model.T_couplage);
             Variable.a_bc(this.model.qv, this.model.Sqv, this.model.dt, this.model.qv_t);
+            this.model.couple(this.model.qv_t, this.model.qv_couplage);
             Variable.a_bc2d(this.model.Z, this.model.Sz, this.model.dt, this.model.Z_t);
+            this.model.couple2D(this.model.Z_t, this.model.Z_couplage);
         }
 
         HydrostaticLeapFrogDynamicsCore.prototype.avanceExpliciteCentre = function()
         {                 
-            Variable.a_bc(this.model.U_t, this.model.Su, 2.0*this.model.dt, this.X_tmp);// X(t+dt)
+            Variable.a_bc(this.model.U_t, this.model.Su, 2.0*this.model.dt, this.model.U_t);
+            this.model.couple(this.model.U_t, this.model.U_couplage);
+
+            Variable.a_bc(this.model.V_t, this.model.Sv, 2.0*this.model.dt, this.model.V_t);
+            this.model.couple(this.model.V_t, this.model.V_couplage);
+            
+            Variable.a_bc(this.model.T_t, this.model.St, 2.0*this.model.dt, this.model.T_t);
+            this.model.couple(this.model.T_t, this.model.T_couplage);
+            
+            Variable.a_bc(this.model.qv_t, this.model.Sqv, 2.0*this.model.dt, this.model.qv_t);
+            this.model.couple(this.model.qv_t, this.model.qv_couplage);
+
+            Variable.a_bc2d(this.model.Z_t, this.model.Sz, 2.0*this.model.dt, this.model.Z_t);
+            this.model.couple2D(this.model.Z_t, this.model.Z_couplage);
+
+            /*Variable.a_bc(this.model.U_t, this.model.Su, 2.0*this.model.dt, this.X_tmp);// X(t+dt)
             this.model.couple(this.model.U_t, this.model.U_couplage);
             Variable.a_bc(this.model.U_t, this.model.U, -2.0, this.model.U_t);          // X(t-dt)-2X(t)
             Variable.sum(this.X_tmp, this.model.U_t, this.model.U_t);                   // X(t+dt)+(X(t-dt)-2X(t))
@@ -85,7 +105,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
             Variable.a_bc2d(this.model.Z_t, this.model.Z, -2.0, this.model.Z_t);
             Variable.sum(this.X2d_tmp, this.model.Z_t, this.model.Z_t);
             Variable.a_bc2d(this.model.Z, this.model.Z_t, 0.5, this.model.Z);
-            Variable.copy(this.X2d_tmp, this.model.Z_t);
+            Variable.copy(this.X2d_tmp, this.model.Z_t);*/
                         
             // Implémentation d'origine du filtre Robert Asselin
             /*Variable.a_bc(this.model.U_t, this.model.Su, 2.0*this.model.dt, this.X_tmp);
@@ -174,10 +194,10 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
                          );
 
                     // Verif Ok 14/06/2018
-                    kphi = (this.model.K[k][i+1]+this.model.phi[k][i+1]-this.model.K[k][i]-this.model.phi[k][i])/this.model.dx[y];
+                    kphi = (this.model.K[k][i+1]+this.model.phi[k][i+1]-this.model.K[k][i]-this.model.phi[k][i])/this.model.dx;
 
                     // Verif Ok 14/06/2018
-                    rtz = Model.R*0.5*(this.model.T[k][i]+this.model.T[k][i+1])*(this.model.Z[i+1]-this.model.Z[i])/this.model.dx[y];
+                    rtz = Model.R*0.5*(this.model.T[k][i]+this.model.T[k][i+1])*(this.model.Z[i+1]-this.model.Z[i])/this.model.dx;
 
                     this.model.Su[k][i] = xi*psvk - adv - kphi - rtz;
                 }
@@ -315,7 +335,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
 
                     part1 = m2*(
                             ((this.model.ps[i+1]+this.model.ps[i])*this.model.U[k][i]*(this.model.T[k][i+1]-this.model.T[k][i])
-                            +(this.model.ps[i]+this.model.ps[i-1])*this.model.U[k][i-1]*(this.model.T[k][i]-this.model.T[k][i-1]))/(4*this.model.dx[y])
+                            +(this.model.ps[i]+this.model.ps[i-1])*this.model.U[k][i-1]*(this.model.T[k][i]-this.model.T[k][i-1]))/(4*this.model.dx)
 
                             +((this.model.ps[i-this.model.width]+this.model.ps[i])*this.model.V[k][i-this.model.width]*(this.model.T[k][i-this.model.width]-this.model.T[k][i])
                             +(this.model.ps[i]+this.model.ps[i+this.model.width])*this.model.V[k][i]*(this.model.T[k][i]-this.model.T[k][i+this.model.width]))/(4*this.model.dy)
@@ -335,7 +355,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
                             (
                                 (this.model.ps[i]+this.model.ps[i+1])*this.model.U[k][i]*(this.model.T[k][i]+this.model.T[k][i+1])*(this.model.Z[i+1]-this.model.Z[i])
                                 +(this.model.ps[i]+this.model.ps[i-1])*this.model.U[k][i-1]*(this.model.T[k][i]+this.model.T[k][i-1])*(this.model.Z[i]-this.model.Z[i-1])                                    
-                            )/(8*this.model.dx[y])
+                            )/(8*this.model.dx)
                         +
                             ( 
                                 (this.model.ps[i]+this.model.ps[i-this.model.width])*this.model.V[k][i-this.model.width]*(this.model.T[k][i]+this.model.T[k][i-this.model.width])*(this.model.Z[i-this.model.width]-this.model.Z[i])
@@ -366,15 +386,15 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
         HydrostaticLeapFrogDynamicsCore.prototype.calcSz = function()
         {
             var n = this.model.DtildeDs.length-1;
-            var i = 0;
+            var i = 1;
             var x, y;
             for (y=1;y<this.model.height-1;y++)
             {
-                for (x=1;x<this.model.width-1;x++)
+                for (x=1;x<this.model.width-1;x++,i++)
                 {
-                    i = x+y*this.model.width;
                     this.model.Sz[i] = -this.model.m[i]*this.model.m[i]*this.model.DtildeDs[n][i]/this.model.ps[i];
                 }
+                i+=2;
             }
         }
 
@@ -428,7 +448,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
                     // Terme de transport horizontal
                     part1 = m2*(
                             ((this.model.ps[i+1]+this.model.ps[i])*this.model.U[k][i]*(q[k][i+1]-q[k][i])
-                            +(this.model.ps[i]+this.model.ps[i-1])*this.model.U[k][i-1]*(q[k][i]-q[k][i-1]))/(4*this.model.dx[y])
+                            +(this.model.ps[i]+this.model.ps[i-1])*this.model.U[k][i-1]*(q[k][i]-q[k][i-1]))/(4*this.model.dx)
 
                             +((this.model.ps[i-this.model.width]+this.model.ps[i])*this.model.V[k][i-this.model.width]*(q[k][i-this.model.width]-q[k][i])
                             +(this.model.ps[i]+this.model.ps[i+this.model.width])*this.model.V[k][i]*(q[k][i]-q[k][i+this.model.width]))/(4*this.model.dy)

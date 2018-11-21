@@ -45,6 +45,8 @@ begin
     field = new((/height, width/), float)
     i = 0
     j = 0
+;print(input_dir+"/"+f+" : "+width+" "+height)
+;print(dimsizes(field))
     do lig = 1, nblig-1
         ;n = stringtodouble(data(lig))
         n = stringtofloat(data(lig))

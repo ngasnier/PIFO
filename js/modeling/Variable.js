@@ -230,6 +230,37 @@ Variable.product = function(x, y, res)
     }
 }
 
+/**
+ * Produit par un terme de surface
+ * @param {type} x
+ * @param {type} y
+ * @param {type} res
+ * @returns {undefined}
+ */
+Variable.product_c = function(x, y, res)
+{
+    var nb;
+    if (x.length>0 && (x[0].constructor===Array || x[0].constructor===Float64Array))
+    {    
+        for (var k=0;k<x.length;k++)
+        {
+            nb = x[k].length;
+            for(var i=0;i<nb;i++)
+            {
+                res[k][i] = x[k][i]*y[i];
+            }
+        }
+    }
+    else
+    {
+        nb = x.length;
+        for(var i=0;i<nb;i++)
+        {
+            res[i] = x[i]*y[i];
+        }        
+    }
+}
+
 
 /**
  * Permute les valeurs de deux variables.

@@ -20,15 +20,24 @@ export var FieldTextExporter = function()
     this.width = 0;
     this.height = 0;
     this.variable = [];
+    this.output = [];
+    this.interpolator = null;
 }
 
 
 FieldTextExporter.prototype.export = function()
 {
-    var str = this.width.toString()+","+this.height.toString()+"\n";
-    for (var i = 0; i < this.variable.length; i++)
+    var outp = this.variable;
+    if (this.interpolator!=null)
     {
-        str += this.variable[i].toString()+"\n";
+        this.interpolator.interp(this.variable, this.output);
+        outp = this.output;
+    }
+
+    var str = this.width.toString()+","+this.height.toString()+"\n";
+    for (var i = 0; i < outp.length; i++)
+    {
+        str += outp[i].toString()+"\n";
     }
     return str;
 }

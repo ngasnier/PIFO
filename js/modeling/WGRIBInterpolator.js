@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Model } from "./Model.js";
+import { MercatorProjection } from "./MercatorProjection.js";
 
 /**
  * Extraction et interpolation horizontale d'un domaine global vers le domaine
@@ -90,8 +91,12 @@ WGRIBInterpolator.prototype.interp = function(f, data, offsetx, offsety)
     lines.shift();
     
     var lon = this.wlon;
-    var lat = this.nlat;
-    
+    var projection = new MercatorProjection(Model.Rterre);
+   
+    var ymin = projection.latToY(this.slat);
+    var ymax = projection.latToY(this.nlat);
+    var dy = (ymax-ymin)/(this.height);
+
     var lat_in, lon_in;
     var x_in1, y_in1;
     var x_in2, y_in2;
@@ -99,11 +104,14 @@ WGRIBInterpolator.prototype.interp = function(f, data, offsetx, offsety)
     var v1, v2, v3, v4;
     var vv1, vv2;
     var i = 0;
+    var y = 0;
     if (this.global) i++;
     
-    for (lat=this.nlat;lat>this.slat;lat-=this.dlat)
+//    lat = latmax;
+    //for (lat=this.nlat;lat>this.slat;lat-=this.dlat)
+    for (y=ymax-0.5*offsety*dy;y>ymin;y-=dy)
     {
-        lat_in = lat-this.dlat*0.5*offsety;
+        lat_in = projection.yToLat(y);
         if (lat_in<-90 || lat_in>90) throw "latitude overflow "+lat_in;
         
         y_in1 = Math.floor((lat_in+90)/this.dlatInput);

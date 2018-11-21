@@ -16,6 +16,7 @@
  */
 
 import { WGRIBInterpolator } from "./js/modeling/WGRIBInterpolator.js";
+import { OutputInterpolator } from "./js/modeling/OutputInterpolator.js";
 import { TimeInterpolator } from "./js/modeling/TimeInterpolator.js";
 import { GeopotentialInterpolator } from "./js/modeling/GeopotentialInterpolator.js";
 import { VerticalInterpolator } from "./js/modeling/VerticalInterpolator.js";
@@ -38,6 +39,7 @@ import { PressureHTMLRenderer } from "./js/ui/PressureHTMLRenderer.js";
 import { TemperatureHTMLRenderer } from "./js/ui/TemperatureHTMLRenderer.js";
 import { RainHTMLRenderer } from "./js/ui/RainHTMLRenderer.js";
 import { BarotropicVerificationHTMLRenderer } from "./js/ui/BarotropicVerificationHTMLRenderer.js";
+import { FieldTextExporter } from "./js/ui/FieldTextExporter.js";
 
 import { ModelFront } from "./js/front/ModelFront.js";
 
@@ -45,10 +47,12 @@ import { ModelFront } from "./js/front/ModelFront.js";
 var fs = require('fs');
 
 var wgribInterpolator = new WGRIBInterpolator();
+var outputInterpolator = new OutputInterpolator();
 var geopInterpolator = new GeopotentialInterpolator();
 var verticalInterpolator = new VerticalInterpolator();
 var humidityInterpolator = new HumidityInterpolator();
 
+var coordExporter = new FieldTextExporter();
 var windRenderer = new WindHTMLRenderer();
 var z500Renderer = new Z500HTMLRenderer();
 var t850Renderer = new T850HTMLRenderer();
@@ -160,6 +164,23 @@ ui.historyInterval = config.historyInterval;
 ui.historyDir = config.historyDir;
 
 // Configuration pour les exportations notamment
+outputInterpolator.global = ui.model.global;
+outputInterpolator.gridType = ui.model.gridType;
+outputInterpolator.projection = ui.model.projection;
+outputInterpolator.width = ui.model.width;
+outputInterpolator.height = ui.model.height;
+outputInterpolator.dlat = ui.model.dlat;
+outputInterpolator.dlon = ui.model.dlon;
+outputInterpolator.nlat = ui.model.nlat;
+outputInterpolator.slat = ui.model.slat;
+outputInterpolator.elon = ui.model.elon;
+outputInterpolator.wlon = ui.model.wlon;
+ui.defaultExporter.interpolator = outputInterpolator;
+ui.defaultExporter.output = Variable.createVariable(1, ui.model.width, ui.model.height);
+
+coordExporter.width = ui.model.width;
+coordExporter.height = ui.model.height;
+
 ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", levels:ui.model.getLayerLevels(), renderer: windRenderer},
     Temperature: {group:"HistoricVariables", name:"Temperature", levels:(ui.model.verticalType=="CP" ? ui.model.getSurfaceLevels() : ui.model.getLayerLevels()), renderer: temperatureRenderer},
     Z500 : {group:"HistoricVariables", name:"Z500", levels:[1], renderer: z500Renderer, data:z500_display},
@@ -169,8 +190,8 @@ ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", lev
     Tourbillon : {group:"DiagnosticVariables", name:"Tourbillon", levels:ui.model.getLayerLevels(), renderer: tourbillonRenderer},
     VV : {group:"DiagnosticVariables", name:"VV", levels:ui.model.getSurfaceLevels(), renderer: verticalVelocityRenderer},
     Pluie : {group:"DiagnosticVariables", name:"Pluie", levels:[1], renderer: rainRenderer},
-    latitudes : {group:"InternalVariables", name:"latitudes", levels:[1], data:latitudes},
-    longitudes : {group:"InternalVariables", name:"longitudes", levels:[1], data:longitudes}
+    latitudes : {group:"InternalVariables", name:"latitudes", levels:[1], data:latitudes, exporter:coordExporter},
+    longitudes : {group:"InternalVariables", name:"longitudes", levels:[1], data:longitudes, exporter:coordExporter}
 };
 
 ui.historyList = ["U", "V", "T", "ps", "qv", "phi", "Z500", "T850", "latitudes", "longitudes", "apcp", "acsnow", "sigmaf", "tourbillon", "f"];
@@ -223,14 +244,18 @@ ui.beforeResetCallback = function()
     if (config.inputRelief)
     {
         verticalInterpolator.surfacePressure = sfcprs.variable[0];
-        ui.model.setVariable("ps", sfcprs.variable[0]);
-        ui.model.setVariable("sfcgeop", sfchgt.variable[0]);
+        ui.model.setVariable("ps", Variable.createVariable(1, ui.model.width, ui.model.height));
+        Variable.copy(sfcprs.variable[0], ui.model.getVariable("ps"));
+        ui.model.setVariable("sfcgeop", Variable.createVariable(1, ui.model.width, ui.model.height));
+        Variable.copy(sfchgt.variable[0], ui.model.getVariable("sfcgeop"));
     }
     else
     {
         verticalInterpolator.surfacePressure = prmsl.variable[0];
-        ui.model.setVariable("ps", prmsl.variable[0]);
-        ui.model.setVariable("sfcgeop", mslhgt.variable[0]);
+        ui.model.setVariable("ps", Variable.createVariable(1, ui.model.width, ui.model.height));
+        Variable.copy(prmsl.variable[0], ui.model.getVariable("ps"));
+        ui.model.setVariable("sfcgeop", Variable.createVariable(1, ui.model.width, ui.model.height));
+        Variable.copy(mslhgt.variable[0], ui.model.getVariable("sfcgeop"));
     }
 
     verticalInterpolator.sigmaLevels = ui.model.getLayerLevels();
