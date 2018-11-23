@@ -100,11 +100,11 @@ $(document).ready(function() {
     else
         ui.model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore();
     
-    ui.model.precipitationScheme = new PrecipitationScheme();
+    //ui.model.precipitationScheme = new PrecipitationScheme();
 
     ui.model.width = 144;
     ui.model.height = 72;
-    ui.model.dt = 30;
+    ui.model.dt = 15;
     ui.model.dlat = 1;
     ui.model.dlon = 1;
     ui.model.nlat = 80;

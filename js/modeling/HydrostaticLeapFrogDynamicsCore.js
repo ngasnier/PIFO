@@ -57,7 +57,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
 
         HydrostaticLeapFrogDynamicsCore.prototype.avanceExpliciteCentre = function()
         {                 
-            Variable.a_bc(this.model.U_t, this.model.Su, 2.0*this.model.dt, this.model.U_t);
+/*            Variable.a_bc(this.model.U_t, this.model.Su, 2.0*this.model.dt, this.model.U_t);
             this.model.couple(this.model.U_t, this.model.U_couplage);
 
             Variable.a_bc(this.model.V_t, this.model.Sv, 2.0*this.model.dt, this.model.V_t);
@@ -70,9 +70,9 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
             this.model.couple(this.model.qv_t, this.model.qv_couplage);
 
             Variable.a_bc2d(this.model.Z_t, this.model.Sz, 2.0*this.model.dt, this.model.Z_t);
-            this.model.couple2D(this.model.Z_t, this.model.Z_couplage);
+            this.model.couple2D(this.model.Z_t, this.model.Z_couplage);*/
 
-            /*Variable.a_bc(this.model.U_t, this.model.Su, 2.0*this.model.dt, this.X_tmp);// X(t+dt)
+            Variable.a_bc(this.model.U_t, this.model.Su, 2.0*this.model.dt, this.X_tmp);// X(t+dt)
             this.model.couple(this.model.U_t, this.model.U_couplage);
             Variable.a_bc(this.model.U_t, this.model.U, -2.0, this.model.U_t);          // X(t-dt)-2X(t)
             Variable.sum(this.X_tmp, this.model.U_t, this.model.U_t);                   // X(t+dt)+(X(t-dt)-2X(t))
@@ -105,7 +105,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
             Variable.a_bc2d(this.model.Z_t, this.model.Z, -2.0, this.model.Z_t);
             Variable.sum(this.X2d_tmp, this.model.Z_t, this.model.Z_t);
             Variable.a_bc2d(this.model.Z, this.model.Z_t, 0.5, this.model.Z);
-            Variable.copy(this.X2d_tmp, this.model.Z_t);*/
+            Variable.copy(this.X2d_tmp, this.model.Z_t);
                         
             // Implémentation d'origine du filtre Robert Asselin
             /*Variable.a_bc(this.model.U_t, this.model.Su, 2.0*this.model.dt, this.X_tmp);
