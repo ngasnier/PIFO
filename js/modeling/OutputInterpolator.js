@@ -129,7 +129,10 @@ OutputInterpolator.prototype.interp = function(data_in, data_out)
             data_out[i] = alpha_x*vv2 + (1-alpha_x)*vv1 ;
             
             if(isNaN(data_out[i]))
+            {
                 console.log([x_in1, x_in2, y_in1, y_in2, x_in, y_in, lat, lon, alpha_x, alpha_y, xmin, ymin, xmax, ymax]);
+                throw "instabilité détectée";
+            }
 
             i++;
         }
