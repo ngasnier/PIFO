@@ -367,7 +367,7 @@ ModelFront.prototype.checkHistory = function()
             }
         });
 
-        if (this.model.time>=this.stopTime*3600)
+//        if (this.model.time>=this.stopTime*3600)
         {
             var filename = this.historyDir+"/fileinfo.txt";
             console.log("exporting "+filename);
