@@ -392,7 +392,7 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
             {
                 for (x=1;x<this.model.width-1;x++,i++)
                 {
-                    this.model.Sz[i] = -this.model.m[i]*this.model.m[i]*this.model.DtildeDs[n][i]/this.model.ps[i];
+                    this.model.Sz[i] = -this.model.m[i]*this.model.m[i]*this.model.DtildeDs[n][i]/this.model.ps[i]+this.model.dPs[i];
                 }
                 i+=2;
             }

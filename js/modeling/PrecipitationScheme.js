@@ -127,7 +127,7 @@ export var PrecipitationScheme = function ()
 
                         // Flux de vapeur vers liquide/solide dépend de ce qui 
                         // est produit dans la couche
-                        flux = flux / this.model.dt;
+                        flux = flux / (this.model.dt*2);
                         this.model.Pl_1[k+1][i] = flux*(1-ri_tmp);
                         this.model.Pi_1[k+1][i] = flux*ri_tmp;
                         //this.model.Pl_1[k][i] = (this.model.qv[k][i]-qsat);
@@ -144,7 +144,7 @@ export var PrecipitationScheme = function ()
                         rf_tmp = rf;
                         
                         // Flux de liquide/solide vers vapeur
-                        flux = (P_tot-P_tot_save) / this.model.dt;
+                        flux = (P_tot-P_tot_save) / (this.model.dt*2);
                         this.model.Pl_3[k+1][i] = flux*(1-rf_tmp);
                         this.model.Pi_3[k+1][i] = flux*ri_tmp;
                         

@@ -188,24 +188,32 @@ ModelFront.prototype.reset = function()
 
 ModelFront.prototype.step = function()
 {
-    this.beforeStepCallback();
-    if (this.status != "ready")
-        return;
-        
-    var firstTimestamp = new Date().getTime();
-      
-    this.model.step();
-    
-    var secondTimestamp = new Date().getTime();
-    this.lastExecTime = secondTimestamp - firstTimestamp;
-    this.totalStep++;
-    this.totalTime += this.lastExecTime;
-    
-    this.updateDisplay();
-    
-    this.afterStepCallback();
-    
-    this.checkHistory();
+    try
+    {
+        this.beforeStepCallback();
+        if (this.status != "ready")
+            return;
+
+        var firstTimestamp = new Date().getTime();
+
+        this.model.step();
+
+        var secondTimestamp = new Date().getTime();
+        this.lastExecTime = secondTimestamp - firstTimestamp;
+        this.totalStep++;
+        this.totalTime += this.lastExecTime;
+
+        this.updateDisplay();
+
+        this.afterStepCallback();
+
+        this.checkHistory();
+    }
+    catch (e)
+    {
+        console.log(e);
+        process.exit(0);
+    }
 }
 
 ModelFront.prototype.playStep = function(timestamp)

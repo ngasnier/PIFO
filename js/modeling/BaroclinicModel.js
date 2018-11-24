@@ -504,7 +504,7 @@ export var BaroclinicModel = function ()
             var n = this.p.length;
             for (var i=0;i<this.width*this.height-1;i++)
             {
-                this.dPs[i] = -Model.g * (this.Pl[this.nbcouches][i]); // +Pi-E
+                this.dPs[i] = -Model.g * (this.Pl[this.nbcouches][i])/this.ps[i]; // +Pi-E
             }
         }
         
@@ -545,17 +545,15 @@ export var BaroclinicModel = function ()
                 {
                     for(x=1;x<this.width-1;x++,i++)
                     {
-                        m2 = this.m[i]*this.m[i];
-                        
                         // Différentiel sur la verticale ????
-                        this.dQv[k][i] = Model.g*m2/(2*this.ps[i]*this.dsigma[k])
+                        this.dQv[k][i] = Model.g /(2*this.ps[i]*this.dsigma[k])
                                 *(
                                  (this.Pl_3[k+1][i]+this.Pi_3[k+1][i] - this.Pl_1[k+1][i] - this.Pi_1[k+1][i])
                                 - (this.Pl_3[k][i]+this.Pi_3[k][i] - this.Pl_1[k][i] - this.Pi_1[k][i])
                         
-                                + 0.5*(this.qv[k][i]+this.qv[k1][i])*(this.Pl[k+1][i] + this.Pi[k+1][i])/this.dt
+                                + 0.5*(this.qv[k][i]+this.qv[k1][i])*(this.Pl[k+1][i] + this.Pi[k+1][i])/(this.dt*2)
                               -
-                                + 0.5*(this.qv[k][i]+this.qv[kn1][i])*(this.Pl[k][i] + this.Pi[k][i])/this.dt
+                                + 0.5*(this.qv[k][i]+this.qv[kn1][i])*(this.Pl[k][i] + this.Pi[k][i])/(this.dt*2)
                                 );
                     }
                     i+=2;
@@ -571,8 +569,6 @@ export var BaroclinicModel = function ()
             var i = 0;
             var x, y;
             var n = this.nbcouches;
-            var m2 = 0;
-            var c_chapo = 0;
             var k1, kn1;
             for (var k=0;k<n;k++)
             {
@@ -582,27 +578,25 @@ export var BaroclinicModel = function ()
                 for (y=1;y<this.height-1;y++)
                 {
                     for(x=1;x<this.width-1;x++,i++)
-                    {
-                        m2 = this.m[i]*this.m[i];
-                        
-                        this.Q[k][i] = -Model.g*m2/(2*this.ps[i]*this.dsigma[k])
+                    {                       
+                        this.Q[k][i] = -Model.g/(2*this.ps[i]*this.dsigma[k])
                             *(
                                 // Terme de contribution du changement de pression dûe au changement de 
                                 // masse à cause du flux de précipitation
                                 // (si j'ai bien tout compris...)
                                 ((
-                                    0.5*(Model.Cp_l-Model.Cp)*this.Pl[k+1][i]/this.dt*(this.T[k1][i]+this.T[k][i])
+                                    0.5*(Model.Cp_l-Model.Cp)*this.Pl[k+1][i]/(this.dt*2)*(this.T[k1][i]+this.T[k][i])
 
-                                    +0.5*(Model.Cp_i-Model.Cp)*this.Pi[k+1][i]/this.dt*(this.T[k1][i]+this.T[k][i])
+                                    +0.5*(Model.Cp_i-Model.Cp)*this.Pi[k+1][i]/(this.dt*2)*(this.T[k1][i]+this.T[k][i])
                                 )
 
                                 // Terme de contribution de la chaleur latente
                                 +(-Model.Ll*(this.Pl_1[k][i]-this.Pl_3[k][i]) - -Model.Li*(this.Pi_1[k][i]-this.Pi_3[k][i])))
                             -
                                 ((
-                                    0.5*(Model.Cp_l-Model.Cp)*this.Pl[k][i]/this.dt*(this.T[k][i]+this.T[kn1][i])
+                                    0.5*(Model.Cp_l-Model.Cp)*this.Pl[k][i]/(this.dt*2)*(this.T[k][i]+this.T[kn1][i])
 
-                                    +0.5*(Model.Cp_i-Model.Cp)*this.Pi[k][i]/this.dt*(this.T[k][i]+this.T[kn1][i])
+                                    +0.5*(Model.Cp_i-Model.Cp)*this.Pi[k][i]/(this.dt*2)*(this.T[k][i]+this.T[kn1][i])
                                 )
 
                                 // Terme de contribution de la chaleur latente
