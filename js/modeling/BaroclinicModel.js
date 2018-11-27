@@ -799,11 +799,7 @@ BaroclinicModel.prototype.init = function()
     var nbs = this.nbcouches*2+1;
 
     // *** Initialises les variables de grille ***
-    if (this.projection!=Model.PROJ_MERCATOR) throw "Projection non supportée.";
-    var proj = new MercatorProjection(Model.Rterre);
-    
-    this.dx = (proj.lonToX(this.elon)-proj.lonToX(this.wlon))/this.width;
-    this.dy = (proj.latToY(this.nlat)-proj.latToY(this.slat))/this.height;
+    this.initGridFactors();
     this.calcCoords();
     this.time = 0;
     this.dsigma = [];
@@ -884,61 +880,16 @@ BaroclinicModel.prototype.init = function()
     }
     
     // *** Initialise les variables 2D utilisées pour coordonnées, relaxation etc ***
-    this.f = Variable.createVariable(1, this.width, this.height);
-    this.alpha_couplage = Variable.createVariable(1, this.width, this.height);
-    this.m = Variable.createVariable(1, this.width, this.height);
-    this.inv_m = Variable.createVariable(1, this.width, this.height);
-    var yplan = proj.latToY(this.nlat);
-    var lat = 0;
     for (var y=0;y<this.height;y++)
     {
         for(var x=0;x<this.width;x++)
         {
             i = x + y*this.width;
-            
             // Variable pronostique
             this.Z[i] = Math.log(this.ps[i]);
             this.Z_t[i] = this.Z[i];
             this.Z_couplage[i] = this.Z[i];
-
-            // Paramètre de coriolis pris en décalé d'une demi cellule
-            lat = proj.yToLat(yplan-0.5*this.dy);
-            this.f[i] = 2 * Model.omega * Math.sin(lat*Math.PI/180);
-
-            // Facteur d'échelle
-            lat = proj.yToLat(yplan);
-            this.m[i] = proj.scaleFactor(0, lat);
-            this.inv_m[i] = 1/this.m[i];
-
-            // Initialisation du couplage
-            if (y==0 || y==this.height-1 || ((x==0 || x==this.width-1) && !this.global))
-            {
-                this.alpha_couplage[i] = 1.0;
-            }
-            else if ((y<1+this.relaxation||y>=this.height-this.relaxation-1)
-                    || ((x<1+this.relaxation||x>=this.width-this.relaxation-1) && !this.global))
-            {
-                var xd = 0;
-                var yd = 0;
-
-                if (x<1+this.relaxation) xd = this.relaxation-x+1;
-                else if (x>=this.width-this.relaxation-1) 
-                    xd = x-this.width+this.relaxation+2;
-                if (y<1+this.relaxation) yd = this.relaxation-y+1;
-                else if (y>=this.height-this.relaxation-1) 
-                    yd = y-this.height+this.relaxation+2;
-
-                if (xd<yd || this.global) xd = yd;
-
-                this.alpha_couplage[i] = 1-Math.tanh(0.5*(this.relaxation-xd+1));
-            }
-            else 
-            {
-                this.alpha_couplage[i] = 0.0;
-            }
         }
-
-        yplan -= this.dy;
     }
 
     // Copie des données

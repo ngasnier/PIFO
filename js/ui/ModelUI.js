@@ -547,38 +547,41 @@ ModelUI.prototype.checkHistory = function()
 
 ModelUI.prototype.dumpColumn = function()
 {
-    var table = [];
-    var i = 0;
-    var col = Number($("#column").val());
-    var row = Number($("#row").val());
-    var html = "<table><tr><td></td>";
-    for (var k in this.variableDescriptions)
+    if (this.model.nbcouches>1)
     {
-        html += "<td>"+this.variableDescriptions[k].name+"</td>";
-        for (i=0;i<this.variableDescriptions[k].levels.length;i++)
-        {
-            if (! (i in table)) table[i] = [];
-            if (this.variableDescriptions[k].levels.length>1)
-            {
-                table[i][this.variableDescriptions[k].name] = this.model.getVariable(this.variableDescriptions[k].name)[i][this.model.width*row+col];
-            }
-            else
-                table[i][this.variableDescriptions[k].name] = this.model.getVariable(this.variableDescriptions[k].name)[this.model.width*row+col];
-        }
-    };
-    html += "</tr>";
-    for (i=0;i<table.length;i++)
-    {
-        html += "<tr><td>"+i.toString()+"</td>";
+        var table = [];
+        var i = 0;
+        var col = Number($("#column").val());
+        var row = Number($("#row").val());
+        var html = "<table><tr><td></td>";
         for (var k in this.variableDescriptions)
         {
-            if (this.variableDescriptions[k].name in table[i])
-                html += "<td>"+table[i][this.variableDescriptions[k].name].toString()+"</td>";
-            else
-                html += "<td></td>";
-        }
+            html += "<td>"+this.variableDescriptions[k].name+"</td>";
+            for (i=0;i<this.variableDescriptions[k].levels.length;i++)
+            {
+                if (! (i in table)) table[i] = [];
+                if (this.variableDescriptions[k].levels.length>1)
+                {
+                    table[i][this.variableDescriptions[k].name] = this.model.getVariable(this.variableDescriptions[k].name)[i][this.model.width*row+col];
+                }
+                else
+                    table[i][this.variableDescriptions[k].name] = this.model.getVariable(this.variableDescriptions[k].name)[this.model.width*row+col];
+            }
+        };
         html += "</tr>";
+        for (i=0;i<table.length;i++)
+        {
+            html += "<tr><td>"+i.toString()+"</td>";
+            for (var k in this.variableDescriptions)
+            {
+                if (this.variableDescriptions[k].name in table[i])
+                    html += "<td>"+table[i][this.variableDescriptions[k].name].toString()+"</td>";
+                else
+                    html += "<td></td>";
+            }
+            html += "</tr>";
+        }
+        html += "</table>";
+        $("#dump").html(html);
     }
-    html += "</table>";
-    $("#dump").html(html);
 }

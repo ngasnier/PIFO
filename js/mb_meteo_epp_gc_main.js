@@ -50,12 +50,12 @@ var latitudes = [];
 var longitudes = [];
 
 var valids = [];
-var scenario = "";
+var scenario = "2018062200";
 var reslist = [];
 
 $(document).ready(function () {
     
-    valids = ["00"];
+    valids = ["000"];
     scenario = "2018062200";
     
     ui.setStatus("loading");
@@ -65,7 +65,7 @@ $(document).ready(function () {
     ui.model.projection = Model.PROJ_MERCATOR;
     ui.model.width = 144;
     ui.model.height = 72;
-    ui.model.dt = 180;
+    ui.model.dt = 60;
     ui.model.dlat = 1;
     ui.model.dlon = 1;
     ui.model.nlat = 80;
@@ -143,7 +143,7 @@ $(document).ready(function () {
 
     ui.beforeStepCallback = function()
     {
-        if (ui.model.relaxation>0)
+        /*if (ui.model.relaxation>0)
         {
             h500.interp(ui.model.time, h500_couplage);
             u500.interp(ui.model.time, u500_couplage);
@@ -151,7 +151,7 @@ $(document).ready(function () {
             ui.model.setVariable("phi_couplage", h500_couplage);
             ui.model.setVariable("U_couplage", u500_couplage);
             ui.model.setVariable("V_couplage", v500_couplage);
-        }
+        }*/
     };
     
     // Init l'interpolation temporelle pour le couplage

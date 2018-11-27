@@ -118,7 +118,7 @@ export var BarotropicModel = function ()
 
                         v = (this.V[i]+this.V[i+1]+this.V[i-this.width]+this.V[i+1-this.width])/4;
 
-                        kphi = (this.K[i+1]+this.phi[i+1]-(this.K[i]+this.phi[i]))/(this.dx*this.m[i]);
+                        kphi = (this.K[i+1]+this.phi[i+1]-(this.K[i]+this.phi[i]))/this.dx;
 
                         this.Su[i] = xi*v - kphi;
                     }
@@ -140,7 +140,7 @@ export var BarotropicModel = function ()
                         c3 = this.K[i-1];
                         c4 = this.phi[i-1];
 
-                        kphi = (c1+c2-c3-c4)/(2*this.dx*this.m[i]);
+                        kphi = (c1+c2-c3-c4)/(2*this.dx);
 
                         this.Su[i] = (this.tourbillon[i]+this.f[i])*this.V[i] - kphi;
                     }
@@ -213,7 +213,7 @@ export var BarotropicModel = function ()
                         m = this.m[i];
 
                         d = this.Sphi[i] = -(m*m)*(
-                            ((this.phi[i]+this.phi[i+1])*this.U[i] - (this.phi[i-1]+this.phi[i])*this.U[i-1])*0.5/(this.dx*m)
+                            ((this.phi[i]+this.phi[i+1])*this.U[i] - (this.phi[i-1]+this.phi[i])*this.U[i-1])*0.5/this.dx
                            + 
                             ((this.phi[i-this.width]+this.phi[i])*this.V[i-this.width] - (this.phi[i]+this.phi[i+this.width])*this.V[i])*0.5/this.dy
                            );
@@ -239,7 +239,7 @@ export var BarotropicModel = function ()
                         m = this.m[i];
 
                         this.Sphi[i] = -(m*m)*(
-                                (this.phi[i+1]*this.U[i+1] - this.phi[i-1]*this.U[i-1])/(this.dx*2*m)
+                                (this.phi[i+1]*this.U[i+1] - this.phi[i-1]*this.U[i-1])/(this.dx*2)
                                 +(this.phi[i-this.width]*this.V[i-this.width] - this.phi[i+this.width]*this.V[i+this.width])/(this.dy*2)
                             );
                     }
@@ -311,7 +311,7 @@ export var BarotropicModel = function ()
                         this.tourbillon[i] = (
                                 0.25*(m1*m1+m2*m2+m3*m3+m4*m4)
                                 *(
-                                     (this.V[i+1]-this.V[i])/(this.dx*0.25*(m1+m2+m3+m4)) - (this.U[i]-this.U[i+this.width])/this.dy
+                                     (this.V[i+1]-this.V[i])/this.dx - (this.U[i]-this.U[i+this.width])/this.dy
                                  )
                             );
                     }
@@ -339,7 +339,7 @@ export var BarotropicModel = function ()
                         v2 = this.V[i-1];
 
                         this.tourbillon[i] = m1*m1
-                                *((v1-v2)/(2*this.dx*m1)
+                                *((v1-v2)/(2*this.dx)
                                   - (u1-u2)/(2*this.dy)
                                  );
                     }
@@ -380,11 +380,7 @@ BarotropicModel.prototype.constructor = BarotropicModel;
 BarotropicModel.prototype.init = function()
 {
     // *** Calculs dimentionnels ***
-    var kr = 0;
-    var lat = this.nlat*(Math.PI/180);
-    if (this.gridType==Model.GRID_C) lat -= (this.dlat/2)*(Math.PI/180);
-    this.dx = 111.1 * this.dlon * 1000;
-    this.dy = 111.1 * this.dlat * 1000;
+    this.initGridFactors();
     this.time = 0;
     this.filterCounter = 0;
 
@@ -394,12 +390,21 @@ BarotropicModel.prototype.init = function()
     this.U_t = Variable.createVariable(1, this.width, this.height);
     this.V_t = Variable.createVariable(1, this.width, this.height);
     this.phi_t = Variable.createVariable(1, this.width, this.height);     
+    this.U_couplage = Variable.createVariable(1, this.width, this.height);
+    this.V_couplage = Variable.createVariable(1, this.width, this.height);
+    this.phi_couplage = Variable.createVariable(1, this.width, this.height);     
     this.Su = Variable.createVariable(1, this.width, this.height);
     this.Sv = Variable.createVariable(1, this.width, this.height);
     this.Sphi = Variable.createVariable(1, this.width, this.height);
-    this.alpha = Variable.createVariable(1, this.width, this.height);
-    this.m = Variable.createVariable(1, this.width, this.height);
-    this.f = Variable.createVariable(1, this.width, this.height);
+
+    Variable.product_c(this.U, this.inv_m, this.U);
+    Variable.product_c(this.V, this.inv_m, this.V);
+    Variable.copy(this.U, this.U_t);
+    Variable.copy(this.V, this.V_t);
+    Variable.copy(this.phi, this.phi_t);
+    Variable.copy(this.U, this.U_couplage);
+    Variable.copy(this.V, this.V_couplage);
+    Variable.copy(this.phi, this.phi_couplage);
 
     // *** Pré-calcul des valeurs constantes ***
     for (var y=0;y<this.height;y++)
@@ -407,24 +412,6 @@ BarotropicModel.prototype.init = function()
         for(var x=0;x<this.width;x++)
         {
             var i = x+y*this.width;
-            var h = 0;
-
-            // Paramètre de coriolis et facteur d'échelle en fonction de la latitude
-            this.f[i] = 2 * Model.omega * Math.sin(lat);
-
-            switch (this.projection)
-            {
-                case Model.PROJ_CARTESIEN:
-                    this.m[i] = 1;
-                    break;
-                case Model.PROJ_MERCATOR:
-                    this.m[i] = Math.cos(lat);
-                    break;
-                default:
-                    //supposé fourni par l'appelant
-                    //this.m[i] = 1;
-            }
-
             // Initialisation du couplage
             if (y==0 || y==this.height-1 || x==0 || x==this.width-1)
             {
@@ -452,8 +439,6 @@ BarotropicModel.prototype.init = function()
                 this.alpha[i] = 0.0;
             }
         }
-
-        lat -= this.dlat*(Math.PI/180);
     }
 
     // *** Initialise les variables diagnostics pour affichage ***
@@ -539,6 +524,18 @@ BarotropicModel.prototype.getDiagnosticVariables = function()
     return [
             {"name":"K", "description":"kinetic energy", "units":"J", "type":Variable.VARIABLE_TYPE_LAYER, "levels": [1]},
             {"name":"tourbillon", "description":"absolute vorticity potential", "units": "S^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": [1]}
+        ];
+}
+
+/**
+ * Donne la liste des variables paramètres du modèle.
+ * @returns {Array} 
+ */
+BarotropicModel.prototype.getParameterVariables = function()
+{
+    return [{"name":"U_couplage", "description":"U component of wind", "units":"m.s^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": [1]}, 
+            {"name":"V_couplage", "description":"V component of wind", "units":"m.s^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": [1]},
+            {"name":"phi_couplage", "description":"geopotential height of the top of the model layer", "units":"m^2.s^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": [1]},
         ];
 }
 
