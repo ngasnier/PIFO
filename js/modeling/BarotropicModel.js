@@ -349,13 +349,14 @@ export var BarotropicModel = function ()
     
         BarotropicModel.prototype.calcVerifs = function()
         {
+            var v = 0;
             this.total_masse = 0;
             this.total_energie = 0;
             this.total_tourbillon = 0;
             this.total_enstropie = 0;
             for(var i=0;i<this.width*this.height;i++)
             {
-                var v = ((this.tourbillon[i]+this.f[i])/this.phi[i]);
+                v = ((this.tourbillon[i]+this.f[i])/this.phi[i]);
                 this.total_masse += this.phi[i]*this.dx*this.dy/(this.m[i]*this.m[i]);
                 this.total_energie += this.phi[i]*(this.phi[i]/2+this.K[i])*this.dx*this.dy/(this.m[i]*this.m[i]);
                 this.total_tourbillon += this.phi[i]*v*this.dx*this.dy/(this.m[i]*this.m[i]);            
