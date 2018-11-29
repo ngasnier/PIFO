@@ -352,10 +352,9 @@ ModelFront.prototype.checkHistory = function()
                 +inithour.substring(inithour.length-2)+";"
                 +this.model.startDate.toLocaleDateString()+";"
                 +(hoursfmt.length<=3?hoursfmt.substring(hoursfmt.length-2):hours)+";"
-                /*+dt.toLocaleDateString("fr-fr", {
+                +dt.toLocaleDateString("fr-fr", {
                      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                })+";"*/
-                +dateToLongLocaleString(dt)+";";
+                })+";"
                 +dt.toLocaleTimeString("fr-fr", {
                     hour:'2-digit', minute:'2-digit'
                 })+";"
@@ -397,13 +396,4 @@ ModelFront.prototype.checkHistory = function()
 
         this.nextHistory += this.historyInterval*3600;
     }
-}
-
-function dateToLongLocaleString(pDate)
-{
-    var weekday = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
-    var month = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-    var day = "0"+pDate.getDate().toString();
-    
-    return weekday[pDate.getDay()]+" "+day.substring(day.length-2)+" "+month[pDate.getMonth()]+" "+pDate.getFullYear().toString();
 }
