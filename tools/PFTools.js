@@ -49,13 +49,13 @@ module.exports.createMaps = function(context)
     Helper.mkdirpSync(context.europe_dir);
     Helper.createSymlink(context.europe_dir, path.join(context.config.PRODUCT_DIR, "maps/europe/pifo", "latest"));
        
-    context.france_dir = path.join(context.config.PRODUCT_DIR, "maps/france/pifo/"+context.product);
+    context.france_dir = path.join(context.config.PRODUCT_DIR, "maps/france/pifo/"+path.basename(context.productDir));
     Helper.mkdirpSync(context.france_dir);
 
-    context.meteogrammes_dir = path.join(context.config.PRODUCT_DIR, "charts/france/pifo/"+context.product);
+    context.meteogrammes_dir = path.join(context.config.PRODUCT_DIR, "charts/france/pifo/"+path.basename(context.productDir));
     Helper.mkdirpSync(context.meteogrammes_dir);
     
-    context.coupes_dir = path.join(context.config.PRODUCT_DIR, "slices/france/pifo/"+context.product);
+    context.coupes_dir = path.join(context.config.PRODUCT_DIR, "slices/france/pifo/"+path.basename(context.productDir));
     Helper.mkdirpSync(context.coupes_dir);
     
     execSync('/bin/cp '+ path.join(context.config.products[context.productName].pifo_root, "output", "fileinfo.txt")+" "+context.europe_dir)
