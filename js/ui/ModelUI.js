@@ -64,7 +64,21 @@ export var ModelUI = function()
     this.precHistory = "";
     
     this.historyInfo = "";
-        
+
+    this.hindcastStep = 0;
+    
+    this.hindcastNb = 0;
+    
+    this.hindcastForwardSum = [];
+    
+    this.hindcastBackwardSum = [];
+    
+    this.hindcastSeries = [];
+    
+    this.hindcastLcSum = 0;
+    
+    this.hindcastCb = function() {};
+    
     this.beforeResetCallback = function() {};
     this.afterResetCallback = function() {};
 
@@ -114,7 +128,7 @@ ModelUI.prototype.reset = function()
 {
     this.beforeResetCallback();
     
-    if (this.status != "ready")
+    if (this.status != "ready" && this.status!="hindcast")
         return;
     
     if ($("#filtering").is(':checked'))
@@ -207,6 +221,10 @@ ModelUI.prototype.initVariableList = function()
     $("#resetButton").click(function() {
         me.reset(); 
     });
+    
+    $("#initButton").click(function(){
+       me.startInit();
+    });
 
     $("#stepButton").click(function () {
         me.step();
@@ -291,7 +309,7 @@ ModelUI.prototype.updateDisplay = function ()
 {
     this.beforeDisplayCallback();
 
-    if (this.status != "ready")
+    if (this.status != "ready" && this.status!="hindcast")
         return;
 
     var t = this.model.time;
@@ -300,7 +318,7 @@ ModelUI.prototype.updateDisplay = function ()
     var heures = Math.floor(t / 3600);
     t -= heures * 3600;
     var minutes = Math.floor(t / 60);
-    this.setStatusString("Temps = " + this.model.time.toString() + " secondes ("
+    this.setStatusString(this.status+" | Temps = " + this.model.time.toString() + " secondes ("
             + jours.toString() + " jrs " + heures.toString() + " hrs "
             + minutes.toString() + " min) - dt=" + this.model.dt.toString() + "s, dlon="
             + this.model.dlon.toString() + "°, dlat=" + this.model.dlat.toString() + "°, "
@@ -345,7 +363,7 @@ ModelUI.prototype.updateDisplay = function ()
 ModelUI.prototype.step = function()
 {
     this.beforeStepCallback();
-    if (this.status != "ready")
+    if (this.status != "ready" && this.status!="hindcast")
         return;
     
     if ($("#filtering").is(':checked'))
@@ -584,4 +602,108 @@ ModelUI.prototype.dumpColumn = function()
         html += "</table>";
         $("#dump").html(html);
     }
+}
+
+ModelUI.prototype.startInit = function()
+{   
+    var me = this;
+    
+    // Reset du modèle avec les variables brutes
+    this.status = "hindcast";
+    this.reset();
+       
+    // Nombre d'étapes pour chaque hindcast
+    this.hindcastNb = 3*3600 / this.model.dt;
+    this.hindcastStep = 0;
+    var lc = 0.5*1/(this.hindcastNb*Math.PI*Math.PI/(this.hindcastNb+1));
+    this.hindcastLcSum = lc;
+    
+    $.each(this.model.getHistoricVariables(), function (i, item) {
+        me.hindcastBackwardSum[item.name] = Variable.clone(me.model.getVariable(item.name));
+        me.hindcastForwardSum[item.name] = Variable.clone(me.model.getVariable(item.name));
+        Variable.mulConst(me.hindcastBackwardSum[item.name], lc, me.hindcastBackwardSum[item.name]);
+        Variable.mulConst(me.hindcastForwardSum[item.name], lc, me.hindcastForwardSum[item.name]);
+    });
+    
+    this.hindcastSeries = this.hindcastForwardSum;
+    this.hindcastCb = this.onForwardHindcastEnd;
+    this.playHindcast();
+}
+
+ModelUI.prototype.playHindcastStep = function(timestamp)
+{
+    var me = this;
+    this.hindcastStep++;
+    
+    this.step();
+
+    var lc = Math.sin(me.hindcastStep*Math.PI/(me.hindcastNb+1))/(me.hindcastStep*Math.PI/(me.hindcastNb+1))
+            *Math.sin(me.hindcastStep*Math.PI/me.hindcastNb)/(me.hindcastStep*Math.PI);
+    
+    $.each(this.model.getHistoricVariables(), function (i, item) {
+        Variable.a_bc(me.hindcastSeries[item.name], me.model.getVariable(item.name), lc, me.hindcastSeries[item.name]);
+    });
+    
+    this.hindcastLcSum += lc;
+    
+    this.updateDisplay();
+    
+    if (this.playStatus)
+    {
+        if (this.hindcastStep==0 || this.hindcastStep<this.hindcastNb)
+        {
+            var me = this;
+            this.requestFrame = window.requestAnimationFrame(function()
+            {
+                me.playHindcastStep();
+            });
+        }
+        else
+        {
+            this.playStatus = false;
+            this.hindcastCb();
+        }
+    }
+}
+
+ModelUI.prototype.playHindcast = function()
+{
+    if (!this.playStatus)
+    {
+        this.playStatus = true;
+        var me = this;
+        this.requestFrame = window.requestAnimationFrame(function()
+        {
+            me.playHindcastStep();
+        });
+    }
+}
+
+ModelUI.prototype.onForwardHindcastEnd = function()
+{
+    // Reset le modèle et inverse le pas de temps
+    this.reset();
+    this.hindcastStep = 0;
+    this.model.dt = -this.model.dt;
+    this.hindcastSeries = this.hindcastBackwardSum;
+    this.hindcastLcSum = 0.5*Math.PI*Math.PI/(this.hindcastNb);
+    this.hindcastCb = this.onBackwardHindcastEnd;
+    this.playHindcast();
+}
+
+ModelUI.prototype.onBackwardHindcastEnd = function()
+{
+    var me = this;
+       
+    $.each(this.model.getHistoricVariables(), function (i, item) {       
+        Variable.sum(me.hindcastBackwardSum[item.name], me.hindcastForwardSum[item.name], me.model.getVariable(item.name));
+    });
+    
+    this.status = "ready";
+    
+    // Les données de vent sont déjà réduites
+    this.inputScaled = true;
+    this.model.dt = -this.model.dt;
+    this.model.init();
+    this.updateDisplay();    
 }

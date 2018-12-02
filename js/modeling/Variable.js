@@ -171,14 +171,21 @@ Variable.sum = function(x, y, res)
  */
 Variable.a_bc = function(a, b, c, res)
 {
-    var nb;
-    for (var k=0;k<a.length;k++)
+    if (a.length>0 && (a[0].constructor===Array || a[0].constructor===Float64Array) )
     {
-        nb = a[k].length;
-        for(var i=0;i<nb;i++)
+        var nb;
+        for (var k=0;k<a.length;k++)
         {
-            res[k][i] = a[k][i]+c*b[k][i];
+            nb = a[k].length;
+            for(var i=0;i<nb;i++)
+            {
+                res[k][i] = a[k][i]+c*b[k][i];
+            }
         }
+    }
+    else
+    {
+        Variable.a_bc2d(a, b, c, res);
     }
 }
 
@@ -226,6 +233,36 @@ Variable.product = function(x, y, res)
         for(var i=0;i<nb;i++)
         {
             res[i] = x[i]*y[i];
+        }        
+    }
+}
+
+/**
+ * Calcule le produit d'une variable par une constante
+ * @param {type} x 
+ * @param {type} c
+ * @param {type} res variable résultat
+ */
+Variable.mulConst = function(x, c, res)
+{
+    var nb;
+    if (x.length>0 && (x[0].constructor===Array || x[0].constructor===Float64Array))
+    {    
+        for (var k=0;k<x.length;k++)
+        {
+            nb = x[k].length;
+            for(var i=0;i<nb;i++)
+            {
+                res[k][i] = x[k][i]*c;
+            }
+        }
+    }
+    else
+    {
+        nb = x.length;
+        for(var i=0;i<nb;i++)
+        {
+            res[i] = x[i]*c;
         }        
     }
 }

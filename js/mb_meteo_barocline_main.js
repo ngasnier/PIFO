@@ -88,6 +88,10 @@ var requestFrame = 0;
 
 $(document).ready(function() {   
 
+    $("#debug").click(function ()
+    {
+        $("#dump").html(ui.model.debug);
+    });
     ui.setStatus("loading");
     ui.setStatusString("Initialisation");
   
@@ -104,7 +108,7 @@ $(document).ready(function() {
 
     ui.model.width = 144;
     ui.model.height = 72;
-    ui.model.dt = 15;
+    ui.model.dt = 10;
     ui.model.dlat = 1;
     ui.model.dlon = 1;
     ui.model.nlat = 80;
@@ -140,7 +144,7 @@ $(document).ready(function() {
     ui.model.relaxation = 8;*/
     
     // Choix de surfaces régulièrement espacées sur un nombre souhaité de niveaux
-    var ptop = 6250.0;
+    var ptop = 100.0;
     var surfaces = [ ptop/100000];
     var nbsurfaces = 9;
     var lev = ptop/100000;
@@ -246,7 +250,7 @@ $(document).ready(function() {
         }
         
         z500_display = Variable.createVariable(1, ui.model.width, ui.model.height);
-        t850_display = Variable.createVariable(1, ui.model.width, ui.model.height);
+        t850_display = Variable.createVariable(1, ui.model.width, ui.model.height);        
     }
 
     ui.beforeDisplayCallback = function()

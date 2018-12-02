@@ -140,6 +140,9 @@ export var BaroclinicModel = function ()
 
     // ---- VARIABLES HISTORIQUES
     
+    // Indique si les données de vent ont été réduites ou non
+    this.inputScaled = false;
+    
     // Composantes du vent réduit T et T-1 des couches (N-1)
     this.U = [];
     this.U_t = [];
@@ -264,6 +267,7 @@ export var BaroclinicModel = function ()
     
     // Variable de debug
     this.debug3d = [];
+    this.debug = "";
 
 
     // Méthodes privées du modèle
@@ -366,7 +370,7 @@ export var BaroclinicModel = function ()
             var i = 0;
             var m1=0, m2=0, m3=0, m4=0;
             var x, y;
-
+    
             for (var k=0;k<this.U.length;k++)
             {
                 i = this.width+1;
@@ -893,8 +897,11 @@ BaroclinicModel.prototype.init = function()
     }
 
     // Copie des données
-    Variable.product_c(this.U, this.inv_m, this.U);
-    Variable.product_c(this.V, this.inv_m, this.V);
+    if (!this.inputScaled)
+    {
+        Variable.product_c(this.U, this.inv_m, this.U);
+        Variable.product_c(this.V, this.inv_m, this.V);
+    }
     Variable.copy(this.U, this.U_t);
     Variable.copy(this.V, this.V_t);
     Variable.copy(this.T, this.T_t);
