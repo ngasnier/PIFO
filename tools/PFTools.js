@@ -83,9 +83,8 @@ module.exports.createImagesEurope = function(context)
 
 module.exports.createImagesFrance = function(context)
 {
-    var filenum = context.file.substring(context.file.length-3, context.file.length);
     var cmdline = path.join(context.config.products[context.productName].script_root,"createimage_france.sh");
-    return Helper.dirAndProcess(context, context.france_dir+"/*_"+filenum+".ps", 
+    return Helper.dirAndProcess(context, context.france_dir+"/*.ps", 
         (file) => {
             return Helper.spawnPromise(cmdline, [file], context);
         });
@@ -93,9 +92,8 @@ module.exports.createImagesFrance = function(context)
 
 module.exports.createSkewt = function(context)
 {
-    var filenum = context.file.substring(context.file.length-3, context.file.length);
     var cmdline = path.join(context.config.products[context.productName].script_root,"createimage_skewt.sh");
-    return Helper.dirAndProcess(context, context.meteogrammes_dir+"/*_"+filenum+".ps", 
+    return Helper.dirAndProcess(context, context.meteogrammes_dir+"/*.ps", 
         (file) => {
             return Helper.spawnPromise(cmdline, [file], context);
         });
@@ -103,9 +101,8 @@ module.exports.createSkewt = function(context)
 
 module.exports.createSlices = function(context)
 {
-    var filenum = context.file.substring(context.file.length-3, context.file.length);
     var cmdline = path.join(context.config.products[context.productName].script_root,"createimage_slices.sh");
-    return Helper.dirAndProcess(context, context.coupes_dir+"/*_"+filenum+".ps", 
+    return Helper.dirAndProcess(context, context.coupes_dir+"/*.ps", 
         (file) => {
             return Helper.spawnPromise(cmdline, [file], context);
         });
