@@ -39,7 +39,7 @@ export var TimeInterpolator = function()
 TimeInterpolator.prototype.linint = function(a, b, t1, t2, t, res)
 {
     var coef = (t - t1) / (t2 - t1);
-    if (a.length>0 && a[0].constructor===Array)
+    if (a.length>0 && (a[0].constructor===Array || a[0].constructor===Float64Array))
     {
         for (var k=0;k<a.length;k++)
         {
@@ -97,4 +97,25 @@ TimeInterpolator.prototype.addTime = function(p_time)
     var t = this.times.length;
     this.times[t] = p_time;
     this.variable[t] = [];
+}
+
+TimeInterpolator.prototype.getTimeIndex = function(time)
+{
+    var tprec = this.times[0];
+    if (this.times.length>1)
+    {
+        for (var i = 1; i < this.times.length; i++)
+        {
+            if ( time >= tprec && time < this.times[i])
+            {
+                return i-1;
+            }
+            tprec = this.times[i];
+        }
+        return this.times.length-1;
+    }
+    else
+    {
+        return 0;
+    }
 }

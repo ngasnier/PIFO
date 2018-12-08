@@ -223,7 +223,6 @@ ModelFront.prototype.playStep = function(timestamp)
         if (this.stopTime==0 || this.model.time<this.stopTime*3600)
         {
             this.step();
-            this.updateDisplay();
             var me = this;
             this.requestFrame = process.nextTick(function()
             {
@@ -368,9 +367,9 @@ ModelFront.prototype.checkHistory = function()
             if (description==null) description = me.variableDescriptions[item];
             for (var k=0;k<description.levels.length;k++)
             {
-                var data = me.exportField(item, k);
                 var filename = me.getFileNameFor(item, k)
                 console.log("exporting "+filename);
+                var data = me.exportField(item, k);
                 fs.writeFileSync(filename, data);
             }
         });

@@ -701,8 +701,6 @@ ModelUI.prototype.onBackwardHindcastEnd = function()
     
     this.status = "ready";
     
-    // Les données de vent sont déjà réduites
-    this.inputScaled = true;
     this.model.dt = -this.model.dt;
     this.model.init();
     this.updateDisplay();    

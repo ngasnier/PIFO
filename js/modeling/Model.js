@@ -23,7 +23,7 @@ export var Model = function ()
     // **** PARAMETRES DU MODELE ****
     
     // Type de projection à utiliser pour les équations (détermine m)
-    this.projection = 1;
+    this.projection = null;
      
     // Type de grille
     this.gridType = "A";
@@ -210,18 +210,15 @@ Model.prototype.getSigmaSurfaces = function()
  * @returns {undefined}
  */
 Model.prototype.initGridFactors = function()
-{
-    if (this.projection!=Model.PROJ_MERCATOR) throw "Projection non supportée.";
-    var proj = new MercatorProjection(Model.Rterre);
-    
-    this.dx = (proj.lonToX(this.elon)-proj.lonToX(this.wlon))/this.width;
-    this.dy = (proj.latToY(this.nlat)-proj.latToY(this.slat))/this.height;
+{   
+    this.dx = (this.projection.lonToX(this.elon)-this.projection.lonToX(this.wlon))/this.width;
+    this.dy = (this.projection.latToY(this.nlat)-this.projection.latToY(this.slat))/this.height;
     this.f = Variable.createVariable(1, this.width, this.height);
     this.alpha_couplage = Variable.createVariable(1, this.width, this.height);
     this.m = Variable.createVariable(1, this.width, this.height);
     this.inv_m = Variable.createVariable(1, this.width, this.height);
-    
-    var yplan = proj.latToY(this.nlat);
+
+    var yplan = this.projection.latToY(this.nlat);
     var lat = 0;
     var i = 0;
     for (var y=0;y<this.height;y++)
@@ -230,14 +227,14 @@ Model.prototype.initGridFactors = function()
         {
             // Paramètre de coriolis pris en décalé d'une demi cellule
             if (this.gridType==Model.GRID_C)
-                lat = proj.yToLat(yplan-0.5*this.dy);
+                lat = this.projection.yToLat(yplan-0.5*this.dy);
             else
-                lat = proj.yToLat(yplan);
+                lat = this.projection.yToLat(yplan);
             this.f[i] = 2 * Model.omega * Math.sin(lat*Math.PI/180);
 
             // Facteur d'échelle
-            lat = proj.yToLat(yplan);
-            this.m[i] = proj.scaleFactor(0, lat);
+            lat = this.projection.yToLat(yplan);
+            this.m[i] = this.projection.scaleFactor(0, lat);
             this.inv_m[i] = 1/this.m[i];
 
             // Initialisation du couplage

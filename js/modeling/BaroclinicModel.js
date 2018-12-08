@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { Model } from './Model.js';
 import { Variable } from './Variable.js';
 import { DynamicsCore } from './DynamicsCore.js';
-import { MercatorProjection } from "./MercatorProjection.js";
 
 /**
  * Modèle coordonnée vertical sigma pure en grille C
@@ -66,9 +65,6 @@ export var BaroclinicModel = function ()
     Model.call(this);
       
     // **** PARAMETRES DU MODELE ****
-    
-    // Type de projection à utiliser pour les équations (détermine m)
-    this.projection = this.PROJ_CARTESIEN;
     
     // Type de grille
     this.gridType = "C";
@@ -278,7 +274,7 @@ export var BaroclinicModel = function ()
         // ********************************************************************
         BaroclinicModel.prototype.calcPs = function()
         {
-            for (var i=0;i<this.width*this.height-1;i++)
+            for (var i=0;i<this.width*this.height;i++)
             {
                 this.ps[i] = Math.exp(this.Z[i])+this.dPs[i];
             }
@@ -291,7 +287,7 @@ export var BaroclinicModel = function ()
             var i=0, k = 0;
             for (k=0;k<n;k++)
             {
-                for (i=0;i<this.width*this.height-1;i++)
+                for (i=0;i<this.width*this.height;i++)
                 {
                     this.p[k][i] = this.sigma[k]*this.ps[i];
                 }
@@ -799,32 +795,22 @@ BaroclinicModel.prototype.step = function()
  */
 BaroclinicModel.prototype.init = function()
 {
-    // *** Quelques calculs de dimensions... ***
-    var nbs = this.nbcouches*2+1;
-
     // *** Initialises les variables de grille ***
     this.initGridFactors();
     this.calcCoords();
     this.time = 0;
-    this.dsigma = [];
 
     // *** Initialisation des tableaux nécessaires sur couches et surfaces ***
-    this.p = Variable.createVariable(nbs, this.width, this.height, true);
-    if (this.global)
-    {
-        this.wrap2d(this.ps);
-    }
-    
-    var i = 0;
-    this.calcPressureLevels();
-    
+    this.dsigma = [];
     for (var k=0;k<this.nbcouches;k++)
     {
         this.dsigma[k] = this.sigma[this.surfaces[k+1]]-this.sigma[this.surfaces[k]];
     }
       
-     // Creation des variables intermédiaires et diagnostique sur les couches
-    this.Z = Variable.createVariable(1, this.width, this.height, false);
+    // *** Creation des variables intermédiaires et diagnostique sur les couches
+    var nbs = this.nbcouches*2+1;
+    this.p = Variable.createVariable(nbs, this.width, this.height, true);
+    this.ps = Variable.createVariable(1, this.width, this.height, false);
     this.sigmaf = Variable.createVariable(this.nbcouches+1, this.width, this.height, true);
     this.phi = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.K = Variable.createVariable(this.nbcouches, this.width, this.height, true);
@@ -873,7 +859,7 @@ BaroclinicModel.prototype.init = function()
     this.debug3d = Variable.createVariable(this.nbcouches, this.width, this.height, true);
 
     this.acsnow = Variable.createVariable(1, this.width, this.height);
-    
+  
     if (this.global)
     {
         this.wrap(this.U);
@@ -882,20 +868,9 @@ BaroclinicModel.prototype.init = function()
         this.wrap(this.qv);
         this.wrap2d(this.Z);
     }
-    
-    // *** Initialise les variables 2D utilisées pour coordonnées, relaxation etc ***
-    for (var y=0;y<this.height;y++)
-    {
-        for(var x=0;x<this.width;x++)
-        {
-            i = x + y*this.width;
-            // Variable pronostique
-            this.Z[i] = Math.log(this.ps[i]);
-            this.Z_t[i] = this.Z[i];
-            this.Z_couplage[i] = this.Z[i];
-        }
-    }
+    this.calcPs();
 
+    
     // Copie des données
     if (!this.inputScaled)
     {
@@ -906,11 +881,13 @@ BaroclinicModel.prototype.init = function()
     Variable.copy(this.V, this.V_t);
     Variable.copy(this.T, this.T_t);
     Variable.copy(this.qv, this.qv_t);
+    Variable.copy(this.Z, this.Z_t);
 
     Variable.copy(this.U, this.U_couplage);
     Variable.copy(this.V, this.V_couplage);
     Variable.copy(this.T, this.T_couplage);
     Variable.copy(this.qv, this.qv_couplage);
+    Variable.copy(this.Z, this.Z_couplage);
 
     // *** Initialisation des schemas ***
     this.dynamicsCore.init(this);
@@ -1073,19 +1050,18 @@ BaroclinicModel.prototype.getName = function()
 
 BaroclinicModel.prototype.calcCoords = function()
 {
-    var proj = new MercatorProjection(Model.Rterre);
-    var xmap = 0, ymap = proj.latToY(this.nlat);
+    var xmap = 0, ymap = this.projection.latToY(this.nlat);
     var i = 0;
     this.latitudes = Variable.createVariable(1, this.width, this.height);
     this.longitudes = Variable.createVariable(1, this.width, this.height);
     
     for (var y=0;y<this.height;y++)
     {
-        xmap = proj.lonToX(this.wlon);
+        xmap = this.projection.lonToX(this.wlon);
         for (var x=0;x<this.width;x++)
         {
-            this.latitudes[i] =  proj.yToLat(ymap);
-            this.longitudes[i] = proj.xToLon(xmap);
+            this.latitudes[i] =  this.projection.yToLat(ymap);
+            this.longitudes[i] = this.projection.xToLon(xmap);
             xmap += this.dx;
             i++;
         }

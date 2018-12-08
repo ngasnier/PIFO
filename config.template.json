@@ -4,28 +4,33 @@
     "projection": 1,
     "gridType": "C",
     "verticalType":  "L",
-    "enablePrecipitationScheme" : true,
-    "enableConvectionScheme" : false,
     
-    "width": 92,
-    "height": 44,
-    "global": true,
-    "dlat": 4,
-    "dlon": 4,
-    "nlat": 88,
-    "elon": 360,
+    "width": 111,
+    "height": 72,
+    "global": false,
+    "dlat": 1,
+    "dlon": 1,
+    "nlat": 81,
+    "elon": 51,
     "relaxation": 8,
     
-    "ptop": 6250.0,
+    "ptop": 100.0,
     "nbSurfaces": 9,
 
-    "dt": 120,
-    "stopTime": 48,
-    "historyInterval": 6,
-    "historyDir": "output",
+    "dt": 10,
     
     "filter": "none",
-    
+
+    "enablePrecipitationScheme" : false,
+    "enableConvectionScheme" : false,
+
+    "preprocessDir" : "input",
     "inputLevels": [100, 7000, 15000, 35000, 50000, 65000, 85000, 92500, 100000],
-    "inputRelief": false
+    "inputTimes": [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48],
+    "inputRelief": false,
+    "inputDir": "run",
+    
+    "stopTime": 48,
+    "historyInterval": 6,
+    "historyDir": "output"
 }

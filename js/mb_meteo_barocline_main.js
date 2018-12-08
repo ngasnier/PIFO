@@ -15,6 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { MercatorProjection } from "./modeling/MercatorProjection.js";
 import { WGRIBInterpolator } from "./modeling/WGRIBInterpolator.js";
 import { TimeInterpolator } from "./modeling/TimeInterpolator.js";
 import { GeopotentialInterpolator } from "./modeling/GeopotentialInterpolator.js";
@@ -61,13 +62,14 @@ var t850_display = [];
 var latitudes = [];
 var longitudes = [];
 
-var hgt = new TimeInterpolator();
 var ugrd = new TimeInterpolator();
 var vgrd = new TimeInterpolator();
 var vvel = new TimeInterpolator();
 var sfcprs = new TimeInterpolator();
+var z_sfcprs = new TimeInterpolator();
 var sfchgt = new TimeInterpolator();
 var prmsl = new TimeInterpolator();
+var z_prmsl = new TimeInterpolator();
 var mslhgt = new TimeInterpolator();
 var tmp = new TimeInterpolator();
 var qv = new TimeInterpolator();
@@ -77,7 +79,7 @@ var lastExecTime = 0;
 var totalTime = 0;
 var totalStep = 0;
 
-var valids = ["000"];
+var valids = ["000", "003", "006", "009", "012", "015", "018", "021", "024", "027", "030", "033", "036", "039", "042", "045", "048"];
 var scenario = "2018062200";
 //var scenario = "2018092500";
 var reslist = [];
@@ -96,7 +98,7 @@ $(document).ready(function() {
     ui.setStatusString("Initialisation");
   
     ui.model = new BaroclinicModel();
-    ui.model.projection = Model.PROJ_MERCATOR;
+    ui.model.projection = new MercatorProjection(Model.Rterre);
     ui.model.gridType = "C";
     ui.model.verticalType = "L";
     if (ui.model.verticalType == "CP")
@@ -117,6 +119,7 @@ $(document).ready(function() {
     ui.model.wlon = ui.model.elon-ui.model.width*ui.model.dlon;
     ui.model.global = false;
     ui.model.relaxation = 8;
+    ui.model.inputScaled = true;
     
 /*    ui.model.width = 182;
     ui.model.height = 88;
@@ -194,60 +197,58 @@ $(document).ready(function() {
     wgribInterpolator.wlon = ui.model.wlon;
 
     // Init l'interpolation temporelle pour le couplage
-    var times = [];
     var t = 0;
     for (var i=0;i<valids.length;i++)
     {
         t = Number(valids[i]) * 3600;
-        hgt.addTime(t);
+        
         ugrd.addTime(t);
+        ugrd.variable[i] = Variable.createVariable(ui.model.nbcouches, ui.model.width, ui.model.height);
+                
         vgrd.addTime(t);
-        vvel.addTime(t);
+        vgrd.variable[i] = Variable.createVariable(ui.model.nbcouches, ui.model.width, ui.model.height);
+
         sfcprs.addTime(t);
+        sfcprs.variable[i] = Variable.createVariable(1, ui.model.width, ui.model.height);
+        
         sfchgt.addTime(t);
-        prmsl.addTime(t);
-        mslhgt.addTime(t);
+        sfchgt.variable[i] = Variable.createVariable(1, ui.model.width, ui.model.height);
+        
         tmp.addTime(t);
+        if (ui.model.verticalType=="CP")
+            tmp.variable[i] = Variable.createVariable(ui.model.nbcouches+1, ui.model.width, ui.model.height);
+        else
+            tmp.variable[i] = Variable.createVariable(ui.model.nbcouches, ui.model.width, ui.model.height);
+        
         qv.addTime(t);
+        qv.variable[i] = Variable.createVariable(ui.model.nbcouches, ui.model.width, ui.model.height);
     }    
     
     ui.beforeResetCallback = function()
     {
-        if ($("#incRelief").is(':checked'))
-        {
-            verticalInterpolator.surfacePressure = sfcprs.variable[0];
-            ui.model.setVariable("ps", sfcprs.variable[0]);
-            ui.model.setVariable("sfcgeop", sfchgt.variable[0]);
-        }
-        else
-        {
-            verticalInterpolator.surfacePressure = prmsl.variable[0];
-            ui.model.setVariable("ps", prmsl.variable[0]);
-            ui.model.setVariable("sfcgeop", mslhgt.variable[0]);
-        }
-        
-        verticalInterpolator.sigmaLevels = ui.model.getLayerLevels();
+        ui.model.setVariable("Z", Variable.createVariable(1, ui.model.width, ui.model.height));
+        Variable.copy(sfcprs.variable[0], ui.model.getVariable("Z"));
+        ui.model.setVariable("sfcgeop", Variable.createVariable(1, ui.model.width, ui.model.height));
+        Variable.copy(sfchgt.variable[0], ui.model.getVariable("sfcgeop"));
         
         ui.model.setVariable("U", Variable.createVariable(ui.model.nbcouches, ui.model.width, ui.model.height, true));
-        verticalInterpolator.interp(ugrd.variable[0], ui.model.getVariable("U"));
+        Variable.copy(ugrd.variable[0], ui.model.getVariable("U"));
 
         ui.model.setVariable("V", Variable.createVariable(ui.model.nbcouches, ui.model.width, ui.model.height, true));
-        verticalInterpolator.interp(vgrd.variable[0], ui.model.getVariable("V"));
+        Variable.copy(vgrd.variable[0], ui.model.getVariable("V"));
 
         ui.model.setVariable("qv", Variable.createVariable(ui.model.nbcouches, ui.model.width, ui.model.height, true));
-        verticalInterpolator.interp(qv.variable[0], ui.model.getVariable("qv"));
-        
+        Variable.copy(qv.variable[0], ui.model.getVariable("qv"));
+
         if (ui.model.verticalType=="CP")
         {
-            verticalInterpolator.sigmaLevels = ui.model.getSurfaceLevels();
             ui.model.setVariable("T", Variable.createVariable(ui.model.nbcouches+1, ui.model.width, ui.model.height, true));
-            verticalInterpolator.interp(tmp.variable[0], ui.model.getVariable("T"));
         }
         else
         {
             ui.model.setVariable("T", Variable.createVariable(ui.model.nbcouches, ui.model.width, ui.model.height, true));
-            verticalInterpolator.interp(tmp.variable[0], ui.model.getVariable("T"));
         }
+        Variable.copy(tmp.variable[0], ui.model.getVariable("T"));
         
         z500_display = Variable.createVariable(1, ui.model.width, ui.model.height);
         t850_display = Variable.createVariable(1, ui.model.width, ui.model.height);        
@@ -267,6 +268,8 @@ $(document).ready(function() {
             case "Z500":
                 z500Renderer.width = ui.model.width;
                 z500Renderer.height = ui.model.height;
+                verticalInterpolator.sigmaLevels = ui.model.getLayerLevels();
+                Variable.copy(ui.model.getVariable("ps"), verticalInterpolator.surfacePressure);
                 verticalInterpolator.modelToPressureLevel(ui.model.getVariable("phi"), 50000, z500_display);
                 geopInterpolator.modelToHeight(z500_display, z500_display);
                 z500Renderer.variable = z500_display;
@@ -274,6 +277,8 @@ $(document).ready(function() {
             case "T850":
                 t850Renderer.width = ui.model.width;
                 t850Renderer.height = ui.model.height;
+                verticalInterpolator.sigmaLevels = ui.model.getLayerLevels();
+                Variable.copy(ui.model.getVariable("ps"), verticalInterpolator.surfacePressure);
                 verticalInterpolator.modelToPressureLevel(ui.model.getVariable("T"), 85000, t850_display);
                 t850Renderer.variable = t850_display;
                 break;
@@ -340,64 +345,64 @@ $(document).ready(function() {
         }
     };
     
+    ui.beforeStepCallback = function()
+    {
+        if (ui.model.relaxation>0)
+        {
+            ugrd.interp(ui.model.time, ui.model.getVariable("U_couplage"));
+            vgrd.interp(ui.model.time, ui.model.getVariable("V_couplage"));
+            tmp.interp(ui.model.time, ui.model.getVariable("T_couplage"));
+            qv.interp(ui.model.time, ui.model.getVariable("qv_couplage"));
+            sfcprs.interp(ui.model.time, ui.model.getVariable("Z_couplage"));
+        }
+    };
+    
     reloadData();
 });
 
-// Verif Ok 13/06/2018
+function textToVariable(pData, pVariable)
+{
+    var lines = pData.split('\n');
+    for (var i=1;i<lines.length;i++)
+    {
+        pVariable[i-1] = Number(lines[i]);
+    }
+}
+
 function onFieldDownload(data) 
 {
+    var t, k;
     var f = reslist[0].split("_");
-    var t = 0, k = 0;
     switch (f[0])
     {
-        case "hgt":
-            k = hgt.variable[t].length;
-            hgt.variable[t][k] = [];
-            wgribInterpolator.interp(hgt.variable[t][k], data, 0, 0);
-            geopInterpolator.heightToModel(hgt.variable[t][k], hgt.variable[t][k]);
+        case "U":
+            t = ugrd.getTimeIndex(Number(f[2].split(".")[0])*3600);
+            k = Number(f[1]);
+            textToVariable(data, ugrd.variable[t][k]);
             break;
-        case "ugrd":
-            k = ugrd.variable[t].length;
-            ugrd.variable[t][k] = [];
-            if (ui.model.gridType=="C") 
-                wgribInterpolator.interp(ugrd.variable[t][k], data, 1, 0);
-            else
-                wgribInterpolator.interp(ugrd.variable[t][k], data, 0, 0);
-            break;
-        case "vgrd":
-            k = vgrd.variable[t].length;
-            vgrd.variable[t][k] = [];
-            if (ui.model.gridType=="C")  
-                wgribInterpolator.interp(vgrd.variable[t][k], data, 0, 1);
-            else
-                wgribInterpolator.interp(vgrd.variable[t][k], data, 0, 0);
-            break;
-        case "vvel":
-            k = vvel.variable[t].length;
-            vvel.variable[t][k] = [];
-            wgribInterpolator.interp(vvel.variable[t][k], data, 0, 0);
+        case "V":
+            t = vgrd.getTimeIndex(Number(f[2].split(".")[0])*3600);
+            k = Number(f[1]);
+            textToVariable(data, vgrd.variable[t][k]);
             break;
         case "tmp":
-            k = tmp.variable[t].length;
-            tmp.variable[t][k] = [];
-            wgribInterpolator.interp(tmp.variable[t][k], data, 0, 0);
+            t = tmp.getTimeIndex(Number(f[2].split(".")[0])*3600);
+            k = Number(f[1]);
+            textToVariable(data, tmp.variable[t][k]);
             break;
-        case "sfcprs":
-            wgribInterpolator.interp(sfcprs.variable[t], data, 0, 0);
-            break;
-        case "prmsl":
-            wgribInterpolator.interp(prmsl.variable[t], data, 0, 0);
+        case "Z":
+            t = sfcprs.getTimeIndex(Number(f[1].split(".")[0])*3600);
+            textToVariable(data, sfcprs.variable[t]);
             break;
         case "sfchgt":
-            wgribInterpolator.interp(sfchgt.variable[t], data, 0, 0);
-            geopInterpolator.heightToModel(sfchgt.variable[t], sfchgt.variable[t]);
-            mslhgt.variable[t] = Variable.createVariable(1, ui.model.width, ui.model.height);
+            t = sfchgt.getTimeIndex(Number(f[1].split(".")[0])*3600);
+            k = Number(f[1]);
+            textToVariable(data, sfchgt.variable[t]);
             break;
-        case "rh":
-            k = qv.variable[t].length;
-            qv.variable[t][k] = [];
-            wgribInterpolator.interp(qv.variable[t][k], data, 0, 0);
-            humidityInterpolator.rhToSpecific(qv.variable[t][k], tmp.variable[t][k]);
+        case "qv":
+            t = qv.getTimeIndex(Number(f[2].split(".")[0])*3600);
+            k = Number(f[1]);
+            textToVariable(data, qv.variable[t][k]);
             break;
     }
     reslist.shift();
@@ -405,7 +410,8 @@ function onFieldDownload(data)
     {
         ui.setStatusString(getLoadingString());
         $.ajax({
-          url : "res/run/"+scenario+"/"+reslist[0],
+          //url : "res/run/"+scenario+"/"+reslist[0],
+          url : "run/"+reslist[0],
           dataType: "text",
           success : onFieldDownload
        });
@@ -422,25 +428,25 @@ function reloadData()
 {
     for (var i=0;i<valids.length;i++)
     {
-        reslist.push("sfcprs_"+valids[i]+".txt");
-        reslist.push("sfchgt_"+valids[i]+".txt");
-        reslist.push("prmsl_"+valids[i]+".txt");
-        for (var j=0;j<verticalInterpolator.inputLevels.length;j++)
+        var valid = valids[i];
+        reslist.push("Z_"+valid+".txt");
+        reslist.push("sfchgt_"+valid+".txt");
+        for (var j=0;j<ui.model.nbcouches;j++)
         {
-            var lev = Math.floor(verticalInterpolator.inputLevels[j]/100);
-            reslist.push("hgt_"+lev.toString()+"_"+valids[i]+".txt");
-            reslist.push("ugrd_"+lev.toString()+"_"+valids[i]+".txt");
-            reslist.push("vgrd_"+lev.toString()+"_"+valids[i]+".txt");
-            reslist.push("vvel_"+lev.toString()+"_"+valids[i]+".txt");
-            reslist.push("tmp_"+lev.toString()+"_"+valids[i]+".txt");
-            reslist.push("rh_"+lev.toString()+"_"+valids[i]+".txt");
+            reslist.push("U_"+j.toString()+"_"+valid+".txt");
+            reslist.push("V_"+j.toString()+"_"+valid+".txt");
+            reslist.push("tmp_"+j.toString()+"_"+valid+".txt");
+            reslist.push("qv_"+j.toString()+"_"+valid+".txt");
         }
+        if (ui.model.verticalType=="CP")
+            reslist.push("tmp_"+(ui.model.nbcouches).toString()+"_"+valid+".txt");
     }
     
     calcCoords();
     
     $.ajax({
-        url: "res/run/" + scenario + "/fileinfo.txt",
+        //url: "res/run/" + scenario + "/fileinfo.txt",
+        url: "run/fileinfo.txt",
         dataType: "text",
         success: function (data)
         {
@@ -453,7 +459,8 @@ function reloadData()
         }
     });
     $.ajax({
-        url: "res/run/" + scenario + "/" + reslist[0],
+        //url: "res/run/" + scenario + "/" + reslist[0],
+        url: "run/"+reslist[0],
         dataType: "text",
         success: onFieldDownload
     });

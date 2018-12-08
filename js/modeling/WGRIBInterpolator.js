@@ -26,7 +26,7 @@ import { MercatorProjection } from "./MercatorProjection.js";
  */
 export var WGRIBInterpolator = function()
 {
-    this.projection = 1;
+    this.projection = null;
      
     // Type de grille
     this.gridType = Model.GRID_A;
@@ -85,16 +85,15 @@ export var WGRIBInterpolator = function()
  * @param {type} offsety
  * @returns {undefined}
  */
-WGRIBInterpolator.prototype.interp = function(f, data, offsetx, offsety)
+WGRIBInterpolator.prototype.interp = function(f, data, offsetx, offsety, scale=false)
 {     
     var lines = data.split('\n');
     lines.shift();
     
     var lon = this.wlon;
-    var projection = new MercatorProjection(Model.Rterre);
-   
-    var ymin = projection.latToY(this.slat);
-    var ymax = projection.latToY(this.nlat);
+  
+    var ymin = this.projection.latToY(this.slat);
+    var ymax = this.projection.latToY(this.nlat);
     var dy = (ymax-ymin)/(this.height);
 
     var lat_in, lon_in;
@@ -107,11 +106,9 @@ WGRIBInterpolator.prototype.interp = function(f, data, offsetx, offsety)
     var y = 0;
     if (this.global) i++;
     
-//    lat = latmax;
-    //for (lat=this.nlat;lat>this.slat;lat-=this.dlat)
     for (y=ymax-0.5*offsety*dy;y>ymin;y-=dy)
     {
-        lat_in = projection.yToLat(y);
+        lat_in = this.projection.yToLat(y);
         if (lat_in<-90 || lat_in>90) throw "latitude overflow "+lat_in;
         
         y_in1 = Math.floor((lat_in+90)/this.dlatInput);
@@ -139,99 +136,14 @@ WGRIBInterpolator.prototype.interp = function(f, data, offsetx, offsety)
             vv2 = alpha_y*v4 + (1-alpha_y)*v3;
             
             f[i] = alpha_x*vv2 + (1-alpha_x)*vv1 ;
-
-            //TODO : l'interpolation en 0.5° rend le modèle instable. Pourquoi ?
-            //if ((lon<=-92 && lat>=79 && (offsetx==0 && offsety==0)))
-            /*if ((lon<=this.wlon+2 && lat>=this.nlat-2 && (offsetx==1 || offsety==1)))
+            
+            if (scale)
             {
-                console.log("lon="+lon+" lat="+lat+" lon_in="+lon_in+" lat_in="+lat_in+" x_in1="+x_in1+" x_in2="+x_in2+" alpha_x="+alpha_x+" y_in1="+y_in1+" y_in2="+y_in2+" alpha_y="+alpha_y+" (offsetx="+offsetx+" offsety="+offsety+")");
-                console.log("v1="+v1+" v2="+v2+" v3="+v3+" v4="+v4+" vv1="+vv1+" vv2="+vv2+" val="+f[i]);
-            }*/
+                f[i] = f[i]/this.projection.scaleFactor(lon_in, this.projection.yToLat(y+0.5*offsety*dy));
+            }
 
             i++;
         }
         if (this.global) i+=2;
     }
-//    console.log("-------");
-        
-/*    
-    var width = 720;
-    var height = 361;
-
-  // TODO : limitation a lever, on suppose qu'on est centré sur greenwich...
-
-    // Choppe ce qui est à droite de greenwich
-    var outoffset = 0;
-    if (this.global) outoffset = 1;
-    var greenwich = Math.floor(-this.wlon/this.dlon);
-    var ystep = 2*this.dlat;
-    var ygridoffset = Math.floor(offsety*this.dlat);
-    var ystart = Math.floor((90-this.nlat)*2)+1;
-    var yend = Math.floor((90-this.slat)*2)+1;
-    var xstep = 2*this.dlon;
-    var xgridoffset = Math.floor(offsetx*this.dlon);
-    var xstart = 0;
-    var xend = 2*this.elon;
-    if (xend>width) xend = width;
-    var i = greenwich+outoffset;
-    var src = 0, src2 = 0;
-    for (var y = ystart ; y<yend ; y+=xstep)
-    {
-        for (var x = xstart ; x<xend ; x+=xstep)
-        {
-            if (this.interpolationType==1)
-            {
-                src = x+xgridoffset+(360-y-ygridoffset)*width;
-                f[i] = Number(lines[src]);
-            }
-            else
-            {
-                if (offsetx!=0 || offsety!=0)
-                {
-                    src = (x+xgridoffset*2+(360-y-ygridoffset*2)*width);
-                    src2 = (x+(360-y)*width);
-                    f[i] = (Number(lines[src])+Number(lines[src2]))*0.5;
-                }
-                else
-                {
-                    src = x+(360-y)*width;
-                    f[i] = Number(lines[src]);
-                }
-            }
-            i++;
-        }
-        i += greenwich+outoffset*2;
-    }
-    
-    // Choppe ce qui est à gauche de greenwich
-    var xstart = width-Math.floor((-this.wlon*2));
-    var xend = 720;
-    i = outoffset;
-    for (var y = ystart ; y<yend ; y+=ystep)
-    {
-        for (var x = xstart ; x<xend ; x+=xstep)
-        {
-            if (this.interpolationType==1)
-            {
-                src = x+xgridoffset+(360-y-ygridoffset)*width;
-                f[i] = Number(lines[src]);
-            }
-            else
-            {
-                if (offsetx!=0 || offsety!=0)
-                {
-                    src = (x+xgridoffset*2+(360-y-ygridoffset*2)*width);
-                    src2 = (x+(360-y)*width);
-                    f[i] = (Number(lines[src])+Number(lines[src2]))*0.5;
-                }
-                else
-                {
-                    src = x+(360-y)*width;
-                    f[i] = Number(lines[src]);
-                }
-            }
-            i++;
-        }
-        i += this.width-greenwich;
-    }*/
 }

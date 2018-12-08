@@ -15,6 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { MercatorProjection } from "./modeling/MercatorProjection.js";
 import { BarotropicInterpolator } from "./modeling/BarotropicInterpolator.js";
 import { WGRIBInterpolator } from "./modeling/WGRIBInterpolator.js";
 import { TimeInterpolator } from "./modeling/TimeInterpolator.js";
@@ -62,7 +63,7 @@ $(document).ready(function () {
     ui.setStatusString("Initialisation");
 
     ui.model = new BarotropicModel();    
-    ui.model.projection = Model.PROJ_MERCATOR;
+    ui.model.projection = new MercatorProjection(Model.Rterre);
     ui.model.width = 144;
     ui.model.height = 72;
     ui.model.dt = 60;
@@ -123,7 +124,7 @@ $(document).ready(function () {
         }
     };
     
-        ui.beforeExportCallback = function()
+    ui.beforeExportCallback = function()
     {
         var k = ui.getDisplayLevel();
         switch (ui.getDisplayVariable())
