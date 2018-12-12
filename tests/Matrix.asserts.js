@@ -66,10 +66,51 @@ test('multiplication matrice vecteur', () => {
     expect(res).arrayBeCloseTo([[23, 34]]);
 });
 
+test('multiplication matrice vecteur 2 ', () => {
+    var a = [[1, 2], [3, 4]];
+    var b = [5, 6];
+    var res = [0, 0];
+    Matrix.mul(a, b, res);
+    expect(res).arrayBeCloseTo([23, 34]);
+});
+
 test('multiplication vecteur vecteur', () => {
     var a = [[1],[3]];
     var b = [[5, 6]];
     var res = [[0], [0]];
     Matrix.mul(a, b, res);
     expect(res).arrayBeCloseTo([[23]]);
+});
+
+test('sor (1) w=1 simple a diagonale strictement dominante', () => {
+    var a = [[-4, 1, 1],[2,6,-2],[1,2,5]];
+    var b = [1,2,3];
+    var res = [1, 1, 1];
+    var r = [0, 0, 0];
+    var conv = Matrix.sor(a, b, 1, res, r);
+    expect(conv).toBeLessThan(1000);
+    console.log("sor (1) : conv="+conv);
+    expect(res).arrayBeCloseTo([-0.026, 0.12, 0.6533]);
+});
+
+test('sor (2) w=1 diagonale', () => {
+    var a = [[5,0,0,0],[0,6,0,0],[0,0,4,0],[0,0,0,3]];
+    var b = [1,2,3,4];
+    var res = [1, 1, 1, 1];
+    var r = [0, 0, 0, 0];
+    var conv = Matrix.sor(a, b, 1, res, r);
+    expect(conv).toBeLessThan(1000);
+    console.log("sor (2) : conv="+conv);
+    expect(res).arrayBeCloseTo([0.2, 0.333, 0.75, 1.333]);
+});
+
+test('sor (3) w=1 diagonale strictement dominante', () => {
+    var a = [[5,1,0,0],[1,6,1,0],[0,1,4,1],[0,0,1,3]];
+    var b = [1,2,3,4];
+    var res = [1, 1, 1, 1];
+    var r = [0, 0, 0, 0];
+    var conv = Matrix.sor(a, b, 1, res, r);
+    expect(conv).toBeLessThan(1000);
+    console.log("sor (3ù) : conv="+conv);
+    expect(res).arrayBeCloseTo([0.1513, 0.2434, 0.3881, 1.2039]);
 });

@@ -72,24 +72,41 @@ Matrix.mul = function(a, b, res)
     var nb = b.length;
     var mb = nb>0 && (b[0].constructor===Array || b[0].constructor===Float64Array) ? b[0].length : 1;
     
-    if (na!=mb) throw Exception("produit interdit");
+    //if (na!=mb) throw Exception("produit interdit");
     
     if (ma>1)
     {
         // Matrice ma*na et mb*nb quelquonques
-        for (i=0;i<ma;i++)
+        if (mb>1)
         {
-            for(j=0;j<nb;j++)
+            for (i=0;i<ma;i++)
             {
-                res[j][i] = 0;
-                for (k=0;k<na;k++)
+                for(j=0;j<nb;j++)
                 {
-                    res[j][i] += a[k][i]*b[j][k];
+                    res[j][i] = 0;
+                    for (k=0;k<na;k++)
+                    {
+                        res[j][i] += a[k][i]*b[j][k];
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (i=0;i<ma;i++)
+            {
+                for(j=0;j<nb;j++)
+                {
+                    res[i] = 0;
+                    for (k=0;k<na;k++)
+                    {
+                        res[i] += a[k][i]*b[k];
+                    }
                 }
             }
         }
     }
-    else
+    else 
     {
         for(j=0;j<nb;j++)
         {
@@ -103,3 +120,71 @@ Matrix.mul = function(a, b, res)
 
 }
 
+Matrix.residual = function(a, b, x)
+{
+    var i, j, k, r, s;
+    var na = a.length;
+    var ma = na>0 && (a[0].constructor===Array || a[0].constructor===Float64Array) ? a[0].length : 1;
+    
+    r = 0;
+    for (i=0;i<ma;i++)
+    {
+        s = 0;
+        for (j=0;j<ma;j++)
+        {
+            s += a[j][i]*x[j];
+        }
+        s -= b[i];
+        r += Math.abs(s);
+    }
+    return Math.sqrt(r);
+    
+}
+
+
+Matrix.norm = function(x)
+{
+    var i, r;
+    r = 0;
+    for (i=0;i<x.length;i++)
+    {
+        r += x[i]*x[i];
+    }
+    return Math.sqrt(r);
+    
+}
+
+Matrix.sor = function(a, b, w, x, r)
+{
+    var i, j;
+    var s, k;
+    var nr;
+    var na = a.length;
+    var ma = na>0 && (a[0].constructor===Array || a[0].constructor===Float64Array) ? a[0].length : 1;
+    
+    if (ma!=na) throw Exception("matrice non carrée");
+    
+    for (i=0;i<ma;i++) r[i] = 1;
+
+    k=0;
+    while ((nr=Matrix.norm(r))>0.0001 && k<1000)
+    {
+        k++;
+        for (i=0;i<ma;i++)
+        {
+            s = 0;
+            for (j=0;j<=i-1;j++)
+            {
+                s += a[j][i]*x[j];
+            }
+            for (j=i+1;j<na;j++)
+            {
+                s += a[j][i]*x[j];
+            }
+            x[i] = (1-w)*x[i]+w/a[i][i]*(b[i]-s);
+        }
+        Matrix.mul(a, x, r);
+        Matrix.sub(r, b, r);
+    }
+    return k;
+}
