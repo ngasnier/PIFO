@@ -20,6 +20,32 @@ export var Matrix = function ()
     
 }
 
+Matrix.createMatrix = function(m, n)
+{
+    var mx = []
+    for (var i=0;i<n;i++)
+    {
+        var buffer = new ArrayBuffer(m * 8);
+        mx[i] = new Float64Array(buffer);
+        for (var j=0;j<m;j++)
+        {
+            mx[i][j] = 0;
+        }
+    }
+    return mx;
+}
+
+Matrix.createVector = function(n)
+{
+    var buffer = new ArrayBuffer(n * 8);
+    var mx = new Float64Array(buffer);        
+    for (var i=0;i<n;i++)
+    {
+        mx[i] = 0;
+    }
+    return mx;
+}
+
 Matrix.add = function(a, b, res)
 {
     if (a.length>0 && (a[0].constructor===Array || a[0].constructor===Float64Array) )
@@ -95,13 +121,10 @@ Matrix.mul = function(a, b, res)
         {
             for (i=0;i<ma;i++)
             {
+                res[i] = 0;
                 for(j=0;j<nb;j++)
                 {
-                    res[i] = 0;
-                    for (k=0;k<na;k++)
-                    {
-                        res[i] += a[k][i]*b[k];
-                    }
+                    res[i] += a[j][i]*b[j];
                 }
             }
         }
@@ -167,7 +190,7 @@ Matrix.sor = function(a, b, w, x, r)
     for (i=0;i<ma;i++) r[i] = 1;
 
     k=0;
-    while ((nr=Matrix.norm(r))>0.0001 && k<1000)
+    while ((nr=Matrix.norm(r))>0.000001 && k<1000)
     {
         k++;
         for (i=0;i<ma;i++)

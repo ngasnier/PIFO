@@ -63,6 +63,7 @@ $(document).ready(function () {
     ui.setStatusString("Initialisation");
 
     ui.model = new BarotropicModel();    
+    ui.model.semiImplicite = true;
     ui.model.projection = new MercatorProjection(Model.Rterre);
     ui.model.width = 144;
     ui.model.height = 72;

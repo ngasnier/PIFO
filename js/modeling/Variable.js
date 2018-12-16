@@ -160,6 +160,36 @@ Variable.sum = function(x, y, res)
     }
 }
 
+/**
+ * Calcule la somme de deux variables élément par élément
+ * @param {type} x
+ * @param {type} y
+ * @param {type} res variable résultat
+ */
+Variable.mul = function(x, y, res)
+{
+    var nb;
+    if (x.length>0 && (x[0].constructor===Array || x[0].constructor===Float64Array) )
+    {    
+        for (var k=0;k<x.length;k++)
+        {
+            nb = x[k].length;
+            for(var i=0;i<nb;i++)
+            {
+                var b = y[k][i];
+                res[k][i] = x[k][i]*y[k][i];
+            }
+        }
+    }
+    else
+    {
+        nb = x.length;
+        for(var i=0;i<nb;i++)
+        {
+            res[i] = x[i]*y[i];
+        }        
+    }
+}
 
 /**
  * Opérateur pour calculer A + B * C
@@ -268,6 +298,36 @@ Variable.mulConst = function(x, c, res)
 }
 
 /**
+ * Ajoute une constante
+ * @param {type} x 
+ * @param {type} c
+ * @param {type} res variable résultat
+ */
+Variable.addConst = function(x, c, res)
+{
+    var nb;
+    if (x.length>0 && (x[0].constructor===Array || x[0].constructor===Float64Array))
+    {    
+        for (var k=0;k<x.length;k++)
+        {
+            nb = x[k].length;
+            for(var i=0;i<nb;i++)
+            {
+                res[k][i] = x[k][i]-c;
+            }
+        }
+    }
+    else
+    {
+        nb = x.length;
+        for(var i=0;i<nb;i++)
+        {
+            res[i] = x[i]-c;
+        }        
+    }
+}
+
+/**
  * Produit par un terme de surface
  * @param {type} x
  * @param {type} y
@@ -332,4 +392,33 @@ Variable.swap2d = function(a, b)
         a[i] = b[i];
         b[i] = n;
     }
+}
+
+
+Variable.mean = function(x)
+{
+    var s = 0;
+    var n = 0;
+    var nb;
+    if (x.length>0 && (x[0].constructor===Array || x[0].constructor===Float64Array))
+    {    
+        for (var k=0;k<x.length;k++)
+        {
+            n+=x[k].length;
+            nb = x[k].length;
+            for(var i=0;i<nb;i++)
+            {
+                s += x[k][i];
+            }
+        }
+    }
+    else
+    {
+        n = nb = x.length;
+        for(var i=0;i<nb;i++)
+        {
+            s += x[i];
+        }        
+    }
+    return s / n;
 }
