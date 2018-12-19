@@ -90,13 +90,14 @@ Matrix.sub = function(a, b, res)
 
 }
 
-Matrix.mul = function(a, b, res)
+Matrix.mul = function(a, b, res, diagw=0)
 {
     var i, j, k;
     var na = a.length;
     var ma = na>0 && (a[0].constructor===Array || a[0].constructor===Float64Array) ? a[0].length : 1;
     var nb = b.length;
     var mb = nb>0 && (b[0].constructor===Array || b[0].constructor===Float64Array) ? b[0].length : 1;
+    var colstart, colend;
     
     //if (na!=mb) throw Exception("produit interdit");
     
@@ -107,7 +108,11 @@ Matrix.mul = function(a, b, res)
         {
             for (i=0;i<ma;i++)
             {
-                for(j=0;j<nb;j++)
+                colstart = diagw==0?0:i-diagw;
+                colend = diagw==0?nb:i+diagw+1;
+                if (colstart<0) colstart=0;
+                if (colend>=nb) colend=nb;
+                for(j=colstart;j<colend;j++)
                 {
                     res[j][i] = 0;
                     for (k=0;k<na;k++)
@@ -119,10 +124,16 @@ Matrix.mul = function(a, b, res)
         }
         else
         {
+            var cnt = 0;
             for (i=0;i<ma;i++)
             {
+                colstart = diagw==0?0:i-diagw;
+                colend = diagw==0?nb:i+diagw+1;
+                if (colstart<0) colstart=0;
+                if (colend>=nb) colend=nb;
+                cnt += colend-colstart+1;
                 res[i] = 0;
-                for(j=0;j<nb;j++)
+                for(j=colstart;j<colend;j++)
                 {
                     res[i] += a[j][i]*b[j];
                 }
@@ -177,7 +188,7 @@ Matrix.norm = function(x)
     
 }
 
-Matrix.sor = function(a, b, w, x, r)
+Matrix.sor = function(a, b, w, x, r, epsilon=0.000001, maxiter=1000, diagw=0)
 {
     var i, j;
     var s, k;
@@ -190,7 +201,7 @@ Matrix.sor = function(a, b, w, x, r)
     for (i=0;i<ma;i++) r[i] = 1;
 
     k=0;
-    while ((nr=Matrix.norm(r))>0.000001 && k<1000)
+    while ((nr=Matrix.norm(r))>epsilon && k<maxiter)
     {
         k++;
         for (i=0;i<ma;i++)
@@ -206,8 +217,9 @@ Matrix.sor = function(a, b, w, x, r)
             }
             x[i] = (1-w)*x[i]+w/a[i][i]*(b[i]-s);
         }
-        Matrix.mul(a, x, r);
+        Matrix.mul(a, x, r, diagw);
         Matrix.sub(r, b, r);
     }
     return k;
 }
+

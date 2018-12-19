@@ -80,7 +80,7 @@ export var BarotropicModel = function ()
     this.semiImplicite = false;
     
     // Géopotentiel de référence pour semi-implicite
-    this.si_phi_star = 53955-40000; 
+    this.si_phi_star = 53955-40000;
     
     // Coefficients du système matriciel à résoudre
     this.si_phi_a = [];
@@ -385,7 +385,8 @@ export var BarotropicModel = function ()
                 for(var x=1;x<this.width-1;x++)
                 {
                     res[i] = (f[i]-f[i+this.width])/this.dy;
-                }           
+                }
+                i+=2;
             }
         }
 
@@ -396,7 +397,7 @@ export var BarotropicModel = function ()
             {
                 for(var x=1;x<this.width-1;x++,i++)
                 {
-                    res[i] = (u[i+1]-u[i])/this.dx+(v[i-this.width]-v[i])/this.dy;
+                    res[i] = (u[i]-u[i-1])/this.dx+(v[i-this.width]-v[i])/this.dy;
                 }
                 i+=2;
             }
@@ -446,19 +447,6 @@ export var BarotropicModel = function ()
                 }
             }
         }
-              
-        this.retrieveVector = function(a, b)
-        {
-            var j = this.width+1;
-            for (var y=1;y<this.height-1;y++,j+=2)
-            {
-                for(var x=1;x<this.width-1;x++,j++)
-                {
-                    b[j] = a[j];
-                }
-            }
-        }
-
         
         BarotropicModel.prototype.calcVerifs = function()
         {
@@ -590,22 +578,24 @@ BarotropicModel.prototype.step = function()
     this.calcSphi();
     
      // *** Calcul des variables pronostiques ***
+    if (this.semiImplicite)
+    {
+        // Tant qu'on connait encore phi(t-dt), calcule le terme d'ajustement 
+        // transitoire 2phi(t)+phi(t-dt) pour calculer les transcients U et V
+        Variable.mulConst(this.phi_t, -1, this.phi_trans); // -phi(t-dt)
+        Variable.a_bc(this.phi_trans, this.phi, 2, this.phi_trans); // 2*phi(t)-phit(t-dt)
+    }
+     
     if (this.time==0) {
         this.avanceEuler();
     }
     else {
         this.avanceExpliciteCentre();
     }
+    
     if (this.semiImplicite)
     {
         // *** Calcul des transcients 
-        // U_t, V_t et phi_t contiennent déjà les deux termes du calcul
-        // phi_trans contient phi(t-dt)=phi_t au début du calcul
-        
-        // Terme en phi(t) et phi(t-dt)
-        Variable.mulConst(this.phi_trans, -1, this.phi_trans); // -phi(t-dt)
-        Variable.a_bc(this.phi_trans, this.phi, 2, this.phi_trans); // 2*phi(t)-phit(t-dt)
-
         this.calcDx(this.phi_trans, this.tmp_var);
         Variable.a_bc(this.U_t, this.tmp_var, this.dt, this.U_t);
         
@@ -624,12 +614,8 @@ BarotropicModel.prototype.step = function()
         this.calcDivergence(this.U_t, this.V_t, this.div_tmp);       
         this.initPhiAMatrix();
         this.initPhiBVector();
-        /*console.log(this.phi);
-        console.log(this.si_phi_a);
-        console.log(this.si_phi_b);*/
         Variable.copy(this.phi, this.si_phi);
-        console.log("convergence : "+Matrix.sor(this.si_phi_a, this.si_phi_b, 1, this.si_phi, this.si_residu));
-        //this.retrieveVector(this.si_phi, this.phi_t);
+        console.log("convergence : "+Matrix.sor(this.si_phi_a, this.si_phi_b, 1.4, this.si_phi, this.si_residu, 1, 1000, this.width));
         Variable.copy(this.si_phi, this.phi_t);
         
         // *** Calcul du vent et du géopotentiel final
@@ -666,7 +652,7 @@ BarotropicModel.prototype.step = function()
     
     if (this.semiImplicite)
     {
-        Variable.copy(this.phi, this.phi_trans);
+        //Variable.copy(this.phi, this.phi_trans);
         tmp = this.divergence_t; this.divergence_t = this.divergence; this.divergence = tmp;
     }
 

@@ -82,6 +82,15 @@ test('multiplication vecteur vecteur', () => {
     expect(res).arrayBeCloseTo([[23]]);
 });
 
+test('multiplication matrice diagonale vecteur ', () => {
+    var a = [[1, 4, 0], [6, 2,5], [0, 7, 3]];
+    var b = [1, 1, 1];
+    var res = [0, 0, 0];
+    Matrix.mul(a, b, res, 1);
+    expect(res).arrayBeCloseTo([7, 13, 8]);
+});
+
+
 test('sor (1) w=1 simple a diagonale strictement dominante', () => {
     var a = [[-4, 1, 1],[2,6,-2],[1,2,5]];
     var b = [1,2,3];

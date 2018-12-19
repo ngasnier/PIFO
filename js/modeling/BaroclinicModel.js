@@ -658,12 +658,19 @@ export var BaroclinicModel = function ()
         BaroclinicModel.prototype.couple = function(x, c)
         {
             var i, k;
-            for (k=0;k<x.length;k++)
-            {
-                for (i=0;i<this.height*this.width;i++)
+            if (x.length>0 && (x[0].constructor===Array || x[0].constructor===Float64Array))
+            {    
+                for (k=0;k<x.length;k++)
                 {
-                    x[k][i] = (1-this.alpha_couplage[i])*x[k][i] + this.alpha_couplage[i]*c[k][i];
+                    for (i=0;i<this.height*this.width;i++)
+                    {
+                        x[k][i] = (1-this.alpha_couplage[i])*x[k][i] + this.alpha_couplage[i]*c[k][i];
+                    }
                 }
+            }
+            else
+            {
+                this.couple2D(x, c);
             }
         }
         
