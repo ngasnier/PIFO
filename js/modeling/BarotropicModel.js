@@ -382,7 +382,7 @@ export var BarotropicModel = function ()
             var i = this.width+1;
             for (var y=1;y<this.height-1;y++)
             {
-                for(var x=1;x<this.width-1;x++)
+                for(var x=1;x<this.width-1;x++,i++)
                 {
                     res[i] = (f[i]-f[i+this.width])/this.dy;
                 }
@@ -402,7 +402,7 @@ export var BarotropicModel = function ()
                 i+=2;
             }
         }
-        
+              
         this.initPhiAMatrix = function()
         {
             var i = 0;
