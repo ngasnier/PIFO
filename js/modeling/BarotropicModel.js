@@ -80,11 +80,14 @@ export var BarotropicModel = function ()
     this.semiImplicite = false;
     
     // Géopotentiel de référence pour semi-implicite
-    this.si_phi_star = 53955-40000;
+    this.si_phi_star = 15000;
     
     // Coefficients du système matriciel à résoudre
     this.si_phi_a = [];
     this.si_phi_b = [];
+    this.si_cx = [];
+    this.si_cy = [];
+    this.si_xy = [];
     this.phi_trans = [];
     this.divergence = [];
     this.divergence_t = [];
@@ -92,6 +95,9 @@ export var BarotropicModel = function ()
     this.tmp_var = [];
     this.si_phi = [];
     this.si_residu = [];
+    this.phi_tmp = [];
+    this.U_tmp = [];
+    this.V_tmp = [];
          
     this.couple = function(x, c)
     {
@@ -112,10 +118,29 @@ export var BarotropicModel = function ()
         }
 
         BarotropicModel.prototype.avanceExpliciteCentre = function()
-        {       
+        {             
             Variable.a_bc2d(this.U_t, this.Su, 2*this.dt, this.U_t);
             Variable.a_bc2d(this.V_t, this.Sv, 2*this.dt, this.V_t);
             Variable.a_bc2d(this.phi_t, this.Sphi, 2*this.dt, this.phi_t);
+        }
+        
+        BarotropicModel.prototype.asselinPart1 = function(epsilon)
+        {
+            Variable.a_bc(this.U_t, this.U, -2, this.U_tmp);
+            Variable.a_bc(this.U, this.U_tmp, epsilon, this.U_tmp);
+
+            Variable.a_bc(this.V_t, this.V, -2, this.V_tmp);
+            Variable.a_bc(this.V, this.V_tmp, epsilon, this.V_tmp);
+
+            Variable.a_bc(this.phi_t, this.phi, -2, this.phi_tmp);
+            Variable.a_bc(this.phi, this.phi_tmp, epsilon, this.phi_tmp);
+        }
+        
+        BarotropicModel.prototype.asselinPart2 = function(epsilon)
+        {
+            Variable.a_bc(this.U_tmp, this.U_t, epsilon, this.U);
+            Variable.a_bc(this.V_tmp, this.V_t, epsilon, this.V);
+            Variable.a_bc(this.phi_tmp, this.phi_t, epsilon, this.phi);
         }
        
         BarotropicModel.prototype.calcSu = function(k)
@@ -402,7 +427,47 @@ export var BarotropicModel = function ()
                 i+=2;
             }
         }
-              
+        
+        this.sor = function(a, b, w, x, r, epsilon=0.000001, maxiter=1000)
+        {
+            //TODO optimisation, plus besoin de la matrice etc...
+            var i, j;
+            var s, k;
+            var nr;
+            var nb = this.width * this.height;
+
+            for (i=0;i<nb;i++) r[i] = 1;
+            nr = nb;
+            
+            k=0;
+            while (nr>epsilon && k<maxiter)
+            {
+                k++;
+                nr = 0;
+                for (i=0;i<nb;i++)
+                {
+                    s = 0;
+                    if (i-this.width>=0) s += this.si_cy[i]*x[i-this.width];
+                    if (i-1>=0) s += this.si_cx[i]*x[i-1];
+                    if (i+1<nb) s += this.si_cx[i]*x[i+1];
+                    if (i+this.width<nb) s += this.si_cy[i]*x[i+this.width];
+                    x[i] = (1-w)*x[i]+w/this.si_xy[i]*(b[i]-s);
+
+                    r[i] = 0;
+                    if (i-this.width>=0) r[i] += this.si_cy[i]*x[i-this.width];
+                    if (i-1>=0) r[i]+= this.si_cx[i]*x[i-1];
+                    r[i] += this.si_xy[i]*x[i]
+                    if (i+1<nb) r[i]+= this.si_cx[i]*x[i+1];
+                    if (i+this.width<nb) r[i]+= this.si_cy[i]*x[i+this.width];
+                    r[i] -= b[i];
+                    nr += r[i]*r[i];
+                }
+                nr = Math.sqrt(nr);
+            }
+            return k;
+        }
+        
+        
         this.initPhiAMatrix = function()
         {
             var i = 0;
@@ -422,10 +487,17 @@ export var BarotropicModel = function ()
                         this.si_phi_a[i][i] = 2*this.m[i]*this.m[i]*this.dt*this.dt*this.si_phi_star*(1/(this.dx*this.dx)+1/(this.dy*this.dy))+1; 
                         this.si_phi_a[i+1][i] = cx;
                         this.si_phi_a[i+this.width][i] = cy;
+                        this.si_cx[i] = cx;
+                        this.si_cy[i] = cy;
                     }
                     else
+                    {
                         // Conditions aux limites
                         this.si_phi_a[i][i] = 1;
+                        this.si_cx[i] = 0;
+                        this.si_cy[i] = 0;
+                    }
+                    this.si_xy[i] = this.si_phi_a[i][i];
                 }
             }
         }
@@ -469,6 +541,39 @@ export var BarotropicModel = function ()
             this.total_enstropie *= Model.rho/Model.g;
         }
         
+        
+        BarotropicModel.prototype.solveSemiImplicit = function()
+        {
+            // *** Calcul des transcients 
+            //this.si_phi_star = Variable.mean(this.phi);
+            this.calcDx(this.phi_trans, this.tmp_var);
+            Variable.a_bc(this.U_t, this.tmp_var, this.dt, this.U_t);
+
+            this.calcDy(this.phi_trans, this.tmp_var);
+            Variable.a_bc(this.V_t, this.tmp_var, this.dt, this.V_t);
+
+            // Terme de divergence
+            Variable.mulConst(this.divergence_t, -1, this.div_tmp);
+            Variable.a_bc(this.div_tmp, this.divergence, 2, this.div_tmp);
+            Variable.mul(this.m, this.div_tmp, this.div_tmp); // * m^2 
+            Variable.mul(this.m, this.div_tmp, this.div_tmp);                
+            Variable.a_bc(this.phi_t, this.div_tmp, this.dt*this.si_phi_star, this.phi_trans);
+
+            // *** Résolution de l'équation de helmholtz
+            this.calcDivergence(this.U_t, this.V_t, this.div_tmp); 
+            this.initPhiAMatrix();
+            this.initPhiBVector();
+            Variable.copy(this.phi, this.si_phi);
+            //console.log("convergence : "+Matrix.sor(this.si_phi_a, this.si_phi_b, 1.4, this.si_phi, this.si_residu, 1, 1000, this.width));
+            console.log("convergence : "+this.sor(this.si_phi_a, this.si_phi_b, 1.4, this.si_phi, this.si_residu, 0.000001, 1000));
+            Variable.copy(this.si_phi, this.phi_t);
+
+            // *** Calcul du vent et du géopotentiel final
+            this.calcDx(this.phi_t, this.tmp_var);
+            Variable.a_bc(this.U_t, this.tmp_var, -this.dt, this.U_t);
+            this.calcDy(this.phi_t, this.tmp_var);
+            Variable.a_bc(this.V_t, this.tmp_var, -this.dt, this.V_t);
+        }
     }
 }
 
@@ -516,6 +621,9 @@ BarotropicModel.prototype.init = function()
         this.si_phi_b = Matrix.createVector(n);
         this.si_phi = Matrix.createVector(n);   
         this.si_residu = Matrix.createVector(n);
+        this.si_cx = Matrix.createVector(n);
+        this.si_cy = Matrix.createVector(n);
+        this.si_xy = Matrix.createVector(n);
         this.phi_trans = Variable.createVariable(1, this.width, this.height);
         this.tmp_var = Variable.createVariable(1, this.width, this.height);
         this.divergence = Variable.createVariable(1, this.width, this.height);
@@ -524,6 +632,11 @@ BarotropicModel.prototype.init = function()
         Variable.copy(this.phi, this.phi_trans);
         this.calcDivergence(this.U, this.V, this.divergence);
         Variable.copy(this.divergence, this.divergence_t);
+        this.si_phi_star = Variable.mean(this.phi);
+
+        this.phi_tmp = Variable.createVariable(1, this.width, this.height);
+        this.U_tmp = Variable.createVariable(1, this.width, this.height);
+        this.V_tmp = Variable.createVariable(1, this.width, this.height);
     }
 
     // *** Pré-calcul des valeurs constantes ***
@@ -576,16 +689,21 @@ BarotropicModel.prototype.step = function()
     this.calcSu();
     this.calcSv();
     this.calcSphi();
-    
-     // *** Calcul des variables pronostiques ***
+
     if (this.semiImplicite)
     {
         // Tant qu'on connait encore phi(t-dt), calcule le terme d'ajustement 
         // transitoire 2phi(t)+phi(t-dt) pour calculer les transcients U et V
+        this.calcDivergence(this.U, this.V, this.divergence);
         Variable.mulConst(this.phi_t, -1, this.phi_trans); // -phi(t-dt)
         Variable.a_bc(this.phi_trans, this.phi, 2, this.phi_trans); // 2*phi(t)-phit(t-dt)
     }
-     
+    
+    // *** Initialise le filtrage temporel
+    var asselin_epsilon = 0.005;
+    //if (this.time>0) this.asselinPart1(asselin_epsilon);
+    
+    // *** Calcul des variables pronostiques *** 
     if (this.time==0) {
         this.avanceEuler();
     }
@@ -595,35 +713,9 @@ BarotropicModel.prototype.step = function()
     
     if (this.semiImplicite)
     {
-        // *** Calcul des transcients 
-        this.calcDx(this.phi_trans, this.tmp_var);
-        Variable.a_bc(this.U_t, this.tmp_var, this.dt, this.U_t);
-        
-        this.calcDy(this.phi_trans, this.tmp_var);
-        Variable.a_bc(this.V_t, this.tmp_var, this.dt, this.V_t);
-
-        // Terme de divergence
-        this.calcDivergence(this.U, this.V, this.divergence);
-        Variable.mulConst(this.divergence_t, -1, this.div_tmp);
-        Variable.a_bc(this.div_tmp, this.divergence, 2, this.div_tmp);
-        Variable.mul(this.m, this.div_tmp, this.div_tmp); // * m^2 
-        Variable.mul(this.m, this.div_tmp, this.div_tmp);                
-        Variable.a_bc(this.phi_t, this.div_tmp, this.dt*this.si_phi_star, this.phi_trans);
-        
-        // *** Résolution de l'équation de helmholtz
-        this.calcDivergence(this.U_t, this.V_t, this.div_tmp);       
-        this.initPhiAMatrix();
-        this.initPhiBVector();
-        Variable.copy(this.phi, this.si_phi);
-        console.log("convergence : "+Matrix.sor(this.si_phi_a, this.si_phi_b, 1.4, this.si_phi, this.si_residu, 1, 1000, this.width));
-        Variable.copy(this.si_phi, this.phi_t);
-        
-        // *** Calcul du vent et du géopotentiel final
-        this.calcDx(this.phi_t, this.tmp_var);
-        Variable.a_bc(this.U_t, this.tmp_var, -this.dt, this.U_t);
-        this.calcDy(this.phi_t, this.tmp_var);
-        Variable.a_bc(this.V_t, this.tmp_var, -this.dt, this.V_t);
+        this.solveSemiImplicit();
     }
+    
 
     // *** Filtrage des champs ***
     this.filterCounter++;
@@ -647,6 +739,9 @@ BarotropicModel.prototype.step = function()
         this.couple(this.V_t, this.V_couplage);
         this.couple(this.phi_t, this.phi_couplage);
     }
+    
+    // *** Filtrage temporel
+    //if (this.time>0) this.asselinPart2(asselin_epsilon);
 
     var tmp;
     
@@ -715,7 +810,18 @@ BarotropicModel.prototype.getInternalVariables = function()
     return [
             {"name":"f", "description":"coriolis factor", "units":"", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
             {"name":"m", "description":"scaling factor", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"alpha", "description":"alpha coefficient for coupling", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]}
+            {"name":"alpha", "description":"alpha coefficient for coupling", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
+            {"name":"phi_trans", "description":"géopotentiel transitoire", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
+            {"name":"divergence", "description":"divergence", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
+            {"name":"si_cx", "description":"", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
+            {"name":"si_cy", "description":"", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
+            {"name":"si_xy", "description":"", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
+            {"name":"si_phi_b", "description":"", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
+            {"name":"si_phi", "description":"", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
+            {"name":"div_tmp", "description":"", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
+            {"name":"phi_tmp", "description":"", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},           
+            {"name":"U_tmp", "description":"", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},           
+            {"name":"V_tmp", "description":"", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]}            
         ];
 }
 
