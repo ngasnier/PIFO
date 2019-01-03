@@ -157,22 +157,22 @@ export var BarotropicModel = function ()
                     {
                         i = x+y*this.width;
 
-                        /*xi = 0.5*(this.tourbillon[i]+this.f[i]+this.tourbillon[i-this.width]+this.f[i-this.width]);
+                        xi = 0.5*(this.tourbillon[i]+this.f[i]+this.tourbillon[i-this.width]+this.f[i-this.width]);
 
                         v = (this.V[i]+this.V[i+1]+this.V[i-this.width]+this.V[i+1-this.width])/4;
 
                         kphi = (this.K[i+1]+this.phi[i+1]-(this.K[i]+this.phi[i]))/this.dx;
 
-                        this.Su[i] = xi*v - kphi;*/
+                        this.Su[i] = xi*v - kphi;
                         
                         // Discretisation alternative
-                        xi = 0.5*(this.tourbillon[i]+this.tourbillon[i-this.width]);
+                        /*xi = 0.5*(this.tourbillon[i]+this.tourbillon[i-this.width]);
                         v = ((this.phi[i]+this.phi[i+this.width])*this.V[i]
                                 +(this.phi[i+1]+this.phi[i+1+this.width])*this.V[i+1]
                                 +(this.phi[i]+this.phi[i-this.width])*this.V[i-this.width]
                                 +(this.phi[i+1]+this.phi[i+1-this.width])*this.V[i+1-this.width])/8;
                         kphi = (this.K[i+1]+this.phi[i+1]-(this.K[i]+this.phi[i]))/this.dx;
-                        this.Su[i] = xi*v - kphi;
+                        this.Su[i] = xi*v - kphi;*/
                     }
                 }
             } 
@@ -214,16 +214,16 @@ export var BarotropicModel = function ()
                     {
                         i = x+y*this.width;
 
-/*                        xi = 0.5*(this.tourbillon[i-1]+this.f[i-1]+this.tourbillon[i]+this.f[i]);
+                        xi = 0.5*(this.tourbillon[i-1]+this.f[i-1]+this.tourbillon[i]+this.f[i]);
 
                         u = (this.U[i-1]+this.U[i]+this.U[i-1+this.width]+this.U[i+this.width])/4;
 
                         kphi = (this.K[i]+this.phi[i]-(this.K[i+this.width]+this.phi[i+this.width]))/this.dy;
 
-                        this.Sv[i] = -xi*u - kphi;*/
+                        this.Sv[i] = -xi*u - kphi;
                         
                         // Discretisation alternative
-                        xi = 0.5*(this.tourbillon[i-1]+this.tourbillon[i]);
+                        /*xi = 0.5*(this.tourbillon[i-1]+this.tourbillon[i]);
 
                         u = ((this.phi[i]+this.phi[i-1])*this.U[i-1]
                                 +(this.phi[i]+this.phi[i+1])*this.U[i]
@@ -232,7 +232,7 @@ export var BarotropicModel = function ()
 
                         kphi = (this.K[i]+this.phi[i]-(this.K[i+this.width]+this.phi[i+this.width]))/this.dy;
 
-                        this.Sv[i] = -xi*u - kphi;
+                        this.Sv[i] = -xi*u - kphi;*/
                     }
                 }
             }
@@ -371,19 +371,19 @@ export var BarotropicModel = function ()
                         m3 = this.m[i];
                         m4 = this.m[i+1];
 
-/*                        this.tourbillon[i] = (
-                                0.25*(m1*m1+m2*m2+m3*m3+m4*m4)
-                                *(
-                                     (this.V[i+1]-this.V[i])/this.dx - (this.U[i]-this.U[i+this.width])/this.dy
-                                 )
-                            );*/
-                        // Discretisation alternative
                         this.tourbillon[i] = (
                                 0.25*(m1*m1+m2*m2+m3*m3+m4*m4)
                                 *(
                                      (this.V[i+1]-this.V[i])/this.dx - (this.U[i]-this.U[i+this.width])/this.dy
+                                 )
+                            );
+                        // Discretisation alternative
+/*                        this.tourbillon[i] = (
+                                0.25*(m1*m1+m2*m2+m3*m3+m4*m4)
+                                *(
+                                     (this.V[i+1]-this.V[i])/this.dx - (this.U[i]-this.U[i+this.width])/this.dy
                                  )+this.f[i]
-                            )/(0.25*(this.phi[i]+this.phi[i+1]+this.phi[i+this.width]+this.phi[i+this.width+1]));
+                            )/(0.25*(this.phi[i]+this.phi[i+1]+this.phi[i+this.width]+this.phi[i+this.width+1]));*/
                     }
                 }
             }

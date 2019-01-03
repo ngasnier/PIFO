@@ -29,6 +29,8 @@ import { Z500HTMLRenderer } from "./ui/Z500HTMLRenderer.js";
 import { BarotropicVerificationHTMLRenderer } from "./ui/BarotropicVerificationHTMLRenderer.js";
 import { ModelUI } from "./ui/ModelUI.js";
 
+import { HumpDisturbance } from "./cases/HumpDisturbance.js";
+
 var ui = new ModelUI();
 
 var interpolator = new BarotropicInterpolator();
@@ -67,7 +69,7 @@ $(document).ready(function () {
     ui.model.projection = new MercatorProjection(Model.Rterre);
     ui.model.width = 144;
     ui.model.height = 72;
-    ui.model.dt = 90;
+    ui.model.dt = 45;
     ui.model.dlat = 1;
     ui.model.dlon = 1;
     ui.model.nlat = 80;
@@ -184,6 +186,10 @@ $(document).ready(function () {
         reloadData();
     });
 
+    $("#testCaseButton").click(function () { 
+        initTestCase();
+    });
+    
     // Charge les données
     reloadData();
 });
@@ -268,9 +274,47 @@ function onFieldDownload(data)
     else
     {
         ui.setStatusString("Prêt");
-        ui.setStatus("ready");
+        ui.setStatus("ready");       
         ui.reset();
     }
+}
+
+function initTestCase()
+{
+    // TODO : intégration beurk, il est temps que je me fasse un vrai framework avec de vrais test case...
+    var testcase = new HumpDisturbance();
+    
+    ui.model.width = testcase.width;
+    ui.model.height = testcase.height;
+    ui.model.semiImplicite = false;
+    
+    ui.model.dt = 10;
+    ui.model.dlat = 0.1;
+    ui.model.dlon = 0.1;
+    ui.model.nlat = 20;
+    ui.model.slat = ui.model.nlat - ui.model.height * ui.model.dlon;
+    ui.model.elon = 51;
+    ui.model.wlon = ui.model.elon - ui.model.width * ui.model.dlon;
+    
+    ui.model.relaxation = 0;
+    
+    ui.model.setVariable("U", testcase.getInitialU());
+    ui.model.setVariable("V", testcase.getInitialV());
+    ui.model.setVariable("phi", testcase.getInitialPhi());
+    
+    ui.model.setVariable("U_couplage", testcase.getInitialU());
+    ui.model.setVariable("V_couplage", testcase.getInitialV());
+    ui.model.setVariable("phi_couplage", testcase.getInitialPhi());
+    
+    
+    ui.setStatusString("Prêt");
+    ui.setStatus("ready");       
+    ui.model.init();
+
+    // On triche sur la projection et coriolis...
+    Variable.init(ui.model.getVariable("m"), 1);
+    Variable.init(ui.model.getVariable("inv_m"), 1);
+    Variable.init(ui.model.getVariable("f"), 0);
 }
 
 function calcCoords()
