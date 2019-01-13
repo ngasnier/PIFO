@@ -32,12 +32,23 @@ module.exports.gribExtract = function(context)
     return Helper.spawnPromise(cmdline, args, context);
 }
 
+module.exports.preprocessPifo = function(context)
+{
+    var cmdline = "node"
+    var args = [
+        "runpifo.js",
+        "preprocess"
+        ];
+    var options =  {cwd: path.join(context.config.products[context.productName].pifo_root)};
+    return Helper.spawnPromise(cmdline, args, context, options);
+}
 
 module.exports.runPifo = function(context)
 {
     var cmdline = "node"
     var args = [
-        "runpifo.js"
+        "runpifo.js",
+        "run"
         ];
     var options =  {cwd: path.join(context.config.products[context.productName].pifo_root)};
     return Helper.spawnPromise(cmdline, args, context, options);
