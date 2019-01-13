@@ -27,7 +27,7 @@ module.exports.gribExtract = function(context)
     var cmdline = path.join(context.config.products[context.productName].custom_root, "grib_extract.sh");
     var args = [
         context.productDir,
-        path.join(context.config.products[context.productName].pifo_root, "run")
+        path.join(context.config.products[context.productName].pifo_root, "input")
         ];
     return Helper.spawnPromise(cmdline, args, context);
 }
