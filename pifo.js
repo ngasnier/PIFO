@@ -16,6 +16,7 @@
  */
 
 import { MercatorProjection } from "./js/modeling/MercatorProjection.js";
+import { SchumannFilter } from "./js/modeling/SchumannFilter.js";
 import { WGRIBInterpolator } from "./js/modeling/WGRIBInterpolator.js";
 import { OutputInterpolator } from "./js/modeling/OutputInterpolator.js";
 import { TimeInterpolator } from "./js/modeling/TimeInterpolator.js";
@@ -168,6 +169,8 @@ if (model.verticalType == "CP")
     model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore_CP();
 else
     model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore();
+
+var smoothFilter = null;
 
 // Choix de surfaces régulièrement espacées sur un nombre souhaité de niveaux
 var ptop = config.ptop;
@@ -566,30 +569,36 @@ function run()
                 t = ugrd.getTimeIndex(Number(f[2].split(".")[0])*3600);
                 k = Number(f[1]);
                 textToVariable(data, ugrd.variable[t][k]);
+                if (smoothFilter!=null) smoothFilter.applyFilter2D(ugrd.variable[t][k]);
                 break;
             case "V":
                 t = vgrd.getTimeIndex(Number(f[2].split(".")[0])*3600);
                 k = Number(f[1]);
                 textToVariable(data, vgrd.variable[t][k]);
+                if (smoothFilter!=null) smoothFilter.applyFilter2D(vgrd.variable[t][k]);
                 break;
             case "tmp":
                 t = tmp.getTimeIndex(Number(f[2].split(".")[0])*3600);
                 k = Number(f[1]);
                 textToVariable(data, tmp.variable[t][k]);
+                if (smoothFilter!=null) smoothFilter.applyFilter2D(tmp.variable[t][k]);
                 break;
             case "Z":
                 t = sfcprs.getTimeIndex(Number(f[1].split(".")[0])*3600);
                 textToVariable(data, sfcprs.variable[t]);
+                if (smoothFilter!=null) smoothFilter.applyFilter2D(sfcprs.variable[t]);
                 break;
             case "sfchgt":
                 t = sfchgt.getTimeIndex(Number(f[1].split(".")[0])*3600);
                 k = Number(f[1]);
                 textToVariable(data, sfchgt.variable[t]);
+                if (smoothFilter!=null) textToVariable(data, sfchgt.variable[t]);
                 break;
             case "qv":
                 t = qv.getTimeIndex(Number(f[2].split(".")[0])*3600);
                 k = Number(f[1]);
                 textToVariable(data, qv.variable[t][k]);
+                if (smoothFilter!=null) smoothFilter.applyFilter2D(qv.variable[t][k]);
                 break;
         }
         reslist.shift();

@@ -139,6 +139,9 @@ export var BaroclinicModel = function ()
     // Indique si les données de vent ont été réduites ou non
     this.inputScaled = false;
     
+    // Divergence du vent
+    this.Divergence = [];
+
     // Composantes du vent réduit T et T-1 des couches (N-1)
     this.U = [];
     this.U_t = [];
@@ -475,6 +478,23 @@ export var BaroclinicModel = function ()
             }
         }
 
+        BaroclinicModel.prototype.calcDivergence = function()
+        {
+            var i;
+            for (var k=0;k<this.nbcouches;k++)
+            {
+                i = this.width+1;
+                for (var y=1;y<this.height-1;y++)
+                {
+                    for(var x=1;x<this.width-1;x++,i++)
+                    {
+                        this.Divergence[k][i] = (this.U[k][i]-this.U[k][i-1])/this.dx+(this.V[k][i-this.width]-this.V[k][i])/this.dy;
+                    }
+                    i+=2;
+                }
+            }
+        }
+
              
         /**
          * Filtre les champs pour éliminer ses fréquences parasites.
@@ -489,7 +509,7 @@ export var BaroclinicModel = function ()
                 this.filter.applyFilter(this.T_t);
                 this.filter.applyFilter(this.qv_t);
                 this.filter.applyFilter2D(this.Z_t);
-            }            
+            }
         }
 
         // ********************************************************************
@@ -717,6 +737,7 @@ BaroclinicModel.prototype.step = function()
     this.calcGeop();
     this.calcEnergie();
     this.calcTourbillon();
+    this.calcDivergence();
     if (this.global)
     {
         this.wrap(this.tourbillon);
@@ -828,6 +849,7 @@ BaroclinicModel.prototype.init = function()
     this.Sv = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     this.St = Variable.createVariable(this.verticalType=="CP"?this.nbcouches+1:this.nbcouches, this.width, this.height, true);
     this.Sqv = Variable.createVariable(this.nbcouches, this.width, this.height, true);
+    this.Divergence = Variable.createVariable(this.nbcouches, this.width, this.height, true);
     
     this.dPs = Variable.createVariable(1, this.width, this.height);
     this.dSigmaf = Variable.createVariable(this.nbcouches+1, this.width, this.height, true);
@@ -910,6 +932,7 @@ BaroclinicModel.prototype.init = function()
     this.calcGeop();
     this.calcEnergie();
     this.calcTourbillon();
+    this.calcDivergence();
 } 
 
 /**
@@ -990,6 +1013,7 @@ BaroclinicModel.prototype.getInternalVariables = function()
             {"name":"Pi_1", "description":"pseudo-flux vapeur->glace", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers},
             {"name":"Pi_2", "description":"pesudo-flux glace->neige", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers},
             {"name":"Pi_3", "description":"pseudo-flux neige->vapeur", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers},
+            {"name":"Divergence", "description":"divergence", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
             /*{"name":"latitudes", "description":"latitudes des points de grille", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
             {"name":"longitudes", "description":"longitudes des points", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},*/
             {"name":"debug3d", "description":"variable cotenant du debug", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers}

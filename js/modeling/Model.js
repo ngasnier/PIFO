@@ -234,7 +234,7 @@ Model.prototype.initGridFactors = function()
 
             // Facteur d'échelle
             lat = this.projection.yToLat(yplan);
-            this.m[i] = this.projection.scaleFactor(0, lat);
+            this.m[i] = this.projection.scaleFactor(lat, 0);
             this.inv_m[i] = 1/this.m[i];
 
             // Initialisation du couplage

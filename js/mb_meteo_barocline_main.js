@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { MercatorProjection } from "./modeling/MercatorProjection.js";
+import { SchumannFilter } from "./modeling/SchumannFilter.js";
 import { WGRIBInterpolator } from "./modeling/WGRIBInterpolator.js";
 import { TimeInterpolator } from "./modeling/TimeInterpolator.js";
 import { GeopotentialInterpolator } from "./modeling/GeopotentialInterpolator.js";
@@ -88,6 +89,8 @@ var status = "loading";
 var playStatus = false;
 var requestFrame = 0;
 
+var smoothFilter = null;
+
 $(document).ready(function() {   
 
     $("#debug").click(function ()
@@ -105,12 +108,12 @@ $(document).ready(function() {
         ui.model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore_CP();
     else
         ui.model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore();
-    
+       
     //ui.model.precipitationScheme = new PrecipitationScheme();
-
+    
     ui.model.width = 144;
     ui.model.height = 72;
-    ui.model.dt = 10;
+    ui.model.dt = 15;
     ui.model.dlat = 1;
     ui.model.dlon = 1;
     ui.model.nlat = 80;
@@ -121,31 +124,8 @@ $(document).ready(function() {
     ui.model.relaxation = 8;
     ui.model.inputScaled = true;
     
-/*    ui.model.width = 182;
-    ui.model.height = 88;
-    ui.model.global = true;
-    ui.model.dt = 90;
-    ui.model.dlat = 2;
-    ui.model.dlon = 2;
-    ui.model.nlat = 80;
-    ui.model.slat = ui.model.nlat-ui.model.height*ui.model.dlat;
-    ui.model.elon = 360;
-    ui.model.wlon = ui.model.elon-(ui.model.width-(ui.model.global?2:0))*ui.model.dlon;
-    ui.model.relaxation = 8;*/
-        
-    // TODO : les pôles ?
-/*    ui.model.width = 92;
-    ui.model.height = 44;
-    ui.model.global = true;
-    ui.model.dt = 120;
-    ui.model.dlat = 4;
-    ui.model.dlon = 4;
-    ui.model.nlat = 88;
-    ui.model.slat = ui.model.nlat-(ui.model.height)*ui.model.dlat;
-    ui.model.elon = 360;
-    ui.model.wlon = ui.model.elon-(ui.model.width-(ui.model.global?2:0))*ui.model.dlon;
-    ui.model.relaxation = 8;*/
-    
+    smoothFilter = new SchumannFilter(ui.model.width, ui.model.height);
+       
     // Choix de surfaces régulièrement espacées sur un nombre souhaité de niveaux
     var ptop = 100.0;
     var surfaces = [ ptop/100000];
@@ -379,30 +359,35 @@ function onFieldDownload(data)
             t = ugrd.getTimeIndex(Number(f[2].split(".")[0])*3600);
             k = Number(f[1]);
             textToVariable(data, ugrd.variable[t][k]);
+            if (smoothFilter!=null) smoothFilter.applyFilter2D(ugrd.variable[t][k]);
             break;
         case "V":
             t = vgrd.getTimeIndex(Number(f[2].split(".")[0])*3600);
             k = Number(f[1]);
             textToVariable(data, vgrd.variable[t][k]);
+            if (smoothFilter!=null) smoothFilter.applyFilter2D(vgrd.variable[t][k]);
             break;
         case "tmp":
             t = tmp.getTimeIndex(Number(f[2].split(".")[0])*3600);
             k = Number(f[1]);
             textToVariable(data, tmp.variable[t][k]);
+            if (smoothFilter!=null) smoothFilter.applyFilter2D(tmp.variable[t][k]);
             break;
         case "Z":
             t = sfcprs.getTimeIndex(Number(f[1].split(".")[0])*3600);
             textToVariable(data, sfcprs.variable[t]);
+            if (smoothFilter!=null) smoothFilter.applyFilter2D(sfcprs.variable[t]);
             break;
         case "sfchgt":
             t = sfchgt.getTimeIndex(Number(f[1].split(".")[0])*3600);
             k = Number(f[1]);
-            textToVariable(data, sfchgt.variable[t]);
+            if (smoothFilter!=null) textToVariable(data, sfchgt.variable[t]);
             break;
         case "qv":
             t = qv.getTimeIndex(Number(f[2].split(".")[0])*3600);
             k = Number(f[1]);
             textToVariable(data, qv.variable[t][k]);
+            if (smoothFilter!=null) smoothFilter.applyFilter2D(qv.variable[t][k]);
             break;
     }
     reslist.shift();
