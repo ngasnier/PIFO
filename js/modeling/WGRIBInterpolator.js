@@ -139,7 +139,7 @@ WGRIBInterpolator.prototype.interp = function(f, data, offsetx, offsety, scale=f
             
             if (scale)
             {
-                f[i] = f[i]/this.projection.scaleFactor(lon_in, this.projection.yToLat(y+0.5*offsety*dy));
+                f[i] = f[i]/this.projection.scaleFactor(this.projection.yToLat(y+0.5*offsety*dy), lon_in);
             }
 
             i++;

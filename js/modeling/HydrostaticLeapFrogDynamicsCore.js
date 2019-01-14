@@ -194,9 +194,9 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
                     rtz = Model.R*0.5*(this.model.T[k][i]+this.model.T[k][i+1])*(this.model.Z[i+1]-this.model.Z[i])/this.model.dx;
                     
                     // Divergence damping
-                    damp = -this.dampFactor*(this.model.Divergence[k][i+1]-this.model.Divergence[k][i])/this.model.dx;
+                    damp = this.dampFactor*(this.model.Divergence[k][i+1]-this.model.Divergence[k][i])/this.model.dx;
 
-                    this.model.Su[k][i] = xi*psvk - adv - kphi - rtz - damp;
+                    this.model.Su[k][i] = xi*psvk - adv - kphi - rtz + damp;
                 }
                 i+=2;
             }
@@ -274,9 +274,9 @@ export var HydrostaticLeapFrogDynamicsCore = function ()
                     // Verif Ok 14/06/2018
                     rtz = Model.R*0.5*(this.model.T[k][i]+this.model.T[k][i+this.model.width])*(this.model.Z[i]-this.model.Z[i+this.model.width])/this.model.dy;
 
-                    damp = -this.dampFactor*(this.model.Divergence[k][i+this.model.width]-this.model.Divergence[k][i+this.model.width])/this.model.dy;
+                    damp = this.dampFactor*(this.model.Divergence[k][i+this.model.width]-this.model.Divergence[k][i+this.model.width])/this.model.dy;
 
-                    this.model.Sv[k][i] = -xi*psuk - adv - kphi - rtz - damp;
+                    this.model.Sv[k][i] = -xi*psuk - adv - kphi - rtz + damp;
                 }
                 i+=2;
             }

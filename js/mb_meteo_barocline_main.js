@@ -111,7 +111,7 @@ $(document).ready(function() {
        
     //ui.model.precipitationScheme = new PrecipitationScheme();
     
-    ui.model.width = 144;
+    ui.model.width = 111;
     ui.model.height = 72;
     ui.model.dt = 15;
     ui.model.dlat = 1;

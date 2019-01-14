@@ -389,6 +389,7 @@ function run()
     
     // *** Configuration des paramètres temporels de la simulation
     ui.model.dt = config.dt;
+    ui.model.inputScaled = true;
     ui.stopTime = config.stopTime;
     ui.historyInterval = config.historyInterval;
     ui.historyDir = config.historyDir;
