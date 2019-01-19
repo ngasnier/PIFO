@@ -25,7 +25,8 @@ import { MercatorProjection } from "./MercatorProjection.js";
  */
 export var OutputInterpolator = function()
 {
-    this.projection = 1;
+    this.projection = null;
+    this.outputDomain = null;
      
     // Type de grille
     this.gridType = Model.GRID_A;
@@ -63,17 +64,13 @@ export var OutputInterpolator = function()
     this.elon = 350;    
 }
 
-
 OutputInterpolator.prototype.interp = function(data_in, data_out)
-{     
-    var lon = this.wlon;
+{   
+    this.projection.interpDomainToLatLon(this.outputDomain, data_in, data_out, 0, 0, false, "s");        
+    /*var lon = this.wlon;
     var lat = this.nlat;
-    var projection = new MercatorProjection(Model.Rterre);
-   
-    var ymin = projection.latToY(this.slat);
-    var ymax = projection.latToY(this.nlat);
-    var xmin = projection.lonToX(this.wlon);
-    var xmax = projection.lonToX(this.elon);
+    var [xmin, ymin] = this.projection.latLonToXY(this.minLat, this.minLon);
+    var [xmax, ymax] = this.projection.latLonToXY(this.maxLat, this.maxLon);
     var dx = (xmax-xmin)/(this.width);
     var dy = (ymax-ymin)/(this.height);
     var y_in=0, x_in = 0;
@@ -87,7 +84,7 @@ OutputInterpolator.prototype.interp = function(data_in, data_out)
     
     for (lat=this.nlat;lat>this.slat;lat-=this.dlat)
     {
-        y_in = projection.latToY(lat);
+        y_in = this.projection.latLonToXY(lat, 0);
         
         y_in1 = Math.floor((ymax-y_in)/dy);
         y_in2 = y_in1+1;
@@ -103,9 +100,7 @@ OutputInterpolator.prototype.interp = function(data_in, data_out)
         
         for (lon=this.wlon;lon<this.elon;lon+=this.dlon)
         {
-            x_in = projection.lonToX(lon);
-            /*if (lon_in<0) lon_in += 360;
-            if (lon_in>=360) lon_in -= 360;*/
+            x_in = this.projection.latlonToXY(lat, lon);
             
             x_in1 = Math.floor((x_in-xmin)/dx);
             x_in2 = x_in1+1;
@@ -136,5 +131,5 @@ OutputInterpolator.prototype.interp = function(data_in, data_out)
 
             i++;
         }
-    }
+    }*/
 }

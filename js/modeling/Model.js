@@ -24,6 +24,12 @@ export var Model = function ()
     
     // Type de projection à utiliser pour les équations (détermine m)
     this.projection = null;
+    
+    // Latitudes des points de grille au point m
+    this.latitudes = [];
+    
+    // Longitudes des points de grille au point m
+    this.longitudes = [];
      
     // Type de grille
     this.gridType = "A";
@@ -31,11 +37,11 @@ export var Model = function ()
     // Indique qu'on travaille en grille globale
     this.global = false;
      
-    // Pas de grille en degré dans la direction des latitudes.
+/*    // Pas de grille en degré dans la direction des latitudes.
     this.dlat = 10;
     
     // Pas de grille en degré dans la direction des longitudes.
-    this.dlon = 10;
+    this.dlon = 10;*/
     
     // Pas de grille en X. 1° = 111.11km. Recalculé à partir de dlon.
     this.dx = 1111110;
@@ -49,7 +55,7 @@ export var Model = function ()
     // Hauteur de grille du domaine
     this.height=36;
 
-    // Latitude du coin haut gauche du domaine.
+/*    // Latitude du coin haut gauche du domaine.
     this.nlat = 90;
     
     // Latitude du coin bas droite du domaine.
@@ -59,7 +65,7 @@ export var Model = function ()
     this.wlon = 0;
     
     // Longitude du coin bas droite du domaine
-    this.elon = 350;
+    this.elon = 350;*/
     
     // Pas de temps (attention à la stabilité !)
     this.dt = 3600;
@@ -170,7 +176,7 @@ Model.Rterre = 6371000;
  */
 Model.prototype.init = function()
 {
-    
+    this.initGridFactors();
 }
 
 /**
@@ -211,32 +217,61 @@ Model.prototype.getSigmaSurfaces = function()
  */
 Model.prototype.initGridFactors = function()
 {   
-    this.dx = (this.projection.lonToX(this.elon)-this.projection.lonToX(this.wlon))/this.width;
-    this.dy = (this.projection.latToY(this.nlat)-this.projection.latToY(this.slat))/this.height;
+    var x, y;
+    var i = 0;
+
+    [this.dx, this.dy] = this.projection.getMeshSize();
+
+    this.latitudes = Variable.createVariable(1, this.width, this.height);
+    this.longitudes = Variable.createVariable(1, this.width, this.height);    
     this.f = Variable.createVariable(1, this.width, this.height);
     this.alpha_couplage = Variable.createVariable(1, this.width, this.height);
     this.m = Variable.createVariable(1, this.width, this.height);
     this.inv_m = Variable.createVariable(1, this.width, this.height);
-
-    var yplan = this.projection.latToY(this.nlat);
-    var lat = 0;
-    var i = 0;
+    
+    // *** Calcul du point f
+    var xoffset, yoffset;
+    switch (this.gridType)
+    {
+        case Model.GRID_A,Model.GRID_D_OSCILL:
+            xoffset = 0;
+            yoffset = 0;
+            break;
+        case Model.GRID_B, Model.GRID_C:
+            this.projection.calcLatitudesLongitudes(1, 1, this.latitudes, this.longitudes);
+            break;
+        default:
+            throw "Invalid grid type ("+this.gridType+")";
+    }
+    
+    this.projection.calcLatitudesLongitudes(1, 1, this.latitudes, this.longitudes);
+    i = 0;
     for (var y=0;y<this.height;y++)
     {
         for(var x=0;x<this.width;x++,i++)
         {
-            // Paramètre de coriolis pris en décalé d'une demi cellule
-            if (this.gridType==Model.GRID_C)
-                lat = this.projection.yToLat(yplan-0.5*this.dy);
-            else
-                lat = this.projection.yToLat(yplan);
-            this.f[i] = 2 * Model.omega * Math.sin(lat*Math.PI/180);
-
-            // Facteur d'échelle
-            lat = this.projection.yToLat(yplan);
-            this.m[i] = this.projection.scaleFactor(lat, 0);
+            this.f[i] = 2 * Model.omega * Math.sin(this.latitudes[i]*Math.PI/180);
+        }
+    }
+    
+    // *** Calcul du point m
+    this.projection.calcLatitudesLongitudes(0, 0, this.latitudes, this.longitudes);
+    i = 0;
+    for (var y=0;y<this.height;y++)
+    {
+        for(var x=0;x<this.width;x++,i++)
+        {
+            this.m[i] = this.projection.scaleFactor(this.latitudes[i], this.longitudes[i]);
             this.inv_m[i] = 1/this.m[i];
+        }
+    }
 
+    // *** Calcul de la zone de relaxation et autres termes de grilles nécessaires
+    i = 0;
+    for (var y=0;y<this.height;y++)
+    {
+        for(var x=0;x<this.width;x++,i++)
+        {
             // Initialisation du couplage
             if (y==0 || y==this.height-1 || ((x==0 || x==this.width-1) && !this.global))
             {
@@ -264,8 +299,6 @@ Model.prototype.initGridFactors = function()
                 this.alpha_couplage[i] = 0.0;
             }
         }
-
-        yplan -= this.dy;
     }
 }
 

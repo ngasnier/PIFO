@@ -79,13 +79,7 @@ export var BaroclinicModel = function ()
     // A préciser pour les projections autres que CARTESIEN et MERCATOR
     this.m = [];  
     this.inv_m = [];  
-    
-    // Pas de grille en degré dans la direction des latitudes.
-    this.dlat = 10;
-    
-    // Pas de grille en degré dans la direction des longitudes.
-    this.dlon = 10;
-    
+      
     // Pas de grille en X. 1° = 111.11km. Recalculé à partir de dlon.
     this.dx = 111100;
     
@@ -807,7 +801,7 @@ BaroclinicModel.prototype.step = function()
     // Recalcule la pression des différentes surfaces s
     this.calcPs();
     
-    // *** Calcule des diagnostiques finaux ***
+    // *** Calcul des diagnostiques finaux ***
     Variable.a_bc2d(this.apcp, this.Pl[this.nbcouches], 1, this.apcp);
     Variable.a_bc2d(this.acsnow, this.Pi[this.nbcouches], 1, this.acsnow);
 
@@ -825,7 +819,6 @@ BaroclinicModel.prototype.init = function()
 {
     // *** Initialises les variables de grille ***
     this.initGridFactors();
-    this.calcCoords();
     this.time = 0;
 
     // *** Initialisation des tableaux nécessaires sur couches et surfaces ***
@@ -941,11 +934,11 @@ BaroclinicModel.prototype.init = function()
 BaroclinicModel.prototype.getHistoricVariables = function()
 {
     var layers = this.getLayerLevels();
-    return [{"name":"U", "description":"U component of wind", "units":"m.s^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers}, 
-            {"name":"V", "description":"V component of wind", "units":"m.s^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"T", "description":"Temperature", "units":"K", "type":(this.verticalType=="CP"?Variable.VARIABLE_TYPE_SURFACE:Variable.VARIABLE_TYPE_LAYER), "levels": (this.levelType=="CP"?this.getSurfaceLevels():layers)},
-            {"name":"ps", "description":"Surface pressure", "units":"pa", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"qv", "description":"Specific humidity", "units":"kg/kg", "type":Variable.VARIABLE_LAYER, "levels": layers}
+    return [{"name":"U", "description":"U component of wind", "units":"m.s^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_U_VECTOR}, 
+            {"name":"V", "description":"V component of wind", "units":"m.s^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_V_VECTOR},
+            {"name":"T", "description":"Temperature", "units":"K", "type":(this.verticalType=="CP"?Variable.VARIABLE_TYPE_SURFACE:Variable.VARIABLE_TYPE_LAYER), "levels": (this.levelType=="CP"?this.getSurfaceLevels():layers), "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"ps", "description":"Surface pressure", "units":"pa", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1], "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"qv", "description":"Specific humidity", "units":"kg/kg", "type":Variable.VARIABLE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR}
         ];
 }
 
@@ -956,7 +949,7 @@ BaroclinicModel.prototype.getHistoricVariables = function()
 BaroclinicModel.prototype.getParameterVariables = function()
 {
     return [
-            {"name":"sfcgeop", "description":"surface geopotential", "units": "m^2.s^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": [1]}
+            {"name":"sfcgeop", "description":"surface geopotential", "units": "m^2.s^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": [1], "number":Variable.NUMBER_TYPE_SCALAR}
         ];
 }
 
@@ -969,15 +962,15 @@ BaroclinicModel.prototype.getDiagnosticVariables = function()
     var surfaces = this.getSurfaceLevels();
     var layers = this.getLayerLevels();
     return [
-            {"name":"sigmaf", "description":"vitesse verticale généralisée", "units":"sigma.s^-1", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces},
-            {"name":"phi", "description":"géopotentiel de la couche", "units":"m^2.s^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"K", "description":"énergie cinétique", "units":"J", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"tourbillon", "description":"tourbillon absolu potentiel", "units": "S^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"Pl", "description":"flux de précipitations liquides", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces},
-            {"name":"Pi", "description":"flux de précipitations solides", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces},
-            {"name":"E", "description":"flux d'évaporation de surface", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"apcp", "description":"accumulation totale de pluie", "units": "kg.m^2", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"acsnow", "description":"accumulation totale de neige", "units": "kg.m^2", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]}
+            {"name":"sigmaf", "description":"vitesse verticale généralisée", "units":"sigma.s^-1", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"phi", "description":"géopotentiel de la couche", "units":"m^2.s^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"K", "description":"énergie cinétique", "units":"J", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"tourbillon", "description":"tourbillon absolu potentiel", "units": "S^-1", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Pl", "description":"flux de précipitations liquides", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Pi", "description":"flux de précipitations solides", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"E", "description":"flux d'évaporation de surface", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1], "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"apcp", "description":"accumulation totale de pluie", "units": "kg.m^2", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1], "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"acsnow", "description":"accumulation totale de neige", "units": "kg.m^2", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1], "number":Variable.NUMBER_TYPE_SCALAR}
         ];
 }
 
@@ -989,34 +982,34 @@ BaroclinicModel.prototype.getInternalVariables = function()
     var layers = this.getLayerLevels();
     var surfaces = this.getSurfaceLevels();
     return [
-            {"name":"f", "description":"facteur de coriolis", "units":"", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"m", "description":"facteur d'échelle", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"inv_m", "description":"inverse du facteur d'échelle", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"alpha_couplage", "description":"coefficient de couplage alpha", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"Dtilde", "description":"divergence de quantité de mouvement", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"DtildeDs", "description":"intégration de dtilde*ds sur la verticale", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"p", "description":"pression sur tous les niveaux s du modèle", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": this.sigma},
-            {"name":"Z", "description":"ln(ps)", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"Sz", "description":"tendance de pression de surface", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"Su", "description":"tendance de la composante u du vent", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"Sv", "description":"tendance de la composante v du vent", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"St", "description":"tendence de la temperature", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"Sqv", "description":"tendence de l'humidité spécifique", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"dQv", "description":"variation de qv dûe aux processus physiques", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"dPs", "description":"variation de Ps dûe aux processus physiques", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"dSigmaf", "description":"variation de Sigmaf dûe aux processus physiques", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces},
-            {"name":"Cph", "description":"enthalpie totale du mélange", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"Q", "description":"variation d'enthalapie", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            {"name":"Pl_1", "description":"pseudo-flux vapeur->eau de nuage", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers},
-            {"name":"Pl_2", "description":"pesudo-flux eau de nuage->eau précipitante", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers},
-            {"name":"Pl_3", "description":"pseudo-flux eau précipitante->vapeur", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers},
-            {"name":"Pi_1", "description":"pseudo-flux vapeur->glace", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers},
-            {"name":"Pi_2", "description":"pesudo-flux glace->neige", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers},
-            {"name":"Pi_3", "description":"pseudo-flux neige->vapeur", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers},
-            {"name":"Divergence", "description":"divergence", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers},
-            /*{"name":"latitudes", "description":"latitudes des points de grille", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},
-            {"name":"longitudes", "description":"longitudes des points", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1]},*/
-            {"name":"debug3d", "description":"variable cotenant du debug", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers}
+            {"name":"f", "description":"facteur de coriolis", "units":"", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1], "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"m", "description":"facteur d'échelle", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1], "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"inv_m", "description":"inverse du facteur d'échelle", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1], "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"alpha_couplage", "description":"coefficient de couplage alpha", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1], "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Dtilde", "description":"divergence de quantité de mouvement", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"DtildeDs", "description":"intégration de dtilde*ds sur la verticale", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"p", "description":"pression sur tous les niveaux s du modèle", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": this.sigma, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Z", "description":"ln(ps)", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1], "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Sz", "description":"tendance de pression de surface", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1], "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Su", "description":"tendance de la composante u du vent", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Sv", "description":"tendance de la composante v du vent", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"St", "description":"tendence de la temperature", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Sqv", "description":"tendence de l'humidité spécifique", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"dQv", "description":"variation de qv dûe aux processus physiques", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"dPs", "description":"variation de Ps dûe aux processus physiques", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1], "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"dSigmaf", "description":"variation de Sigmaf dûe aux processus physiques", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": surfaces, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Cph", "description":"enthalpie totale du mélange", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Q", "description":"variation d'enthalapie", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Pl_1", "description":"pseudo-flux vapeur->eau de nuage", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Pl_2", "description":"pesudo-flux eau de nuage->eau précipitante", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Pl_3", "description":"pseudo-flux eau précipitante->vapeur", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Pi_1", "description":"pseudo-flux vapeur->glace", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Pi_2", "description":"pesudo-flux glace->neige", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Pi_3", "description":"pseudo-flux neige->vapeur", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"Divergence", "description":"divergence", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"latitudes", "description":"latitudes des points de grille", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1], "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"longitudes", "description":"longitudes des points", "units": "", "type":Variable.VARIABLE_TYPE_SURFACE, "levels": [1], "number":Variable.NUMBER_TYPE_SCALAR},
+            {"name":"debug3d", "description":"variable cotenant du debug", "units": "", "type":Variable.VARIABLE_TYPE_LAYER, "levels": layers, "number":Variable.NUMBER_TYPE_SCALAR}
         ];
 }
 
@@ -1079,23 +1072,3 @@ BaroclinicModel.prototype.getName = function()
     return "PIFO BAROCLINE";
 }
 
-BaroclinicModel.prototype.calcCoords = function()
-{
-    var xmap = 0, ymap = this.projection.latToY(this.nlat);
-    var i = 0;
-    this.latitudes = Variable.createVariable(1, this.width, this.height);
-    this.longitudes = Variable.createVariable(1, this.width, this.height);
-    
-    for (var y=0;y<this.height;y++)
-    {
-        xmap = this.projection.lonToX(this.wlon);
-        for (var x=0;x<this.width;x++)
-        {
-            this.latitudes[i] =  this.projection.yToLat(ymap);
-            this.longitudes[i] = this.projection.xToLon(xmap);
-            xmap += this.dx;
-            i++;
-        }
-        ymap -= this.dy;
-    }
-}

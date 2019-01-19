@@ -17,7 +17,6 @@
 
 import { MercatorProjection } from "./js/modeling/MercatorProjection.js";
 import { SchumannFilter } from "./js/modeling/SchumannFilter.js";
-import { WGRIBInterpolator } from "./js/modeling/WGRIBInterpolator.js";
 import { OutputInterpolator } from "./js/modeling/OutputInterpolator.js";
 import { TimeInterpolator } from "./js/modeling/TimeInterpolator.js";
 import { GeopotentialInterpolator } from "./js/modeling/GeopotentialInterpolator.js";
@@ -45,15 +44,16 @@ import { FieldTextExporter } from "./js/ui/FieldTextExporter.js";
 
 import { ModelFront } from "./js/front/ModelFront.js";
 
+import { WGRIBFieldReader } from "./js/util/WGRIBFieldReader.js";
+
 // Node.js specific
 var fs = require('fs');
 const path = require('path');
 
-var wgribInterpolator = new WGRIBInterpolator();
 var verticalInterpolator = new VerticalInterpolator();
-var outputInterpolator = new OutputInterpolator();
 var geopInterpolator = new GeopotentialInterpolator();
 var humidityInterpolator = new HumidityInterpolator();
+var outputInterpolator = new OutputInterpolator();
 
 var fieldExporter = new FieldTextExporter();
 var windRenderer = new WindHTMLRenderer();
@@ -96,6 +96,8 @@ var model = null;
 var projection = null;
 var inclureRelief = 0;
 
+var smoothFilter = null;
+
 // Environnement de fonctionnement
 var mode = "run";
 var config = {};
@@ -128,7 +130,6 @@ config = require(configFile);
 
 
 // *** Instanciation du modèle
-// Choix du type de modèle
 switch (config.model)
 {
     case "BaroclinicModel":
@@ -138,8 +139,8 @@ switch (config.model)
         model = new BaroclinicModel();
 }
 
-// *** Paramétrage de la grille horizontale
-switch (config.projection)
+// *** Configuration du domaine géographique
+switch (config.horizontalDomain.projection)
 {
     case Model.PROJ_MERCATOR:
         projection = new MercatorProjection(Model.Rterre);
@@ -147,35 +148,29 @@ switch (config.projection)
     default:
         projection = new MercatorProjection(Model.Rterre);
 }
-// TODO : code du modèle à updater pour accéder au bon type d'objet
-model.projection = projection;
-model.gridType = config.gridType;
 
-// Configuration du domaine géographique
-model.width = config.width;
-model.height = config.height;
-model.global = config.global;
-model.dlat = config.dlat;
-model.dlon = config.dlon;
-model.nlat = config.nlat;
-model.slat = model.nlat-(model.height)*model.dlat;
-model.elon = config.elon;
-model.wlon = model.elon-(model.width-(model.global?2:0))*model.dlon;
-model.relaxation = config.relaxation;
+model.projection = projection;
+model.projection.domain = Object.assign({}, config.horizontalDomain);
+model.gridType = config.horizontalDomain.gridType;
+
+model.width = config.horizontalDomain.width;
+model.height = config.horizontalDomain.height;
+model.global = config.horizontalDomain.global;
+
+model.relaxation = config.horizontalDomain.relaxation;
 
 // *** Paramétrage de la grille verticale du modèle
-model.verticalType = config.verticalType;
+model.verticalType = config.verticalDomain.levelType;
 if (model.verticalType == "CP")
     model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore_CP();
 else
     model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore();
 
-var smoothFilter = null;
 
 // Choix de surfaces régulièrement espacées sur un nombre souhaité de niveaux
-var ptop = config.ptop;
+var ptop = config.verticalDomain.ptop;
 var surfaces = [ ptop/100000];
-var nbsurfaces = config.nbSurfaces;
+var nbsurfaces = config.verticalDomain.nbSurfaces;
 var lev = ptop/100000;
 for (var i=1;i<nbsurfaces;i++)
 {
@@ -191,7 +186,7 @@ switch (mode)
         preprocess();
         break;
     case "init":
-        init();
+        init();// TODO
         break;
     case "run":
         run();
@@ -207,22 +202,9 @@ function preprocess()
     var field3d;
     
     // Interpolation verticale
-    verticalInterpolator.inputLevels = config.inputLevels;
+    verticalInterpolator.inputLevels = config.preprocessor.levels;
     verticalInterpolator.surfacePressure = Variable.createVariable(1, model.width, model.height);
-
-    // Init l'interpolation spatiale des données d'entrée
-    wgribInterpolator.global = model.global;
-    wgribInterpolator.gridType = model.gridType;
-    wgribInterpolator.projection = model.projection;
-    wgribInterpolator.width = model.width;
-    wgribInterpolator.height = model.height;
-    wgribInterpolator.dlat = model.dlat;
-    wgribInterpolator.dlon = model.dlon;
-    wgribInterpolator.nlat = model.nlat;
-    wgribInterpolator.slat = model.slat;
-    wgribInterpolator.elon = model.elon;
-    wgribInterpolator.wlon = model.wlon;
-    
+  
     // Creation des variables sur le modèle
     model.setVariable("U", Variable.createVariable(model.nbcouches, model.width, model.height));
     model.setVariable("V", Variable.createVariable(model.nbcouches, model.width, model.height));
@@ -234,7 +216,7 @@ function preprocess()
     model.setVariable("Z", Variable.createVariable(1, model.width, model.height));
 
     field2d = Variable.createVariable(1, model.width, model.height);
-    field3d = Variable.createVariable(config.inputLevels.length, model.width, model.height);
+    field3d = Variable.createVariable(config.preprocessor.levels.length, model.width, model.height);
 
     for (var t=0;t<config.inputTimes.length;t++)
     {
@@ -255,11 +237,11 @@ function preprocess()
         for (var i=0;i<field2d.length;i++) field2d[i] = Math.log(field2d[i]);
         write2DVariable("Z", config.inputTimes[t], field2d);
         
-        interpWGRIB3DField("ugrd", config.inputTimes[t], 1, 0, true, field3d);
+        interpWGRIB3DField("ugrd", config.inputTimes[t], 1, 0, true, field3d, "u");
         verticalInterpolator.interp(field3d, model.getVariable("U"));
         write3DVariable("U", config.inputTimes[t], model.getVariable("U"));
 
-        interpWGRIB3DField("vgrd", config.inputTimes[t], 0, 1, true, field3d);
+        interpWGRIB3DField("vgrd", config.inputTimes[t], 0, 1, true, field3d, "v");
         verticalInterpolator.interp(field3d, model.getVariable("V"));
         write3DVariable("V", config.inputTimes[t], model.getVariable("V"));
 
@@ -281,7 +263,7 @@ function preprocess()
     }
        
     // Recopie le fileinfo.
-    var inFilename = config.preprocessDir + "/fileinfo.txt";
+    var inFilename = config.preprocessor.preprocessDir + "/fileinfo.txt";
     var outFilename = config.inputDir + "/fileinfo.txt";
     var fileinfo = fs.readFileSync(inFilename, "utf8");
     fs.writeFileSync(outFilename, fileinfo);
@@ -290,7 +272,7 @@ function preprocess()
     console.log("preprocess done.");
 }
 
-function interpWGRIB2DField(pField, pValid, pOffsetX, pOffsetY, pScale, pVariable)
+function interpWGRIB2DField(pField, pValid, pOffsetX, pOffsetY, pScale, pVariable, pFieldType="s")
 {
     var filename, valid;
     var data;
@@ -300,17 +282,17 @@ function interpWGRIB2DField(pField, pValid, pOffsetX, pOffsetY, pScale, pVariabl
         valid ="00"+valid;
         valid = valid.substr(valid.length-3);
     }
-    filename = path.join(config.preprocessDir, pField+"_"+valid+".txt");
+    filename = path.join(config.preprocessor.preprocessDir, pField+"_"+valid+".txt");
     console.log("loading "+filename);
-    data = fs.readFileSync(filename, 'utf8');
-    wgribInterpolator.interp(pVariable, data, pOffsetX, pOffsetY, pScale);
+    data = WGRIBFieldReader.read(fs.readFileSync(filename, 'utf8'));
+    projection.interpLatLonGridToDomain(config.preprocessor, data, pVariable, pOffsetX, pOffsetY, pScale, pFieldType);
 }
 
-function interpWGRIB3DField(pField, pValid, pOffsetX, pOffsetY, pScale, pVariable)
+function interpWGRIB3DField(pField, pValid, pOffsetX, pOffsetY, pScale, pVariable, pFieldType="s")
 {
     var filename, lev, valid;
     var data;
-    for (var k=0;k<config.inputLevels.length;k++)
+    for (var k=0;k<config.preprocessor.levels.length;k++)
     {
         lev = Math.floor(verticalInterpolator.inputLevels[k]/100);
         valid = pValid.toString();
@@ -319,19 +301,10 @@ function interpWGRIB3DField(pField, pValid, pOffsetX, pOffsetY, pScale, pVariabl
             valid ="00"+valid;
             valid = valid.substr(valid.length-3);
         }
-        filename = path.join(config.preprocessDir, pField+"_"+lev.toString()+"_"+valid+".txt");
+        filename = path.join(config.preprocessor.preprocessDir, pField+"_"+lev.toString()+"_"+valid+".txt");
         console.log("loading "+filename);
-        data = fs.readFileSync(filename, 'utf8');
-        wgribInterpolator.interp(pVariable[k], data, pOffsetX, pOffsetY, pScale);
-    }
-}
-
-function textToVariable(pData, pVariable)
-{
-    var lines = pData.split('\n');
-    for (var i=1;i<lines.length;i++)
-    {
-        pVariable[i-1] = Number(lines[i]);
+        data = WGRIBFieldReader.read(fs.readFileSync(filename, 'utf8'));
+        projection.interpLatLonGridToDomain(config.preprocessor, data, pVariable[k], pOffsetX, pOffsetY, pScale, pFieldType);
     }
 }
 
@@ -403,6 +376,9 @@ function run()
     }
 
     // Configuration pour les exportations notamment
+    // TODO : il faudrait ajouter des metadata dans les variables pour l'interpolation
+    outputInterpolator.projection = projection;
+    outputInterpolator.outputDomain = Object.assign({}, config.outputDomain);    
     outputInterpolator.global = ui.model.global;
     outputInterpolator.gridType = ui.model.gridType;
     outputInterpolator.projection = ui.model.projection;
@@ -569,36 +545,35 @@ function run()
             case "U":
                 t = ugrd.getTimeIndex(Number(f[2].split(".")[0])*3600);
                 k = Number(f[1]);
-                textToVariable(data, ugrd.variable[t][k]);
+                WGRIBFieldReader.read(data, ugrd.variable[t][k]);
                 if (smoothFilter!=null) smoothFilter.applyFilter2D(ugrd.variable[t][k]);
                 break;
             case "V":
                 t = vgrd.getTimeIndex(Number(f[2].split(".")[0])*3600);
                 k = Number(f[1]);
-                textToVariable(data, vgrd.variable[t][k]);
+                WGRIBFieldReader.read(data, vgrd.variable[t][k]);
                 if (smoothFilter!=null) smoothFilter.applyFilter2D(vgrd.variable[t][k]);
                 break;
             case "tmp":
                 t = tmp.getTimeIndex(Number(f[2].split(".")[0])*3600);
                 k = Number(f[1]);
-                textToVariable(data, tmp.variable[t][k]);
+                WGRIBFieldReader.read(data, tmp.variable[t][k]);
                 if (smoothFilter!=null) smoothFilter.applyFilter2D(tmp.variable[t][k]);
                 break;
             case "Z":
                 t = sfcprs.getTimeIndex(Number(f[1].split(".")[0])*3600);
-                textToVariable(data, sfcprs.variable[t]);
+                WGRIBFieldReader.read(data, sfcprs.variable[t]);
                 if (smoothFilter!=null) smoothFilter.applyFilter2D(sfcprs.variable[t]);
                 break;
             case "sfchgt":
                 t = sfchgt.getTimeIndex(Number(f[1].split(".")[0])*3600);
                 k = Number(f[1]);
-                textToVariable(data, sfchgt.variable[t]);
-                if (smoothFilter!=null) textToVariable(data, sfchgt.variable[t]);
+                WGRIBFieldReader.read(data, sfchgt.variable[t]);
                 break;
             case "qv":
                 t = qv.getTimeIndex(Number(f[2].split(".")[0])*3600);
                 k = Number(f[1]);
-                textToVariable(data, qv.variable[t][k]);
+                WGRIBFieldReader.read(data, qv.variable[t][k]);
                 if (smoothFilter!=null) smoothFilter.applyFilter2D(qv.variable[t][k]);
                 break;
         }
@@ -626,19 +601,21 @@ function calcCoords()
 {
     latitudes = Variable.createVariable(1, model.width, model.height);
     longitudes = Variable.createVariable(1, model.width, model.height);
-    var lat = model.nlat;
-    var lon = model.wlon;
+    var lat = config.outputDomain.maxLat;
+    var lon = config.outputDomain.minLon;
+    var width = (config.outputDomain.maxLon-config.outputDomain.minLon)/config.outputDomain.dlon;
+    var height = (config.outputDomain.maxLat-config.outputDomain.minLat)/config.outputDomain.dlat;
     var i = 0;
-    for (var y=0;y<model.height;y++)
+    for (var y=0;y<height;y++)
     {
-        lon = model.wlon;
-        for (var x=0;x<model.width;x++)
+        lon = config.outputDomain.minLon;
+        for (var x=0;x<width;x++)
         {
             latitudes[i] = lat;
             longitudes[i] = lon;
-            lon += model.dlon;
+            lon += config.outputDomain.dlon;
             i++;
         }
-        lat-=model.dlat;
+        lat-=config.outputDomain.dlat;
     }
 }

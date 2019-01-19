@@ -41,6 +41,7 @@ import { TemperatureHTMLRenderer } from "./ui/TemperatureHTMLRenderer.js";
 import { RainHTMLRenderer } from "./ui/RainHTMLRenderer.js";
 import { BarotropicVerificationHTMLRenderer } from "./ui/BarotropicVerificationHTMLRenderer.js";
 import { ModelUI } from "./ui/ModelUI.js";
+import { WGRIBFieldReader } from "./util/WGRIBFieldReader.js";
 
 var ui = new ModelUI();
 
@@ -99,37 +100,46 @@ $(document).ready(function() {
     });
     ui.setStatus("loading");
     ui.setStatusString("Initialisation");
-  
+    $.getJSON("config.json",initialize);
+});
+
+function initialize(config) 
+{
     ui.model = new BaroclinicModel();
-    ui.model.projection = new MercatorProjection(Model.Rterre);
-    ui.model.gridType = "C";
-    ui.model.verticalType = "L";
+    
+    // *** Configuration du domaine géographique
+    switch (config.horizontalDomain.projection)
+    {
+        case Model.PROJ_MERCATOR:
+            ui.model.projection = new MercatorProjection(Model.Rterre);
+            break;
+        default:
+            ui.model.projection = new MercatorProjection(Model.Rterre);
+    }
+    ui.model.projection.domain = Object.assign({}, config.horizontalDomain);
+    
+    ui.model.gridType = config.horizontalDomain.gridType;
+    ui.model.width = config.horizontalDomain.width;
+    ui.model.height = config.horizontalDomain.height;
+    ui.model.global = config.horizontalDomain.global;
+    ui.model.global = false;
+
+    var ms = ui.model.projection.getMeshSize();
+    ui.model.dx = ms[0];
+    ui.model.dy = ms[1];
+    ui.model.relaxation = config.horizontalDomain.relaxation;
+
+    // *** Configuration du domaine vertical
+    ui.model.verticalType = config.verticalDomain.levelType;
     if (ui.model.verticalType == "CP")
         ui.model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore_CP();
     else
         ui.model.dynamicsCore = new HydrostaticLeapFrogDynamicsCore();
-       
-    //ui.model.precipitationScheme = new PrecipitationScheme();
     
-    ui.model.width = 111;
-    ui.model.height = 72;
-    ui.model.dt = 15;
-    ui.model.dlat = 1;
-    ui.model.dlon = 1;
-    ui.model.nlat = 80;
-    ui.model.slat = ui.model.nlat-ui.model.height*ui.model.dlat;
-    ui.model.elon = 51;
-    ui.model.wlon = ui.model.elon-ui.model.width*ui.model.dlon;
-    ui.model.global = false;
-    ui.model.relaxation = 8;
-    ui.model.inputScaled = true;
-    
-    smoothFilter = new SchumannFilter(ui.model.width, ui.model.height);
-       
     // Choix de surfaces régulièrement espacées sur un nombre souhaité de niveaux
-    var ptop = 100.0;
+    var ptop = config.verticalDomain.ptop;
     var surfaces = [ ptop/100000];
-    var nbsurfaces = 9;
+    var nbsurfaces = config.verticalDomain.nbSurfaces;;
     var lev = ptop/100000;
     for (var i=1;i<nbsurfaces;i++)
     {
@@ -138,6 +148,22 @@ $(document).ready(function() {
         surfaces.push(lev);
     }
     ui.model.setSurfaceLevels(surfaces);
+    
+    // *** Active la physique si souhaité
+    if (config.enablePrecipitationScheme) ui.model.precipitationScheme = new PrecipitationScheme();
+    if (config.enableConvectionScheme) ui.model.convectionScheme = new ConvectionScheme();
+    
+    // *** Configuration des filtres
+    // TODO : filtre d'entrée paramétrable
+    smoothFilter = new SchumannFilter(ui.model.width, ui.model.height);       
+    
+    // *** Configuration des paramètres temporels de la simulation
+    ui.model.dt = config.dt;
+    ui.model.inputScaled = true;
+    ui.stopTime = config.stopTime;
+    ui.historyInterval = config.historyInterval;
+    ui.historyDir = config.historyDir;
+   
     
     ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", levels:ui.model.getLayerLevels(), renderer: windRenderer},
         Temperature: {group:"HistoricVariables", name:"Temperature", levels:(ui.model.verticalType=="CP" ? ui.model.getSurfaceLevels() : ui.model.getLayerLevels()), renderer: temperatureRenderer},
@@ -157,10 +183,6 @@ $(document).ready(function() {
     
     // Interpolation verticale
     verticalInterpolator.inputLevels = [100, 7000, 15000, 35000, 50000, 65000, 85000, 92500, 100000];
-    /*verticalInterpolator.inputLevels = [100, 200, 300, 500, 700, 1000, 2000, 
-        3000, 5000, 7000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 
-        45000, 50000, 55000, 60000, 65000, 70000, 75000, 80000, 85000, 90000, 
-        92500, 95000, 97500, 100000];*/
 
     // Init l'interpolation spatiale des données d'entrée
 //    wgribInterpolator.interpolationType = 2; // N'apporte pas un gros gain en stabilité...
@@ -338,15 +360,6 @@ $(document).ready(function() {
     };
     
     reloadData();
-});
-
-function textToVariable(pData, pVariable)
-{
-    var lines = pData.split('\n');
-    for (var i=1;i<lines.length;i++)
-    {
-        pVariable[i-1] = Number(lines[i]);
-    }
 }
 
 function onFieldDownload(data) 
@@ -358,35 +371,35 @@ function onFieldDownload(data)
         case "U":
             t = ugrd.getTimeIndex(Number(f[2].split(".")[0])*3600);
             k = Number(f[1]);
-            textToVariable(data, ugrd.variable[t][k]);
+            WGRIBFieldReader.read(data, ugrd.variable[t][k]);
             if (smoothFilter!=null) smoothFilter.applyFilter2D(ugrd.variable[t][k]);
             break;
         case "V":
             t = vgrd.getTimeIndex(Number(f[2].split(".")[0])*3600);
             k = Number(f[1]);
-            textToVariable(data, vgrd.variable[t][k]);
+            WGRIBFieldReader.read(data, vgrd.variable[t][k]);
             if (smoothFilter!=null) smoothFilter.applyFilter2D(vgrd.variable[t][k]);
             break;
         case "tmp":
             t = tmp.getTimeIndex(Number(f[2].split(".")[0])*3600);
             k = Number(f[1]);
-            textToVariable(data, tmp.variable[t][k]);
+            WGRIBFieldReader.read(data, tmp.variable[t][k]);
             if (smoothFilter!=null) smoothFilter.applyFilter2D(tmp.variable[t][k]);
             break;
         case "Z":
             t = sfcprs.getTimeIndex(Number(f[1].split(".")[0])*3600);
-            textToVariable(data, sfcprs.variable[t]);
+            WGRIBFieldReader.read(data, sfcprs.variable[t]);
             if (smoothFilter!=null) smoothFilter.applyFilter2D(sfcprs.variable[t]);
             break;
         case "sfchgt":
             t = sfchgt.getTimeIndex(Number(f[1].split(".")[0])*3600);
             k = Number(f[1]);
-            if (smoothFilter!=null) textToVariable(data, sfchgt.variable[t]);
+            WGRIBFieldReader.read(data, sfchgt.variable[t]);
             break;
         case "qv":
             t = qv.getTimeIndex(Number(f[2].split(".")[0])*3600);
             k = Number(f[1]);
-            textToVariable(data, qv.variable[t][k]);
+            WGRIBFieldReader.read(data, qv.variable[t][k]);
             if (smoothFilter!=null) smoothFilter.applyFilter2D(qv.variable[t][k]);
             break;
     }

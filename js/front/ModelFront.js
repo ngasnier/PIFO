@@ -148,8 +148,8 @@ ModelFront.prototype.updateDisplay = function ()
     var minutes = Math.floor(t / 60);
     console.log("Temps = " + this.model.time.toString() + " secondes ("
             + jours.toString() + " jrs " + heures.toString() + " hrs "
-            + minutes.toString() + " min) - dt=" + this.model.dt.toString() + "s, dlon="
-            + this.model.dlon.toString() + "°, dlat=" + this.model.dlat.toString() + "°, "
+            + minutes.toString() + " min) - dt=" + this.model.dt.toString() + "s, dx="
+            + this.model.dx.toString() + ", dy=" + this.model.dx.toString() + ", "
             + "temps exec = " + this.lastExecTime.toString() + "ms, "
             + "exec total = " + this.totalTime.toString() + "ms, "
             + "nb pas = " + this.totalStep.toString());
@@ -309,6 +309,7 @@ ModelFront.prototype.exportField = function(field, level)
             if (description.levels.length>1)
             {
                 exporter.variable = this.model.getVariable(this.currentField)[this.getDisplayLevel()];
+//                if (this.currentField==="U") console.log(exporter.variable);
             }
             else
             {

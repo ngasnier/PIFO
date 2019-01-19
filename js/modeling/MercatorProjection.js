@@ -28,6 +28,7 @@
 export var MercatorProjection = function(r)
 {   
     this.R = r;
+    this.domain = {};
     
     /**
      * Sphere vers plan
@@ -38,7 +39,7 @@ export var MercatorProjection = function(r)
     {
         var phi = (lat*Math.PI/180);
         return [this.R*(lon*Math.PI/180), 
-            -this.R*Math.log(Math.tan(Math.PI/4 -phi/2))];
+            -this.R*Math.log(Math.tan(Math.PI/4 - phi/2))];
     }
     
     /**
@@ -63,68 +64,62 @@ export var MercatorProjection = function(r)
     }
 
     /**
-     * Interpole une grille lat lon vers un domaine en mercator
-     * @param {type} params
-     * @param {type} data
-     * @param {type} res
+     * Interpole une grille lat lon vers le domaine
+     * @param {type} latLonParams paramètres de la grille lat/lon d'entrée
+     * @param {type} data données d'entrée
+     * @param {type} domain variable qui reçoit les données en sortie
+     * @param {type} offsetx offset du point en 1/2 dx dans la cellule (0 ou 1)
+     * @param {type} offsety offset du point en 1/2 dy dans la cellule (0 ou 1)
+     * @param {type} scale indique si la variable doit être divisée par le facteur d'échelle (défaut false)
+     * @param {type} fieldType indique le type de variable : s scalaire, u composante u vectorielle, v composante v vectorielle
      * @returns {undefined}
      */
-    this.interpLatLonGridToDomain = function(params, data, res, offsetx, offsety, scale, rotate)
-    {
-        /* params.inputGrid.minLat;
-        params.inputGrid.maxLat;
-        params.inputGrid.minLon;
-        params.inputGrid.maxLon;
-        params.inputGrid.dlat;
-        params.inputGrid.dlon;
-        
-        params.domain.projection = "Mercator"
-        params.domain.minLat;
-        params.domain.maxLat;
-        params.domain.minLon;
-        params.domain.maxLon;
-        params.domain.width;
-        params.domain.height;*/
-        
-        var widthInput = (params.inputGrid.maxLon-params.inputGrid.minLon)/params.inputGrid.dlon;
-        var heightInput = (params.inputGrid.maxLat-params.inputGrid.minLat)/params.inputGrid.dlat;
+    this.interpLatLonGridToDomain = function(latLonParams, data, domain, offsetx, offsety, scale=false, fieldType="s")
+    {       
+        var widthInput = (latLonParams.maxLon-latLonParams.minLon)/latLonParams.dlon+1;
+        var heightInput = (latLonParams.maxLat-latLonParams.minLat)/latLonParams.dlat+1;
                 
-        var lon = this.wlon;
+        var lon = this.domain.minLon;
+        var dlon = (this.domain.maxLon-this.domain.minLon)/this.domain.width;
 
-        var ymin = this.latLonToXY(params.inputGrid.minlat, 0)[1];
-        var ymax = this.latLonToXY(params.inputGrid.maxlat, 0)[1];
-        var dy = (ymax-ymin)/(params.domain.height);
+        var [xmin, ymin] = this.latLonToXY(this.domain.minLat, this.domain.minLon);
+        var [xmax, ymax] = this.latLonToXY(this.domain.maxLat, this.domain.maxLon);
+        var dx = (xmax-xmin)/(this.domain.width);
+        var dy = (ymax-ymin)/(this.domain.height);
 
         var lat_in, lon_in;
         var x_in1, y_in1;
         var x_in2, y_in2;
+        var xscale, yscale;
+        var latscale, lonscale;
         var alpha_x, alpha_y;
         var v1, v2, v3, v4;
         var vv1, vv2;
         var i = 0;
         var y = 0;
-        if (this.global) i++;
-
-        for (y=ymax-0.5*offsety*dy;y>ymin;y-=dy)
+        if (this.domain.global) i++;
+        
+        for (y=ymax-0.5*offsety*dy, yscale=ymax ; y>ymin ; y-=dy, yscale-=dy)
         {
             lat_in = this.xyToLatLon(0, y)[0];
             if (lat_in<-90 || lat_in>90) throw "latitude overflow "+lat_in;
 
-            y_in1 = Math.floor((lat_in+90)/this.dlatInput);
+
+            y_in1 = Math.floor((lat_in+90)/latLonParams.dlat);
             y_in2 = y_in1+1;
             if (y_in2>=heightInput) throw "latitude overflow "+lat_in+" resulte en index interp "+y_in2;
-            alpha_y = ((lat_in+90)/this.dlatInput - y_in1)/(y_in2-y_in1);
+            alpha_y = ((lat_in+90)/latLonParams.dlat - y_in1)/(y_in2-y_in1);
 
-            for (lon=this.wlon;lon<this.elon;lon+=this.dlon)
+            for (lon=this.domain.minLon, xscale=xmin;lon<this.domain.maxLon;lon+=dlon, xscale+=dx)
             {
-                lon_in = lon+this.dlon*0.5*offsetx;
+                lon_in = lon+dlon*0.5*offsetx;
                 if (lon_in<0) lon_in += 360;
                 if (lon_in>=360) lon_in -= 360;
 
-                x_in1 = Math.floor(lon_in/this.dlonInput);
+                x_in1 = Math.floor(lon_in/latLonParams.dlon);
                 x_in2 = x_in1+1;
-                if (x_in2>widthInput) x_in2 -= this.widthInput;
-                alpha_x = (lon_in/this.dlonInput - x_in1)/(x_in2-x_in1);
+                if (x_in2>widthInput) x_in2 -= widthInput;
+                alpha_x = (lon_in/latLonParams.dlon - x_in1)/(x_in2-x_in1);
 
                 v1 = data[x_in1+widthInput*y_in1];
                 v2 = data[x_in1+widthInput*y_in2];
@@ -134,60 +129,148 @@ export var MercatorProjection = function(r)
                 vv1 = alpha_y*v2 + (1-alpha_y)*v1;
                 vv2 = alpha_y*v4 + (1-alpha_y)*v3;
 
-                res[i] = alpha_x*vv2 + (1-alpha_x)*vv1 ;
+                domain[i] = alpha_x*vv2 + (1-alpha_x)*vv1 ;
 
                 if (scale)
                 {
-                    res[i] = res[i]/this.scaleFactor(lon_in, this.xyToLatLon(0, y+0.5*offsety*dy)[0]);
+                    [latscale, lonscale] = this.xyToLatLon(xscale, yscale);
+                    domain[i] = domain[i]/this.scaleFactor(latscale, lonscale);
                 }
 
                 i++;
             }
-            if (this.global) i+=2;
+            if (this.domain.global) i+=2;
         }
     }
-       
-    // @todo : éliminer ces fonctions, revoir méthode de définition du domaine
     
     /**
-     * Latitude vers plan
-     * @param {type} lat
-     * @returns {Number}
+     * Interpole les données du domaine vers une grille latitudes longitudes.
+     * @param {type} latLonParams paramètres de la grille lat/lon d'entrée
+     * @param {type} data_in données d'entrée
+     * @param {type} data_out variable qui reçoit les données en sortie
+     * @param {type} offsetx offset du point en 1/2 dx dans la cellule (0 ou 1)
+     * @param {type} offsety offset du point en 1/2 dy dans la cellule (0 ou 1)
+     * @param {type} scale indique si la variable doit être divisée par le facteur d'échelle (défaut false)
+     * @param {type} fieldType indique le type de variable : s scalaire, u composante u vectorielle, v composante v vectorielle
+     * @returns {undefined}
      */
-    this.latToY = function(lat)
-    {
-        var phi = (lat*Math.PI/180);
-        return -this.R*Math.log(Math.tan(Math.PI/4 -phi/2));
-    }
-    
-    /**
-     * Plan vers latitude
-     * @param {type} y
-     * @returns {Number}
-     */
-    this.yToLat = function(y)
-    {
-        return (Math.PI/2-2*Math.atan(Math.exp(-y/this.R)))*180/Math.PI;
+    this.interpDomainToLatLon = function(latLonParams, data_in, data_out, offsetx, offsety, scale=false, fieldType="s")
+    {     
+        var lon = latLonParams.minLon;
+        var lat = latLonParams.maxLat;        
+
+        var [xmin, ymin] = this.latLonToXY(latLonParams.minLat, latLonParams.minLon);
+        var [xmax, ymax] = this.latLonToXY(latLonParams.maxLat, latLonParams.maxLon);
+        var [dx, dy] = this.getMeshSize();
+        
+        var y_in=0, x_in = 0;
+
+        var x_in1, y_in1;
+        var x_in2, y_in2;
+        var alpha_x, alpha_y;
+        var v1, v2, v3, v4;
+        var vv1, vv2;
+        var i = 0;
+
+        for (lat=latLonParams.maxLat;lat>latLonParams.minLat;lat-=latLonParams.dlat)
+        {
+            y_in = this.latLonToXY(lat, lon)[1];
+
+            y_in1 = Math.floor((ymax-y_in)/dy);
+            y_in2 = y_in1+1;
+            if (y_in1<0) y_in1 = 0;
+            if (y_in2<0) y_in2 = 0;
+            if (y_in1>=this.domain.height) y_in1 = this.domain.height-1;
+            if (y_in2>=this.domain.height) y_in2 = this.domain.height-1;
+            //if (y_in2>=this.heightInput) throw "latitude overflow "+lat_in+" resulte en index interp "+y_in2;
+            if (y_in1!=y_in2) 
+                alpha_y = ((ymax-y_in)/dy - y_in1)/(y_in2-y_in1);
+            else
+                alpha_y = 1;
+
+            for (lon=latLonParams.minLon;lon<latLonParams.maxLon;lon+=latLonParams.dlon)
+            {
+                x_in = this.latLonToXY(lat, lon)[0];
+                /*if (lon_in<0) lon_in += 360;
+                if (lon_in>=360) lon_in -= 360;*/
+
+                x_in1 = Math.floor((x_in-xmin)/dx);
+                x_in2 = x_in1+1;
+                if (x_in1<0) x_in1 = 0;
+                if (x_in2<0) x_in2 = 0;
+                if (x_in1>=this.domain.width) x_in1 = this.domain.width-1;
+                if (x_in2>=this.domain.width) x_in2 = this.domain.width-1;
+                if (x_in1!==x_in2) 
+                    alpha_x = ((x_in-xmin)/dx - x_in1)/(x_in2-x_in1);
+                else
+                    alpha_x = 1;
+
+                v1 = data_in[x_in1+this.domain.width*y_in1];
+                v2 = data_in[x_in1+this.domain.width*y_in2];
+                v3 = data_in[x_in2+this.domain.width*y_in1];
+                v4 = data_in[x_in2+this.domain.width*y_in2];
+
+                vv1 = alpha_y*v2 + (1-alpha_y)*v1;
+                vv2 = alpha_y*v4 + (1-alpha_y)*v3;
+
+                data_out[i] = alpha_x*vv2 + (1-alpha_x)*vv1 ;
+
+                // Ce code sert surtout à stopper d'urgence un calcul de modèle qui part en vrille
+                if(isNaN(data_out[i]))
+                {
+                    //console.log([x_in1, x_in2, y_in1, y_in2, x_in, y_in, lat, lon, alpha_x, alpha_y, xmin, ymin, xmax, ymax]);
+                    throw "instabilité détectée en "+i;
+                }
+                
+                if (scale)
+                {
+                    // TODO : scaling sur le point de ref de la maille du domaine
+                    data_out[i] = data_out[i]*this.scaleFactor(lat, lon);
+                }
+
+                i++;
+            }
+        }
     }
 
     /**
-     * Longitude vers plan
-     * @param {type} lon
-     * @returns {Number}
+     * Donne la taille de grille du domaine projeté
+     * @returns {undefined} tableau [dx, dy]
      */
-    this.lonToX = function(lon)
+    this.getMeshSize = function()
     {
-        return this.R*(lon*Math.PI/180);
+        var a = this.latLonToXY(this.domain.minLat, this.domain.minLon);
+        var b = this.latLonToXY(this.domain.maxLat, this.domain.maxLon);
+        return [(b[0]-a[0])/this.domain.width, (b[1]-a[1])/this.domain.height];
     }
     
     /**
-     * Plan vers longitude
-     * @param {type} x
-     * @returns {Number}
+     * Calcule les latitudes des points de grille.
+     * @param {type} xoffset
+     * @param {type} yoffset
+     * @returns {undefined}
      */
-    this.xToLon = function(x)
+    this.calcLatitudesLongitudes = function(xoffset, yoffset, latitudes, longitudes)
     {
-        return x/this.R*180/Math.PI;
+        var a = this.latLonToXY(this.domain.minLat, this.domain.minLon);
+        var b = this.latLonToXY(this.domain.maxLat, this.domain.maxLon);
+        var [dx, dy] = this.getMeshSize();
+        var yplan = b[1]+dy*yoffset*0.5;
+        var xplan = a[0];
+        var i = 0;
+        var lat, lon;
+
+        for (var y=0;y<this.domain.height;y++)
+        {
+            xplan = a[0]+dx*xoffset*0.5;
+            for(var x=0;x<this.domain.width;x++,i++)
+            {
+                [lat, lon] = this.xyToLatLon(xplan, yplan);
+                latitudes[i] = lat;
+                longitudes[i] = lon;
+                xplan += dx;
+            }
+            yplan -= dy;
+        }        
     }
 }
-

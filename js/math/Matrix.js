@@ -154,7 +154,7 @@ Matrix.mul = function(a, b, res, diagw=0)
 
 }
 
-Matrix.residual = function(a, b, x)
+/*Matrix.residual = function(a, b, x)
 {
     var i, j, k, r, s;
     var na = a.length;
@@ -173,7 +173,7 @@ Matrix.residual = function(a, b, x)
     }
     return Math.sqrt(r);
     
-}
+}*/
 
 
 Matrix.norm = function(x)
