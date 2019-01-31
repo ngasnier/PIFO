@@ -15,79 +15,120 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Filter } from "./Filter.js";
+import { SpatialFilter } from "./SpatialFilter.js";
+import { VariableDescription } from "./VariableDescription.js";
 
-export var SchumannFilter = function(p_width, p_height)
-{
-    Filter.call(this);
-    
-    this.width = p_width;
-    
-    this.height = p_height;
-    
-    // Méthodes privées du modèle
-    if( typeof SchumannFilter.initialized == "undefined" ) 
+export class SchumannFilter extends SpatialFilter {
+    /**
+     * 
+     */
+    constructor ()
     {
-        SchumannFilter.prototype.filtre2DMoyenneX = function(a, v, res)
-        {
-            for (var y=0;y<this.height;y++)
-            {
-                var i = y*this.width;
-                res[i] = a[i];
-                for(var x=1;x<this.width-1;x++)
-                {
-                    var i = x+y*this.width;
-                    res[i] = a[i]*(1-v)+(a[i+1]+a[i-1])*v/2;
-                }
-                i = this.width-1+y*this.width;
-                res[i] = a[i];
-            }
-        }
-
-        SchumannFilter.prototype.filtre2DMoyenneY = function(a, v, res)
-        {
-            for (var x=0;x<this.width;x++)
-            {
-                var i = x+this.width*(this.height-1);
-                res[x] = a[x];
-                res[i] = a[i];
-            }
-            for (var y=1;y<this.height-1;y++)
-            {
-                var i = y*this.width;
-                res[i] = a[i];
-                for(var x=1;x<this.width-1;x++)
-                {
-                    var i = x+y*this.width;
-                    res[i] = a[i]*(1-v)+(a[i+this.width]+a[i-this.width])*v/2;
-                }
-                i = this.width-1+y*this.width;
-                res[i] = a[i];
-            }
-        }
+        super();
 
     }
-}
 
-SchumannFilter.prototype = Object.create(Filter.prototype);
-SchumannFilter.prototype.constructor = SchumannFilter;
-
-
-SchumannFilter.prototype.applyFilter2D = function (a)
-{
-    var tmp = [];
-    this.filtre2DMoyenneX(a, 0.5, tmp);
-    this.filtre2DMoyenneX(tmp, -0.5, a);
-
-    this.filtre2DMoyenneY(a, 0.5, tmp);
-    this.filtre2DMoyenneY(tmp, 0.5, a);
-}
-
-SchumannFilter.prototype.applyFilter = function (a)
-{
-    var k = 0;
-    for (var k=0;k<a.length;k++)
+    /**
+     * 
+     * @returns {Array}
+     */
+    getVariablesDescriptions()
     {
-        this.applyFilter2D(a[k]);
+        return [ Object.assign(new VariableDescription(), {
+            "category": VariableDescription.CAT_INTERNAL, 
+            "name": "schumann_tmp", 
+            "description": "temporary variable for schumann filter", 
+            "units": "", 
+            "verticalPosition": VariableDescription.VERTICAL_POSITION_SURFACE,
+            "number": VariableDescription.NUMBER_TYPE_SCALAR
+        }) ];
+    }
+    
+    /**
+     * 
+     * @returns {undefined}
+     */
+    init()
+    {
+        
+    }
+    
+    filter()
+    {
+        var variables = this.model.getVariablesDescriptions();
+        for (var v in variables)
+        {
+            if (variables[v].category==VariableDescription.CAT_PRONOSTIC)
+            {
+                var x = this.model.getVariable(variables[v].name);
+                if (x.length>0 && (x[0].constructor===Array || x[0].constructor===Float64Array))
+                {    
+                    // 3D
+                    var k = 0;
+                    for (var k=0;k<x.length;k++)
+                    {
+                        this._filter2D(x[k]);
+                    }
+                }
+                else
+                {
+                    // 2D
+                    this._filter2D(x);
+                }
+            }
+        }
+    }
+    
+    _filter2D(a)
+    {
+        // TODO : enregistrer cette variable dans l'init et l'allouer
+        var tmp = this.model.getVariable("schumann_tmp");
+        this._filtre2DMoyenneX(a, 0.5, tmp);
+        this._filtre2DMoyenneX(tmp, -0.5, a);
+
+        this._filtre2DMoyenneY(a, 0.5, tmp);
+        this._filtre2DMoyenneY(tmp, 0.5, a);
+    }
+
+    _filtre2DMoyenneX(a, v, res)
+    {
+        var width = this.model.width;
+        var height = this.model.height;
+        for (var y=0;y<height;y++)
+        {
+            var i = y*width;
+            res[i] = a[i];
+            for(var x=1;x<width-1;x++)
+            {
+                var i = x+y*width;
+                res[i] = a[i]*(1-v)+(a[i+1]+a[i-1])*v/2;
+            }
+            i = width-1+y*width;
+            res[i] = a[i];
+        }
+    }
+
+    _filtre2DMoyenneY(a, v, res)
+    {
+        var width = this.model.width;
+        var height = this.model.height;
+        for (var x=0;x<width;x++)
+        {
+            var i = x+width*(height-1);
+            res[x] = a[x];
+            res[i] = a[i];
+        }
+        for (var y=1;y<height-1;y++)
+        {
+            var i = y*width;
+            res[i] = a[i];
+            for(var x=1;x<width-1;x++)
+            {
+                var i = x+y*width;
+                res[i] = a[i]*(1-v)+(a[i+width]+a[i-width])*v/2;
+            }
+            i = width-1+y*width;
+            res[i] = a[i];
+        }
     }
 }

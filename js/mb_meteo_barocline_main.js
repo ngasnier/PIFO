@@ -155,11 +155,11 @@ function initialize(config)
     
     // *** Configuration des filtres
     // TODO : filtre d'entrée paramétrable
-    smoothFilter = new SchumannFilter(ui.model.width, ui.model.height);       
+    //smoothFilter = new SchumannFilter(ui.model.width, ui.model.height);
     
     // *** Configuration des paramètres temporels de la simulation
     ui.model.dt = config.dt;
-    ui.model.inputScaled = true;
+    ui.model.inputScaled = false;
     ui.stopTime = config.stopTime;
     ui.historyInterval = config.historyInterval;
     ui.historyDir = config.historyDir;
@@ -349,14 +349,14 @@ function initialize(config)
     
     ui.beforeStepCallback = function()
     {
-        if (ui.model.relaxation>0)
+        /*if (ui.model.relaxation>0)
         {
             ugrd.interp(ui.model.time, ui.model.getVariable("U_couplage"));
             vgrd.interp(ui.model.time, ui.model.getVariable("V_couplage"));
             tmp.interp(ui.model.time, ui.model.getVariable("T_couplage"));
             qv.interp(ui.model.time, ui.model.getVariable("qv_couplage"));
             sfcprs.interp(ui.model.time, ui.model.getVariable("Z_couplage"));
-        }
+        }*/
     };
     
     reloadData();

@@ -149,12 +149,13 @@ ModelUI.prototype.reset = function()
 
     this.model.init();
     
+    this.afterResetCallback();
+
     this.initVariableList();
 
     this.model.totalTime = 0;
     this.model.totalStep = 0;
     
-    this.afterResetCallback();
 }
 
 ModelUI.prototype.initVariableList = function()

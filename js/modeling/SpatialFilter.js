@@ -15,17 +15,56 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-export var Filter = function()
+export class SpatialFilter 
 {
+    constructor()
+    {
+        this._model = null
+    }
+
+    /**
+     * 
+     */
+    get model()
+    {
+        return this._model;
+    }
     
+    /**
+     * 
+     * @param {type} p_model
+     * @returns {undefined}
+     */
+    set model(p_model)
+    {
+        this._model = p_model;
+    }
+    
+    /**
+     * 
+     * @returns {Array}
+     */
+    getVariablesDescriptions()
+    {
+        return [];
+    }
+    
+    /**
+     * 
+     * @returns {undefined}
+     */
+    init()
+    {
+        
+    }
+    
+    /**
+     * 
+     * @returns {undefined}
+     */
+    filter()
+    {
+
+    }
 }
 
-Filter.prototype.applyFilter = function(p_variable)
-{
-    
-}
-
-Filter.prototype.applyFilter2D = function(p_variable)
-{
-    
-}

@@ -15,27 +15,47 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import { ConformalProjection } from "./ConformalProjection.js"
+import { VariableDescription } from "./VariableDescription.js"
 
 /**
  * Utilitaire pour convertir les coordonnées du plan Mercator vers sphère 
  * en degré et inversement.
  * 
- * On considère que l'orgine est centrée sur (landa, phi) = (0, 0)
+ * On considère que l'orgine est centrée sur (lambda, phi) = (0, 0)
  * 
- * @param r le rayon de la sphère
  * @returns {MercatorProjection}
  */
-export var MercatorProjection = function(r)
-{   
-    this.R = r;
-    this.domain = {};
+export class MercatorProjection extends ConformalProjection {
+    /**
+     * Constructeur.
+     * @param {type} r Rayon de la sphere de projection en mètre
+     * @returns {undefined}
+     */
+    constructor()
+    {   
+        super();
+        this.R = 6371000;
+    }
     
     /**
+     * Spécifie les paramètres du domaine via un objet JSON.
+     * @param {type} p_params
+     * @returns {undefined}
+     */
+    set params(p_params)
+    {
+        super.params = p_params;
+        if ("R" in p_params) this.R = p_params.R;
+    }
+
+    /**
      * Sphere vers plan
-     * @param {type} lat
+     * @param {type} lat en degré
+     * @param {lon} lon en degré
      * @returns {Number}
      */
-    this.latLonToXY = function(lat, lon)
+    latLonToXY(lat, lon)
     {
         var phi = (lat*Math.PI/180);
         return [this.R*(lon*Math.PI/180), 
@@ -44,10 +64,11 @@ export var MercatorProjection = function(r)
     
     /**
      * Plan vers sphere
+     * @param {type} x
      * @param {type} y
      * @returns {Number}
      */
-    this.xyToLatLon = function(x, y)
+    xyToLatLon(x, y)
     {
         return [(Math.PI/2-2*Math.atan(Math.exp(-y/this.R)))*180/Math.PI, 
             x/this.R*180/Math.PI];
@@ -56,9 +77,10 @@ export var MercatorProjection = function(r)
     /**
      * Facteur d'échelle à la position demandée
      * @param {type} lat
+     * @param {type} lon
      * @returns {Number}
      */
-    this.scaleFactor = function(lat, lon)
+    scaleFactor(lat, lon)
     {
         return 1/Math.cos(lat*Math.PI/180);
     }
@@ -74,7 +96,7 @@ export var MercatorProjection = function(r)
      * @param {type} fieldType indique le type de variable : s scalaire, u composante u vectorielle, v composante v vectorielle
      * @returns {undefined}
      */
-    this.interpLatLonGridToDomain = function(latLonParams, data, domain, offsetx, offsety, scale=false, fieldType="s")
+    interpLatLonGridToDomain(latLonParams, data, domain, offsetx, offsety, scale=false, fieldType=VariableDescription.NUMBER_TYPE_SCALAR)
     {       
         var widthInput = (latLonParams.maxLon-latLonParams.minLon)/latLonParams.dlon+1;
         var heightInput = (latLonParams.maxLat-latLonParams.minLat)/latLonParams.dlat+1;
@@ -98,7 +120,7 @@ export var MercatorProjection = function(r)
         var i = 0;
         var y = 0;
         if (this.domain.global) i++;
-        
+               
         for (y=ymax-0.5*offsety*dy, yscale=ymax ; y>ymin ; y-=dy, yscale-=dy)
         {
             lat_in = this.xyToLatLon(0, y)[0];
@@ -154,7 +176,7 @@ export var MercatorProjection = function(r)
      * @param {type} fieldType indique le type de variable : s scalaire, u composante u vectorielle, v composante v vectorielle
      * @returns {undefined}
      */
-    this.interpDomainToLatLon = function(latLonParams, data_in, data_out, offsetx, offsety, scale=false, fieldType="s")
+    interpDomainToLatLon(latLonParams, data_in, data_out, offsetx, offsety, scale=false, fieldType=VariableDescription.NUMBER_TYPE_SCALAR)
     {     
         var lon = latLonParams.minLon;
         var lat = latLonParams.maxLat;        
@@ -237,7 +259,7 @@ export var MercatorProjection = function(r)
      * Donne la taille de grille du domaine projeté
      * @returns {undefined} tableau [dx, dy]
      */
-    this.getMeshSize = function()
+    getMeshSize()
     {
         var a = this.latLonToXY(this.domain.minLat, this.domain.minLon);
         var b = this.latLonToXY(this.domain.maxLat, this.domain.maxLon);
@@ -250,7 +272,7 @@ export var MercatorProjection = function(r)
      * @param {type} yoffset
      * @returns {undefined}
      */
-    this.calcLatitudesLongitudes = function(xoffset, yoffset, latitudes, longitudes)
+    calcLatitudesLongitudes(xoffset, yoffset, latitudes, longitudes)
     {
         var a = this.latLonToXY(this.domain.minLat, this.domain.minLon);
         var b = this.latLonToXY(this.domain.maxLat, this.domain.maxLon);

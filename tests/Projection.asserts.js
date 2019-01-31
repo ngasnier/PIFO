@@ -56,7 +56,7 @@ var outputDomain = {
 
 
 test('projection mercator vers xy', () => {
-    var projection = new MercatorProjection(Model.Rterre);
+    var projection = new MercatorProjection();
     var xy = projection.latLonToXY(0, 0);
     expect(xy).arrayBeCloseTo([0, 0]);
     
@@ -65,7 +65,7 @@ test('projection mercator vers xy', () => {
 });
 
 test('projection mercator vers lat lon', () => {
-    var projection = new MercatorProjection(Model.Rterre);
+    var projection = new MercatorProjection();
     var ll = projection.xyToLatLon(0, 0);
     expect(ll).arrayBeCloseTo([0, 0]);
     
@@ -74,7 +74,7 @@ test('projection mercator vers lat lon', () => {
 });
 
 test('projection mercator facteur echelle', () => {
-    var projection = new MercatorProjection(Model.Rterre);
+    var projection = new MercatorProjection();
     var m = projection.scaleFactor(0, 0);
     expect(m).toBeCloseTo(1);
     
@@ -83,7 +83,7 @@ test('projection mercator facteur echelle', () => {
 });
 
 test('projection mercator interpolations', () => {
-    var projection = new MercatorProjection(Model.Rterre);
+    var projection = new MercatorProjection();
     projection.domain = mercatorProjectionDomain;
     
     var in_width = (latLonDomain1.maxLon-latLonDomain1.minLon)/latLonDomain1.dlon+1;
@@ -195,7 +195,7 @@ test('projection mercator interpolations', () => {
 });
 
 test('projection mercator calcLatitutesLongitudes', () => {
-   var projection = new MercatorProjection(Model.Rterre);   
+   var projection = new MercatorProjection();   
     projection.domain = mercatorProjectionDomain;
    var latitudes = Variable.createVariable(1, mercatorProjectionDomain.width, mercatorProjectionDomain.height, false);
    var longitudes = Variable.createVariable(1, mercatorProjectionDomain.width, mercatorProjectionDomain.height, false);

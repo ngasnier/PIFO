@@ -20,22 +20,6 @@ export var Variable = function ()
 
 }
 
-// Variable décrivant des données à une surface intercouche.
-Variable.VARIABLE_TYPE_SURFACE = "SURFACE";
-
-// Variable décrivant des données à l'intérieur d'une couche.
-Variable.VARIABLE_TYPE_LAYER = "LAYER";
-
-// Représente un scalaire
-Variable.NUMBER_TYPE_SCALAR = "s";
-
-// Représente la composante u d'un vecteur
-Variable.NUMBER_TYPE_U_VECTOR = "u";
-
-// Représente la composante v d'un vecteur
-Variable.NUMBER_TYPE_V_VECTOR = "v";
-
-
 /**
  * Alloue et initialise à zero une variable.
  * @param {type} nblev 1 = variable 2D, >1 = variable 3D

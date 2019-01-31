@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2018 Nicolas GASNIER (http://www.meteo-blois.fr/contact/)
+ * Copyright (C) 2019 Nicolas GASNIER (http://www.meteo-blois.fr/contact/)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,12 +16,9 @@
  */
 
 /**
- * Coeur dynamique en différences centrales pour modèle hydrostatique.
- * Grille C, niveaux sigma, arrangement de Lorentz.
- *          
- * @returns {BaroclinicModel}
+ * Implémente une condition aux limites du modèle.
  */
-export class DynamicsCore
+export class BoundaryCondition
 {
     /**
      * 
@@ -61,30 +58,20 @@ export class DynamicsCore
     }
      
     /**
-     * Initialise le coeur avant la simulation (allocations de variables...)
+     * 
      * @returns {undefined}
      */
     init()
     {
         
     }
-
-    /**
-     * Calcule les tendances d'une variable pronostiques
-     * @returns {undefined}
-     */
-    calcTendency(p_variable)
-    {
-        this["calc"+p_variable+"_tdcy"]();
-    }
     
     /**
-     * Calcule une variable diagnostique
-     * @param {type} p_variable
+     * 
      * @returns {undefined}
      */
-    calcDiagnostic(p_variable)
+    doBoundaryCondition()
     {
-        this["calc"+p_variable]();
+        
     }
 }

@@ -98,7 +98,6 @@ test('sor (1) w=1 simple a diagonale strictement dominante', () => {
     var r = [0, 0, 0];
     var conv = Matrix.sor(a, b, 1, res, r);
     expect(conv).toBeLessThan(1000);
-    console.log("sor (1) : conv="+conv);
     expect(res).arrayBeCloseTo([-0.026, 0.12, 0.6533]);
 });
 
@@ -109,7 +108,6 @@ test('sor (2) w=1 diagonale', () => {
     var r = [0, 0, 0, 0];
     var conv = Matrix.sor(a, b, 1, res, r);
     expect(conv).toBeLessThan(1000);
-    console.log("sor (2) : conv="+conv);
     expect(res).arrayBeCloseTo([0.2, 0.333, 0.75, 1.333]);
 });
 
@@ -120,6 +118,5 @@ test('sor (3) w=1 diagonale strictement dominante', () => {
     var r = [0, 0, 0, 0];
     var conv = Matrix.sor(a, b, 1, res, r);
     expect(conv).toBeLessThan(1000);
-    console.log("sor (3ù) : conv="+conv);
     expect(res).arrayBeCloseTo([0.1513, 0.2434, 0.3881, 1.2039]);
 });
