@@ -15,9 +15,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { ModuleLoader } from "/js/util/ModuleLoader.js";
+import { ModelLoader } from "/js/modeling/ModelLoader.js";
+import { Earth } from "/js/modeling/Earth.js";
 
-import { MercatorProjection } from "/js/modeling/MercatorProjection.js";
 import { BarotropicInterpolator } from "/js/modeling/BarotropicInterpolator.js";
 import { WGRIBInterpolator } from "/js/modeling/WGRIBInterpolator.js";
 import { TimeInterpolator } from "/js/modeling/TimeInterpolator.js";
@@ -48,10 +48,6 @@ var verificationRenderer = new BarotropicVerificationHTMLRenderer();
 var h500 = new TimeInterpolator();
 var u500 = new TimeInterpolator();
 var v500 = new TimeInterpolator();
-
-var h500_couplage = [];
-var u500_couplage = [];
-var v500_couplage = [];
 
 var z500_display = [];
 var latitudes = [];
@@ -116,7 +112,7 @@ var barotropeConfig = {
     "timeIntegration": {
         "integrator": "LeapFrogTimeIntegrator",
         //"filter" : "RobertAsselinTimeFilter",
-        "dt": 15
+        "dt": 10
     },
 
     "enablePrecipitationScheme" : false,
@@ -137,47 +133,8 @@ var barotropeConfig = {
 async function createModel(config)
 {
     var classpath = "/js/";
-    var loader = new ModuleLoader(classpath, config.modules);
-        
-    var model = new Model();
-    model.name = config.name;
-    
-    // *** Domaine horizontal
-    model.horizontalStaggering = config.horizontalDomain.staggering;
-    model.width = config.horizontalDomain.width;
-    model.height = config.horizontalDomain.height;
-    model.global = config.horizontalDomain.global;
-    model.relaxation = config.horizontalDomain.relaxation;
-    
-    model.projection = await loader.loadModule(config.horizontalDomain.projection);
-    model.projection.params = config.horizontalDomain;
-    model.horizontalStaggering = config.horizontalDomain.staggering;    
-
-    if ("filter" in config.horizontalDomain)
-    {
-        model.spatialFilter = await loader.loadModule(config.horizontalDomain.filter);
-        model.spatialFilterInterval = config.horizontalDomain.filterInterval;
-    }
-
-    // *** Domaine vertical
-    model.verticalStaggering = config.verticalDomain.levelType;    
-    model.verticalCoords = [1];
-
-    // *** Coeur dynamique
-    model.dynamicsCore = await loader.loadModule(config.core);
-    
-    // *** Intégration temporelle
-    model.timeIntegrator = await loader.loadModule(config.timeIntegration.integrator);
-    model.dt = config.timeIntegration.dt;
-    
-    // ** Condition aux limites
-    if ("condition" in config.boundaryCondition) model.boundaryCondition = await loader.loadModule(config.boundaryCondition.condition);
-    model.boundaryCondition.relaxation = config.boundaryCondition.relaxation;
-    
-    // *** Filtre temporel
-    if ("filter" in config.timeIntegration) model.timeFilter = await loader.loadModule(config.timeIntegration.filter);
-           
-    return model;
+    var loader = new ModelLoader(classpath);        
+    return loader.loadModel(config);
 }
 
 $(document).ready(function () {
@@ -221,12 +178,19 @@ async function initialize(config)
     
     ui.afterResetCallback = function()
     {
-        ui.model.setVariable("phi", Variable.createVariable(1, ui.model.width, ui.model.height));
         h500.interp(0, ui.model.getVariable("phi"));
-        ui.model.setVariable("U", Variable.createVariable(1, ui.model.width, ui.model.height));
         u500.interp(0, ui.model.getVariable("U"));
-        ui.model.setVariable("V", Variable.createVariable(1, ui.model.width, ui.model.height));
         v500.interp(0, ui.model.getVariable("V"));
+        ui.model.projection.getScaleFactors(ui.model.getVariable("latitudes"), ui.model.getVariable("longitudes"), ui.model.getVariable("m"));
+        var lats = Variable.createVariable(1, ui.model.width, ui.model.height, false);
+        var lons = Variable.createVariable(1, ui.model.width, ui.model.height, false);
+        ui.model.getCoriolisPointCoords(lats, lons);
+        var earth = new Earth();
+        earth.getCoriolisFactors(lats, ui.model.getVariable("f"));
+        
+        h500.interp(ui.model.time, ui.model.getVariable("phi_couplage"));
+        u500.interp(ui.model.time, ui.model.getVariable("U_couplage"));
+        v500.interp(ui.model.time, ui.model.getVariable("V_couplage"));
     };
     
     
@@ -277,14 +241,11 @@ async function initialize(config)
 
     ui.beforeStepCallback = function()
     {
-        /*if (ui.model.relaxation>0)
+        /*if (ui.model.boundaryCondition!=null)
         {
-            h500.interp(ui.model.time, h500_couplage);
-            u500.interp(ui.model.time, u500_couplage);
-            v500.interp(ui.model.time, v500_couplage);
-            ui.model.setVariable("phi_couplage", h500_couplage);
-            ui.model.setVariable("U_couplage", u500_couplage);
-            ui.model.setVariable("V_couplage", v500_couplage);
+            h500.interp(ui.model.time, ui.model.getVariable("phi_couplage"));
+            u500.interp(ui.model.time, ui.model.getVariable("U_couplage"));
+            v500.interp(ui.model.time, ui.model.getVariable("V_couplage"));
         }*/
     };
     

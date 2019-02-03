@@ -122,7 +122,7 @@ export class BarotropicCore extends DynamicsCore
                     this._model.U_tdcy[i] = (this._model.tourbillon[i]+this._model.f[i])*this._model.V[i] - kphi;
                 }
             }
-        }                
+        }
     }
 
     /**

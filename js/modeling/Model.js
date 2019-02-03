@@ -118,6 +118,19 @@ export class Model {
      */
     setupVariablesDescriptions()
     {
+        this.registerVariable(Object.assign(new VariableDescription(), 
+            {"category": VariableDescription.CAT_INTERNAL, 
+                "name":"latitudes", 
+                "description":"latitudes of grid points", 
+                "units":"degree", 
+                "verticalPosition":VariableDescription.VERTICAL_POSITION_SURFACE}));
+        this.registerVariable(Object.assign(new VariableDescription(), 
+            {"category": VariableDescription.CAT_INTERNAL, 
+                "name":"longitudes", 
+                "description":"longitudes of grid points", 
+                "units":"degree", 
+                "verticalPosition":VariableDescription.VERTICAL_POSITION_SURFACE}));
+        
         this._dynamicsCore.getVariablesDescriptions().forEach((v)=> {
             this.registerVariable(v);
         });
@@ -354,19 +367,16 @@ export class Model {
      */
     initGridFactors()
     {   
-        var x, y;
-        var i = 0;
-
         [this.dx, this.dy] = this.projection.getMeshSize();
+        this.projection.calcLatitudesLongitudes(0, 0, this.latitudes, this.longitudes);
+    }
 
-        this.latitudes = Variable.createVariable(1, this.width, this.height);
-        this.longitudes = Variable.createVariable(1, this.width, this.height);    
-        this.f = Variable.createVariable(1, this.width, this.height);
-        this.alpha_couplage = Variable.createVariable(1, this.width, this.height);
-        this.m = Variable.createVariable(1, this.width, this.height);
-        this.inv_m = Variable.createVariable(1, this.width, this.height);
-
-        // *** Calcul du point f
+    /**
+     * Calcule les coordonnées des points de Coriolis de la grille du domaine
+     * @returns {undefined}
+     */
+    getCoriolisPointCoords(latitudes, longitudes)
+    {
         var xoffset, yoffset;
         switch (this.horizontalStaggering)
         {
@@ -375,35 +385,14 @@ export class Model {
                 yoffset = 0;
                 break;
             case Model.HS_GRID_B, Model.HS_GRID_C:
-                this.projection.calcLatitudesLongitudes(1, 1, this.latitudes, this.longitudes);
+                xoffset = 1;
+                yoffset = 1;
                 break;
             default:
                 throw "Invalid grid type ("+this.gridType+")";
         }
-
-        this.projection.calcLatitudesLongitudes(1, 1, this.latitudes, this.longitudes);
-        i = 0;
-        for (var y=0;y<this.height;y++)
-        {
-            for(var x=0;x<this.width;x++,i++)
-            {
-                this.f[i] = 2 * Model.omega * Math.sin(this.latitudes[i]*Math.PI/180);
-            }
-        }
-
-        // *** Calcul du point m
-        this.projection.calcLatitudesLongitudes(0, 0, this.latitudes, this.longitudes);
-        i = 0;
-        for (var y=0;y<this.height;y++)
-        {
-            for(var x=0;x<this.width;x++,i++)
-            {
-                this.m[i] = this.projection.scaleFactor(this.latitudes[i], this.longitudes[i]);
-                this.inv_m[i] = 1/this.m[i];
-            }
-        }
-
-    }
+        this.projection.calcLatitudesLongitudes(xoffset, yoffset, latitudes, longitudes);
+    }    
 
     /**
      * Obtient la liste de toutes les variables du modèle ou d'une catégorie

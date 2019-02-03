@@ -32,7 +32,17 @@ export class CouplingLimitedAreaBoundaryCondition extends BoundaryCondition
         super();
         
         // Taille de la zone de relaxation
-        this.relaxation = 8;
+        this.relaxation = 6;
+    }
+    
+    /**
+     * Paralètre l'objet depuis une config JSON
+     * @returns {undefined}
+     */
+    set params(p_params)
+    {
+        super.params = p_params;
+        if ("relaxation" in p_params) this.relaxation = p_params.relaxation;
     }
 
     /**
@@ -82,7 +92,7 @@ export class CouplingLimitedAreaBoundaryCondition extends BoundaryCondition
                     this.model.alpha_couplage[i] = 1.0;
                 }
                 else if ((y<1+this.relaxation||y>=this.model.height-this.relaxation-1)
-                        || ((x<1+this.relaxation||x>=this.width-this.relaxation-1) && !this.model.global))
+                        || ((x<1+this.relaxation||x>=this.model.width-this.relaxation-1) && !this.model.global))
                 {
                     var xd = 0;
                     var yd = 0;
@@ -117,8 +127,7 @@ export class CouplingLimitedAreaBoundaryCondition extends BoundaryCondition
         {
             if (variables[i].category==VariableDescription.CAT_PRONOSTIC)
             {
-                //this.model.dynamicsCore.calcTendency(variables[v].name);
-                this.couple(this.model.getVariable(variables[i].name), 
+                this.couple(this.model.getVariable(variables[i].name+"_t"), 
                     this.model.getVariable(variables[i].name+"_couplage"));
             }
         }
@@ -132,9 +141,9 @@ export class CouplingLimitedAreaBoundaryCondition extends BoundaryCondition
      */
     couple2D(x, c)
     {
-        for (var i=0;i<this.model.height*this.model.width;i++)
+        for (var i=0;i<x.length;i++)
         {
-            x[i] = (1-this.model.alpha_couplage[i])*x[i] + this.model.alpha_couplage[i]*c[i];
+            x[i] = (1-this._model.alpha_couplage[i])*x[i] + this._model.alpha_couplage[i]*c[i];
         }
     }
 
@@ -151,9 +160,9 @@ export class CouplingLimitedAreaBoundaryCondition extends BoundaryCondition
         {    
             for (k=0;k<x.length;k++)
             {
-                for (i=0;i<this.model.height*this.model.width;i++)
+                for (i=0;i<x[k].length;i++)
                 {
-                    x[k][i] = (1-this.model.alpha_couplage[i])*x[k][i] + this.model.alpha_couplage[i]*c[k][i];
+                    x[k][i] = (1-this._model.alpha_couplage[i])*x[k][i] + this._model.alpha_couplage[i]*c[k][i];
                 }
             }
         }

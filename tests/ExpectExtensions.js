@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-function compareArrayBeCloseTo(received, check)
+function compareArrayBeCloseTo(received, check, precision=0.001)
 {
     var pass = true;
     pass &= (received.constructor==check.constructor);
@@ -48,15 +48,15 @@ function compareArrayBeCloseTo(received, check)
         }
         else 
         {
-            pass &= (Math.abs(received[i]-check[i])<=0.001);
+            pass &= (Math.abs(received[i]-check[i])<=precision);
         }
     }
     return pass;    
 }
 
 expect.extend({
-    arrayBeCloseTo(received, check) {
-        var pass = compareArrayBeCloseTo(received, check);
+    arrayBeCloseTo(received, check, precision=0.001) {
+        var pass = compareArrayBeCloseTo(received, check, precision);
         if (pass) 
         {
             return {
@@ -94,4 +94,44 @@ expect.extend({
       };
     }
   },
+});
+
+expect.extend({
+    notContainingNaN(received) {
+        var pass = true;
+        if (received.length>0 && (received[0].constructor===Array || received[0].constructor===Float64Array) )
+        {
+            var nb;
+            for (var k=0;k<received.length;k++)
+            {
+                nb = received[k].length;
+                for(var i=0;i<nb;i++)
+                {
+                    pass = pass && !isNaN(received[k][i]);
+                }
+            }
+        }
+        else
+        {
+            nb = received.length;
+            for(var i=0;i<nb;i++)
+            {
+                pass = pass && !isNaN(received[i]);
+            }
+        }
+
+        if (pass) {
+            return {
+                message: () =>
+                  'expected array not to contain NaN',
+                pass: true,
+              };
+        } else {
+            return {
+                message: () =>
+                  'expected array not to contain NaN',
+                pass: false,
+            };
+        }
+    }
 });

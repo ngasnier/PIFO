@@ -415,3 +415,31 @@ Variable.mean = function(x)
     }
     return s / n;
 }
+
+
+Variable.containsBadValues = function(x)
+{
+    var nb;
+    if (x.length>0 && (x[0].constructor===Array || x[0].constructor===Float64Array) )
+    {    
+        for (var k=0;k<x.length;k++)
+        {
+            nb = x[k].length;
+            for(var i=0;i<nb;i++)
+            {
+                var b = y[k][i];
+                if (isNaN(x[k][i]) || x[k][i]==null ) return true;
+            }
+        }
+        return false;
+    }
+    else
+    {
+        nb = x.length;
+        for(var i=0;i<nb;i++)
+        {
+            if (isNaN(x[i]) || x[i]==null ) return true;
+        }
+        return false;
+    }
+}

@@ -125,4 +125,17 @@ export class ConformalProjection  {
     {
         
     }
+    
+    /**
+     * Calcule le facteur d'échelle pour les points demandés
+     * @param {type} latitudes
+     * @param {type} longitudes
+     * @param {type} m
+     * @returns {undefined}
+     */
+    getScaleFactors(latitudes, longitudes, m)
+    {
+        for (var i=0;i<latitudes.length;i++)
+            m[i] = this.scaleFactor(latitudes[i], longitudes[i]);
+    }
 }

@@ -15,6 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import { Earth } from "./Earth.js"
+
 /**
  * Coeur dynamique en différences centrales pour modèle hydrostatique.
  * Grille C, niveaux sigma, arrangement de Lorentz.

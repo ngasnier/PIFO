@@ -55,7 +55,7 @@ export class ModuleLoader {
                 {
                     // Navigateur
                     var xhr = new XMLHttpRequest();
-                        xhr.open('GET', module_path);
+                        xhr.open('GET', module_path+"?" + (new Date()).getTime(), true);
                         xhr.onerror = reject;
                         xhr.onload = function () {
                             var module_resolver = p_class+"_module";
@@ -75,45 +75,12 @@ export class ModuleLoader {
                         }
                         xhr.send(null);
                 }
-
-                /*  if (this.config[p_class].startsWith("/"))
-                    loaded_module = await import(this.config[p_class]);
-                else
-                    loaded_module = await import(this.searchPath+this.config[p_class]);
-                var cls = new loaded_module[p_class];/
-                return cls;*/
             }
             else
             {
                 reject( "module "+p_class+" not found");
             }
         });
-        
-/*        var module = null;
-        if (p_class in this.config)
-        {
-            var path = "";
-            if (this.config[p_class].startsWith("/"))
-                path = this.config[p_class];
-            else
-                path =  this.searchPath+this.config[p_class];
-            
-            return new Promise(function(resolve, reject)
-            {
-                import(path).then((module)=>{
-                        var cls = new module[p_class];
-                        resolve(cls);
-                    })
-                    .catch((error)=>{
-                        reject();
-                    });
-            });
-        }
-        else
-        {
-            throw "module "+p_class+" not found";
-        }
-*/        
     }
 }
 

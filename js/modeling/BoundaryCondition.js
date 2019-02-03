@@ -30,6 +30,15 @@ export class BoundaryCondition
     }
     
     /**
+     * Paralètre l'objet depuis une config JSON
+     * @returns {undefined}
+     */
+    set params(p_params)
+    {
+        
+    }
+    
+    /**
      * 
      * @param {type} p_model
      * @returns {undefined}
