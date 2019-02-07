@@ -264,7 +264,7 @@ begin
         frame(wks)
 
 
-        print("Precipitations cumulÃ©es Europe");
+        print("Precipitations cumulées Europe");
         outfile = europe_dir+"/pifo_apcp_acc_"+valid
         wks = gsn_open_wks(device, outfile)
         mb_set_colormap(wks)
@@ -326,7 +326,7 @@ begin
 ;		theta = t850*1.04758 - 273.15
 ;		copy_VarCoords(t850, theta)
 
-        print("TempÃ©rature 850 hPa Europe");
+        print("Température 850 hPa Europe");
         outfile = europe_dir+"/pifo_tmp850_"+valid
         wks = gsn_open_wks(device, outfile)
         mb_set_colormap(wks)
@@ -592,6 +592,29 @@ begin
         delete(plot_ta)
         delete(ta500)
 
+        ; ************************************************************************
+        ; TA coupe
+        ; ************************************************************************
+
+        print("Tourbillon absolu coupe");
+        ta_hpa = vinth2p(ta, hyba_surfaces, sigma_surfaces, slice_levels, ps, 1 , 1000 , 1 , True)
+
+        ; Coupe lon
+        ta_slice = ta_hpa(:, {47.5931}, {-7:13})
+        ta_slice&lev_p@units = "hpa"
+        ta_slice&lon@units = "degrees-east"
+
+        outfile = coupes_dir+"/pifo_lon_ta_"+valid
+        wks = gsn_open_wks(device, outfile)
+        mb_set_colormap(wks)
+
+        plot = mb_ta_coupe(wks, ta_slice, globalRes@validDate, globalRes@runInfo)
+
+        draw(plot)
+        frame(wks)
+
+        delete(ta_slice)
+        delete(ta_hpa)
 
         ; ************************************************************************
         ; Cleanup
