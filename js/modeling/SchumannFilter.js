@@ -35,12 +35,12 @@ export class SchumannFilter extends SpatialFilter {
     getVariablesDescriptions()
     {
         return [ Object.assign(new VariableDescription(), {
-            "category": VariableDescription.CAT_INTERNAL, 
-            "name": "schumann_tmp", 
-            "description": "temporary variable for schumann filter", 
-            "units": "", 
-            "verticalPosition": VariableDescription.VERTICAL_POSITION_SURFACE,
-            "number": VariableDescription.NUMBER_TYPE_SCALAR
+            category: VariableDescription.CAT_INTERNAL, 
+            name: "schumann_tmp", 
+            description: "temporary variable for schumann filter", 
+            units: "", 
+            verticalPosition: VariableDescription.VERTICAL_POSITION_SURFACE,
+            number: VariableDescription.NUMBER_TYPE_SCALAR
         }) ];
     }
     
@@ -53,6 +53,10 @@ export class SchumannFilter extends SpatialFilter {
         
     }
     
+    /**
+     * Filtre les champs pronostiques.
+     * @returns {undefined}
+     */
     filter()
     {
         var variables = this.model.getVariablesDescriptions();

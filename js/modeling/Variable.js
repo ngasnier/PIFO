@@ -15,9 +15,47 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-export var Variable = function ()
+/**
+ * Fonctions de gestion et de calcul sur les variables de modèle.
+ * 
+ * <p>Les variables de modèle sont des tableaux Javascript de deux types :
+ * <ul>
+ *   <li>2D : tableau de type Float64Array linéaire de longueur width*height</li>
+ *   <li>3D : tableau de n variables 2D pour les n niveaux de la variable.</li>
+ * </p>
+ * 
+ * <p>Une variable créée avec les méthodes de cette classe aura les propriétés 
+ * suivantes en plus par rapport aux tableaux Javascript, à des fins de
+ * méta-description :
+ * <ul>
+ *   <li>width</li>
+ *   <li>height</li>
+ *   <li>nbLevels : 0 pour une variable 2D</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>Par convention, toute propriétés de la classe VariableDescription peut
+ * être affectée à la variable pour compléter ses méta-données, et en plus  :
+ * <ul>
+ *   <li>latitudes : latitude des points de la variable</li>
+ *   <li> longitudes : longitude des points de la variable</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>Toute autre propriété ne sera pas gérée par cette classe.</p>
+ * 
+ * @type type
+ */
+export class Variable
 {
-
+    /**
+     * 
+     * @returns {undefined}
+     */
+    constructor()
+    {
+        
+    }
 }
 
 /**
@@ -25,10 +63,10 @@ export var Variable = function ()
  * @param {type} nblev 1 = variable 2D, >1 = variable 3D
  * @returns {undefined} la variable
  */
-// Version avec tableaux typés, donne des perfs régulières sous node
-Variable.createVariable = function(nblev, width, height, forceLevels=false)
+Variable.createVariable = function(nblev, width, height)
 {
-    if (nblev==1 && !forceLevels)
+// Version avec tableaux typés, donne des perfs régulières sous node
+    if (nblev==0)
     {
         var buffer = new ArrayBuffer(width*height * 8);
         var v = new Float64Array(buffer)
@@ -36,6 +74,9 @@ Variable.createVariable = function(nblev, width, height, forceLevels=false)
         {
            v[i] = 0.0;
         }
+        v.nbLevels = nblev;
+        v.width = width;
+        v.height = height;
         return v;
     }
     else
@@ -45,11 +86,17 @@ Variable.createVariable = function(nblev, width, height, forceLevels=false)
         {
             var buffer = new ArrayBuffer(width*height * 8);
             v[k] = new Float64Array(buffer)
+            v[k].nbLevels = 0;
+            v[k].width = width;
+            v[k].height = height;
             for (var i=0;i<height*width;i++)
             {
                 v[k][i] = 0.0;
             }
         }
+        v.nbLevels = nblev;
+        v.width = width;
+        v.height = height;
         return v;
     }
 }
@@ -81,7 +128,11 @@ Variable.copy = function(a, b)
     }
 }
 
-
+/**
+ * 
+ * @param {type} a
+ * @returns {Array|Variable.clone.c}
+ */
 Variable.clone = function(a)
 {
     var c = [];
@@ -92,10 +143,40 @@ Variable.clone = function(a)
             c[k] = [];
         }
     }
+    
     Variable.copy(a, c);
+    
+    if (a.length>0 && (a[0].constructor===Array || a[0].constructor===Float64Array))
+    {
+        c[k].nbLevels = 0;
+        c[k].width = a.width;
+        c[k].height = a.height;
+    }
+    
+    if ("nbLevels" in a) c.nbLevels = a.nbLevels;
+    if ("width" in a) c.width = a.width;
+    if ("height" in a) c.height = a.height;
+    if ("category" in a) c.category = a.category;
+    if ("name" in a) c.name = a.name;
+    if ("description" in a) c.description = a.description;
+    if ("units" in a) c.units = a.units;
+    if ("verticalPosition" in a) c.verticalPosition = a.verticalPosition;
+    if ("levels" in a) c.levels = a.levels;
+    if ("number" in a) c.number = a.number;
+    if ("offsetx" in a) c.offsetx = a.offsetx;
+    if ("offsety" in a) c.offsety = a.offsety;
+    if ("scale" in a) c.scale = a.scale;
+    if ("latitudes" in a) c.latitudes = a.latitudes;
+    if ("longitudes" in a) c.longitudes = a.longitudes;
     return c;
 }
 
+/**
+ * 
+ * @param {type} a
+ * @param {type} v
+ * @returns {undefined}
+ */
 Variable.init = function(a, v)
 {
     if (a.length>0 && (a[0].constructor===Array || a[0].constructor===Float64Array))
@@ -306,7 +387,7 @@ Variable.addConst = function(x, c, res)
             nb = x[k].length;
             for(var i=0;i<nb;i++)
             {
-                res[k][i] = x[k][i]-c;
+                res[k][i] = x[k][i]+c;
             }
         }
     }
@@ -315,7 +396,7 @@ Variable.addConst = function(x, c, res)
         nb = x.length;
         for(var i=0;i<nb;i++)
         {
-            res[i] = x[i]-c;
+            res[i] = x[i]+c;
         }        
     }
 }
@@ -387,7 +468,11 @@ Variable.swap2d = function(a, b)
     }
 }
 
-
+/**
+ * Calcule la valeur moyenne des éléments de la variable
+ * @param {type} x
+ * @returns {Number}
+ */
 Variable.mean = function(x)
 {
     var s = 0;
@@ -416,7 +501,11 @@ Variable.mean = function(x)
     return s / n;
 }
 
-
+/**
+ * Test si la variable contient des valeurs non numériques ou null
+ * @param {type} x
+ * @returns {Boolean}
+ */
 Variable.containsBadValues = function(x)
 {
     var nb;

@@ -47,21 +47,27 @@ export class LeapFrogTimeIntegrator extends TimeIntegrator {
             if (variables[v].category==VariableDescription.CAT_PRONOSTIC)
             {
                 reg_vars.push(Object.assign(new VariableDescription(),{
-                    "category": VariableDescription.CAT_INTERNAL, 
-                    "name": variables[v].name+"_tdcy", 
-                    "description": variables[v].name+" tendency", 
-                    "units": "", 
-                    "verticalPosition": variables[v].verticalPosition,
-                    "number": variables[v].number
+                    category: VariableDescription.CAT_INTERNAL, 
+                    name: variables[v].name+"_tdcy", 
+                    description: variables[v].name+" tendency", 
+                    units: "", 
+                    offsetx: variables[v].offsetx,
+                    offsety: variables[v].offsety,
+                    scale: variables[v].scale,
+                    verticalPosition: variables[v].verticalPosition,
+                    number: variables[v].number
                 }));
                 
                 reg_vars.push(Object.assign(new VariableDescription(),{
-                    "category": VariableDescription.CAT_INTERNAL, 
-                    "name": variables[v].name+"_t", 
-                    "description": variables[v].name+" at t-dt", 
-                    "units": "", 
-                    "verticalPosition": variables[v].verticalPosition,
-                    "number": variables[v].number
+                    category: VariableDescription.CAT_INTERNAL, 
+                    name: variables[v].name+"_t", 
+                    description: variables[v].name+" at t-dt", 
+                    units: "", 
+                    offsetx: variables[v].offsetx,
+                    offsety: variables[v].offsety,
+                    scale: variables[v].scale,
+                    verticalPosition: variables[v].verticalPosition,
+                    number: variables[v].number
                 }));
             }
         }
@@ -107,7 +113,12 @@ export class LeapFrogTimeIntegrator extends TimeIntegrator {
             if (variables[v].category==VariableDescription.CAT_PRONOSTIC)
             {
                 var tmp = this.model.getVariable(variables[v].name+"_t");
-                this.model.setVariable(variables[v].name+"_t", this.model.getVariable(variables[v].name));
+                if ("name" in tmp) tmp.name = variables[v].name;
+                
+                var variable = this.model.getVariable(variables[v].name);
+                if ("name" in variable) variable.name = variables[v].name+"_t";
+                this.model.setVariable(variables[v].name+"_t", variable);
+                
                 this.model.setVariable(variables[v].name, tmp);
             }
         }

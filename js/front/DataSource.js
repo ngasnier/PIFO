@@ -16,62 +16,27 @@
  */
 
 /**
- * Implémente une condition aux limites du modèle.
+ * Interface d'une source de données 2D ou 3D pour le modèle.
+ * @type type
  */
-export class BoundaryCondition
-{
+export class DataSource {
     /**
      * 
      * @returns {undefined}
      */
-    constructor() 
+    constructor()
     {
-        this._model = null;
+        
     }
        
     /**
-     * 
-     * @param {type} p_model
-     * @returns {undefined}
+     * Renvoie un champ au temps demandé.
+     * @param {type} p_field
+     * @param {type} p_time
+     * @returns {undefined} tableau 
      */
-    set model(p_model)
+    async getField(p_field, p_time)
     {
-        this._model = p_model;
-    }
-    
-    /**
-     * 
-     * @returns {@param;DynamicsCore.set model:p_model}
-     */
-    get model()
-    {
-        return this._model;
-    }
-    
-    /**
-     * 
-     * @returns {Array}
-     */
-    getVariablesDescriptions()
-    {
-        return [];
-    }
-     
-    /**
-     * 
-     * @returns {undefined}
-     */
-    init()
-    {
-        
-    }
-    
-    /**
-     * 
-     * @returns {undefined}
-     */
-    doBoundaryCondition()
-    {
-        
+        throw `field ${p_field} not available at time ${p_time}`;
     }
 }

@@ -43,7 +43,7 @@ export class Model {
         this.horizontalStaggering = "A";
         
         //** Type de grille verticale
-        this.horizontalStaggering = "L";
+        this.verticalStaggering = "L";
 
         //** Indique qu'on travaille en grille globale
         this.global = false;
@@ -77,10 +77,10 @@ export class Model {
 
         // *** Variables internes
         // Stockage des coordonnées verticales
-        this._verticalCoords = [];
-        this._surfacesCoords = [];
+        this._verticalCoords = [1];
+        this._surfacesCoords = [1];
         this._layersCoords = [];
-        this._surfacesIndices = [];
+        this._surfacesIndices = [0];
         this._layerIndices = [];
 
         // Liste des descriptions de variables
@@ -165,22 +165,21 @@ export class Model {
         this.getVariablesDescriptions().forEach((v)=>
         {
             var nblevs = this.nbLayers;
-            var vspan = true;
             switch (v.verticalPosition)
             {
                 case VariableDescription.VERTICAL_POSITION_SURFACE:
-                    nblevs = 1;
-                    vspan = false;
+                    nblevs = 0;
                     break;
                 
                 case VariableDescription.VERTICAL_POSITION_INTERLAYER:
                     nblevs = this.nbSurfaces+1;
-                    vspan = false;
                     break;
                 default:
                     // Garder les valeurs par défaut
             }
-            this.setVariable(v.name, Variable.createVariable(nblevs, this.width, this.height, vspan));
+            var variable = Variable.createVariable(nblevs, this.width, this.height);
+            variable = Object.assign(variable, v);
+            this.setVariable(v.name, variable);
         });
         
         // *** Initialisation des algorithmes
@@ -417,6 +416,23 @@ export class Model {
             }
             return vars;
         }
+    }
+     
+    /**
+     * Renvoie la description d'une variable précise.
+     * @param {type} p_variable
+     * @returns {Array|unresolved}
+     */
+    getVariableDescription(p_variable)
+    {
+        for (var v in this.variables)
+        {
+            if (this.variables[v].name==p_variable)
+            {
+                return this.variables[v];
+            }
+        }
+        return null;
      }
 
     /**

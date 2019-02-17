@@ -34,11 +34,6 @@ var latLonDomain1 =
 var mercatorProjectionDomain = {
     "width": 111,
     "height": 72,
-    "projection": "Mercator",
-    "gridType": "C",
-    "relaxation": 8,
-    "global": false,
-
     "minLat":9,
     "maxLat":81,
     "minLon":-60,
@@ -84,7 +79,7 @@ test('projection mercator facteur echelle', () => {
 
 test('projection mercator interpolations', () => {
     var projection = new MercatorProjection();
-    projection.domain = mercatorProjectionDomain;
+    Object.assign(projection, mercatorProjectionDomain);
     
     var in_width = (latLonDomain1.maxLon-latLonDomain1.minLon)/latLonDomain1.dlon+1;
     var in_height = (latLonDomain1.maxLat-latLonDomain1.minLat)/latLonDomain1.dlat+1;
@@ -196,7 +191,7 @@ test('projection mercator interpolations', () => {
 
 test('projection mercator calcLatitutesLongitudes', () => {
    var projection = new MercatorProjection();   
-    projection.domain = mercatorProjectionDomain;
+   Object.assign(projection, mercatorProjectionDomain);
    var latitudes = Variable.createVariable(1, mercatorProjectionDomain.width, mercatorProjectionDomain.height, false);
    var longitudes = Variable.createVariable(1, mercatorProjectionDomain.width, mercatorProjectionDomain.height, false);
    var [dx, dy] = projection.getMeshSize();

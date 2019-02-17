@@ -48,12 +48,15 @@ export class RobertAsselinTimeFilter extends TimeFilter {
             if (variables[v].category==VariableDescription.CAT_PRONOSTIC)
             {
                 reg_vars.push(Object.assign(new VariableDescription(),{
-                    "category": VariableDescription.CAT_INTERNAL, 
-                    "name": variables[v].name+"_tmp", 
-                    "description": variables[v].name+" tmp filter", 
-                    "units": "", 
-                    "verticalPosition": variables[v].verticalPosition,
-                    "number": variables[v].number
+                    category: VariableDescription.CAT_INTERNAL, 
+                    name: variables[v].name+"_tmp", 
+                    description: variables[v].name+" tmp filter", 
+                    units: "", 
+                    offsetx: variables[v].offsetx,
+                    offsety: variables[v].offsety,
+                    scale: variables[v].scale,
+                    verticalPosition: variables[v].verticalPosition,
+                    number: variables[v].number
                 }));
             }
         }

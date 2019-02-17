@@ -34,21 +34,24 @@ export class ModuleLoader {
     /**
      * Charge et instancie la classe indiquée.
      */   
-    async loadModule(p_class)
+    async loadModule(p_module)
     {
         var relate_to_path = this.searchPath;
-        var exp = this.config[p_class].includes("/") ? this.config[p_class].split("/"): [];
+
+        if (!(p_module in this.config)) throw `module ${p_module} not found in config.`;
+
+        var exp = this.config[p_module].includes("/") ? this.config[p_module].split("/"): [];
         relate_to_path += exp.slice(0, exp.length-1).join("/")+"/";
         return new Promise((resolve, reject) => {
-            var module_path = this.config[p_class].startsWith("/") ? this.config[p_class]: this.searchPath+this.config[p_class];
-            if (p_class in this.config)
+            var module_path = this.config[p_module].startsWith("/") ? this.config[p_module]: this.searchPath+this.config[p_module];
+            if (p_module in this.config)
             {
                 if (typeof module !== 'undefined' && module.exports) 
                 {
                     // Node
                     var esmImport = require('esm')(module);
                     var loaded_module = esmImport(module_path);
-                    var cls = new loaded_module[p_class];
+                    var cls = new loaded_module[p_module];
                     resolve(cls);
                 }
                 else
@@ -58,15 +61,15 @@ export class ModuleLoader {
                         xhr.open('GET', module_path+"?" + (new Date()).getTime(), true);
                         xhr.onerror = reject;
                         xhr.onload = function () {
-                            var module_resolver = p_class+"_module";
+                            var module_resolver = p_module+"_module";
                             self[module_resolver] = function (m) {
                                 delete self[module_resolver];
-                                var cls = new m[p_class];
+                                var cls = new m[p_module];
                                 resolve(cls);
                             };
                             var textContent = xhr.responseText.replace(/from ".\//g, "from \""+relate_to_path)
                                 .replace(/from '.\//g, "from '"+relate_to_path);
-                            textContent += "\n"+module_resolver+"({"+p_class+"});";
+                            textContent += "\n"+module_resolver+"({"+p_module+"});";
                             var html = document.documentElement;
                             var script = document.createElement('script');
                             script.textContent = textContent;
@@ -78,13 +81,8 @@ export class ModuleLoader {
             }
             else
             {
-                reject( "module "+p_class+" not found");
+                reject( `module ${p_module} not found`);
             }
         });
     }
-}
-
-function pouet()
-{
-    console.log("pouet");
 }

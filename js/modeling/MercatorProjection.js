@@ -39,17 +39,6 @@ export class MercatorProjection extends ConformalProjection {
     }
     
     /**
-     * Spécifie les paramètres du domaine via un objet JSON.
-     * @param {type} p_params
-     * @returns {undefined}
-     */
-    set params(p_params)
-    {
-        super.params = p_params;
-        if ("R" in p_params) this.R = p_params.R;
-    }
-
-    /**
      * Sphere vers plan
      * @param {type} lat en degré
      * @param {lon} lon en degré
@@ -96,18 +85,18 @@ export class MercatorProjection extends ConformalProjection {
      * @param {type} fieldType indique le type de variable : s scalaire, u composante u vectorielle, v composante v vectorielle
      * @returns {undefined}
      */
-    interpLatLonGridToDomain(latLonParams, data, domain, offsetx, offsety, scale=false, fieldType=VariableDescription.NUMBER_TYPE_SCALAR)
+    interpLatLonGridToDomain(latLonParams, data_in, data_out, offsetx, offsety, scale=false, fieldType=VariableDescription.NUMBER_TYPE_SCALAR)
     {       
         var widthInput = (latLonParams.maxLon-latLonParams.minLon)/latLonParams.dlon+1;
         var heightInput = (latLonParams.maxLat-latLonParams.minLat)/latLonParams.dlat+1;
                 
-        var lon = this.domain.minLon;
-        var dlon = (this.domain.maxLon-this.domain.minLon)/this.domain.width;
+        var lon = this.minLon;
+        var dlon = (this.maxLon-this.minLon)/this.width;
 
-        var [xmin, ymin] = this.latLonToXY(this.domain.minLat, this.domain.minLon);
-        var [xmax, ymax] = this.latLonToXY(this.domain.maxLat, this.domain.maxLon);
-        var dx = (xmax-xmin)/(this.domain.width);
-        var dy = (ymax-ymin)/(this.domain.height);
+        var [xmin, ymin] = this.latLonToXY(this.minLat, this.minLon);
+        var [xmax, ymax] = this.latLonToXY(this.maxLat, this.maxLon);
+        var dx = (xmax-xmin)/(this.width);
+        var dy = (ymax-ymin)/(this.height);
 
         var lat_in, lon_in;
         var x_in1, y_in1;
@@ -119,7 +108,7 @@ export class MercatorProjection extends ConformalProjection {
         var vv1, vv2;
         var i = 0;
         var y = 0;
-        if (this.domain.global) i++;
+        if (this.global) i++;
                
         for (y=ymax-0.5*offsety*dy, yscale=ymax ; y>ymin ; y-=dy, yscale-=dy)
         {
@@ -132,7 +121,7 @@ export class MercatorProjection extends ConformalProjection {
             if (y_in2>=heightInput) throw "latitude overflow "+lat_in+" resulte en index interp "+y_in2;
             alpha_y = ((lat_in+90)/latLonParams.dlat - y_in1)/(y_in2-y_in1);
 
-            for (lon=this.domain.minLon, xscale=xmin;lon<this.domain.maxLon;lon+=dlon, xscale+=dx)
+            for (lon=this.minLon, xscale=xmin;lon<this.maxLon;lon+=dlon, xscale+=dx)
             {
                 lon_in = lon+dlon*0.5*offsetx;
                 if (lon_in<0) lon_in += 360;
@@ -143,25 +132,25 @@ export class MercatorProjection extends ConformalProjection {
                 if (x_in2>widthInput) x_in2 -= widthInput;
                 alpha_x = (lon_in/latLonParams.dlon - x_in1)/(x_in2-x_in1);
 
-                v1 = data[x_in1+widthInput*y_in1];
-                v2 = data[x_in1+widthInput*y_in2];
-                v3 = data[x_in2+widthInput*y_in1];
-                v4 = data[x_in2+widthInput*y_in2];
+                v1 = data_in[x_in1+widthInput*y_in1];
+                v2 = data_in[x_in1+widthInput*y_in2];
+                v3 = data_in[x_in2+widthInput*y_in1];
+                v4 = data_in[x_in2+widthInput*y_in2];
 
                 vv1 = alpha_y*v2 + (1-alpha_y)*v1;
                 vv2 = alpha_y*v4 + (1-alpha_y)*v3;
 
-                domain[i] = alpha_x*vv2 + (1-alpha_x)*vv1 ;
+                data_out[i] = alpha_x*vv2 + (1-alpha_x)*vv1 ;
 
                 if (scale)
                 {
                     [latscale, lonscale] = this.xyToLatLon(xscale, yscale);
-                    domain[i] = domain[i]/this.scaleFactor(latscale, lonscale);
+                    data_out[i] = data_out[i]/this.scaleFactor(latscale, lonscale);
                 }
 
                 i++;
             }
-            if (this.domain.global) i+=2;
+            if (this.global) i+=2;
         }
     }
     
@@ -202,8 +191,8 @@ export class MercatorProjection extends ConformalProjection {
             y_in2 = y_in1+1;
             if (y_in1<0) y_in1 = 0;
             if (y_in2<0) y_in2 = 0;
-            if (y_in1>=this.domain.height) y_in1 = this.domain.height-1;
-            if (y_in2>=this.domain.height) y_in2 = this.domain.height-1;
+            if (y_in1>=this.height) y_in1 = this.height-1;
+            if (y_in2>=this.height) y_in2 = this.height-1;
             //if (y_in2>=this.heightInput) throw "latitude overflow "+lat_in+" resulte en index interp "+y_in2;
             if (y_in1!=y_in2) 
                 alpha_y = ((ymax-y_in)/dy - y_in1)/(y_in2-y_in1);
@@ -220,17 +209,17 @@ export class MercatorProjection extends ConformalProjection {
                 x_in2 = x_in1+1;
                 if (x_in1<0) x_in1 = 0;
                 if (x_in2<0) x_in2 = 0;
-                if (x_in1>=this.domain.width) x_in1 = this.domain.width-1;
-                if (x_in2>=this.domain.width) x_in2 = this.domain.width-1;
+                if (x_in1>=this.width) x_in1 = this.width-1;
+                if (x_in2>=this.width) x_in2 = this.width-1;
                 if (x_in1!==x_in2) 
                     alpha_x = ((x_in-xmin)/dx - x_in1)/(x_in2-x_in1);
                 else
                     alpha_x = 1;
 
-                v1 = data_in[x_in1+this.domain.width*y_in1];
-                v2 = data_in[x_in1+this.domain.width*y_in2];
-                v3 = data_in[x_in2+this.domain.width*y_in1];
-                v4 = data_in[x_in2+this.domain.width*y_in2];
+                v1 = data_in[x_in1+this.width*y_in1];
+                v2 = data_in[x_in1+this.width*y_in2];
+                v3 = data_in[x_in2+this.width*y_in1];
+                v4 = data_in[x_in2+this.width*y_in2];
 
                 vv1 = alpha_y*v2 + (1-alpha_y)*v1;
                 vv2 = alpha_y*v4 + (1-alpha_y)*v3;
@@ -240,7 +229,6 @@ export class MercatorProjection extends ConformalProjection {
                 // Ce code sert surtout à stopper d'urgence un calcul de modèle qui part en vrille
                 if(isNaN(data_out[i]))
                 {
-                    //console.log([x_in1, x_in2, y_in1, y_in2, x_in, y_in, lat, lon, alpha_x, alpha_y, xmin, ymin, xmax, ymax]);
                     throw "instabilité détectée en "+i;
                 }
                 
@@ -261,9 +249,9 @@ export class MercatorProjection extends ConformalProjection {
      */
     getMeshSize()
     {
-        var a = this.latLonToXY(this.domain.minLat, this.domain.minLon);
-        var b = this.latLonToXY(this.domain.maxLat, this.domain.maxLon);
-        return [(b[0]-a[0])/this.domain.width, (b[1]-a[1])/this.domain.height];
+        var a = this.latLonToXY(this.minLat, this.minLon);
+        var b = this.latLonToXY(this.maxLat, this.maxLon);
+        return [(b[0]-a[0])/this.width, (b[1]-a[1])/this.height];
     }
     
     /**
@@ -274,18 +262,18 @@ export class MercatorProjection extends ConformalProjection {
      */
     calcLatitudesLongitudes(xoffset, yoffset, latitudes, longitudes)
     {
-        var a = this.latLonToXY(this.domain.minLat, this.domain.minLon);
-        var b = this.latLonToXY(this.domain.maxLat, this.domain.maxLon);
+        var a = this.latLonToXY(this.minLat, this.minLon);
+        var b = this.latLonToXY(this.maxLat, this.maxLon);
         var [dx, dy] = this.getMeshSize();
         var yplan = b[1]+dy*yoffset*0.5;
         var xplan = a[0];
         var i = 0;
         var lat, lon;
 
-        for (var y=0;y<this.domain.height;y++)
+        for (var y=0;y<this.height;y++)
         {
             xplan = a[0]+dx*xoffset*0.5;
-            for(var x=0;x<this.domain.width;x++,i++)
+            for(var x=0;x<this.width;x++,i++)
             {
                 [lat, lon] = this.xyToLatLon(xplan, yplan);
                 latitudes[i] = lat;

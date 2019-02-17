@@ -16,62 +16,35 @@
  */
 
 /**
- * Implémente une condition aux limites du modèle.
+ * Interface d'un objet capable d'écrire un champ de modèle.
+ * @type type
  */
-export class BoundaryCondition
-{
+export class DataWriter {
     /**
      * 
      * @returns {undefined}
      */
-    constructor() 
-    {
-        this._model = null;
-    }
-       
-    /**
-     * 
-     * @param {type} p_model
-     * @returns {undefined}
-     */
-    set model(p_model)
-    {
-        this._model = p_model;
-    }
-    
-    /**
-     * 
-     * @returns {@param;DynamicsCore.set model:p_model}
-     */
-    get model()
-    {
-        return this._model;
-    }
-    
-    /**
-     * 
-     * @returns {Array}
-     */
-    getVariablesDescriptions()
-    {
-        return [];
-    }
-     
-    /**
-     * 
-     * @returns {undefined}
-     */
-    init()
+    constructor()
     {
         
     }
     
     /**
      * 
+     * @param {type} p_name
+     * @param {type} p_time
+     * @param {type} p_data
      * @returns {undefined}
      */
-    doBoundaryCondition()
+    async writeField(p_name, p_time, p_data)
     {
-        
+        try
+        {
+            
+        }
+        catch (e)
+        {
+            throw e;
+        }
     }
 }

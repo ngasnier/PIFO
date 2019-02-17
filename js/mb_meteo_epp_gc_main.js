@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { ModelLoader } from "/js/modeling/ModelLoader.js";
+import { ConfigManager } from "/js/front/ConfigManager.js";
 import { Earth } from "/js/modeling/Earth.js";
 
 import { BarotropicInterpolator } from "/js/modeling/BarotropicInterpolator.js";
@@ -32,7 +32,7 @@ import { Z500HTMLRenderer } from "/js/ui/Z500HTMLRenderer.js";
 import { BarotropicVerificationHTMLRenderer } from "/js/ui/BarotropicVerificationHTMLRenderer.js";
 import { ModelUI } from "/js/ui/ModelUI.js";
 
-import { WGRIBFieldReader } from "./util/WGRIBFieldReader.js";
+import { WGRIBFormat } from "./util/WGRIBFormat.js";
 
 import { HumpDisturbance } from "/js/cases/HumpDisturbance.js";
 
@@ -54,67 +54,136 @@ var latitudes = [];
 var longitudes = [];
 
 var valids = [];
-var scenario = "2018062200";
+var scenario = "current";
 var reslist = [];
 
+var manager = null;
+var inputDomain = null;
+
 var barotropeConfig = {
+    /*
+     * Définit les noms de modules et les fichiers à charger correspondants
+     */
     "modules" : {
+        "Model": "modeling/Model.js",
         "BarotropicCore": "modeling/BarotropicCore.js",
         "MercatorProjection": "modeling/MercatorProjection.js",
         "LeapFrogTimeIntegrator": "modeling/LeapFrogTimeIntegrator.js",
         "RobertAsselinTimeFilter": "modeling/RobertAsselinTimeFilter.js",
         "SchumannFilter": "modeling/SchumannFilter.js",
-        "CouplingLimitedAreaBoundaryCondition": "modeling/CouplingLimitedAreaBoundaryCondition.js"
+        "CouplingLimitedAreaBoundaryCondition": "modeling/CouplingLimitedAreaBoundaryCondition.js",
+        "WGRIBTextFieldDataSource": "front/WGRIBTextFieldDataSource.js"
     },
     
-    "core": "BarotropicCore",
-    "name": "PIFO barotrope",
+    /*
+     * Définit des objets globaux pouvait être référencés dans la config
+     */
+    "global": {
+        "inputDomain":{
+            "minLat": -90,
+            "maxLat": 90,
+            "minLon": 0,
+            "maxLon": 359.5,
+            "dlat": 0.5,
+            "dlon": 0.5
+        },
         
-    "preprocessor": {
-        "minLat": -90,
-        "maxLat": 90,
-        "minLon": 0,
-        "maxLon": 359.5,
-        "dlat": 0.5,
-        "dlon": 0.5,
-        "levels": [100, 15000, 35000, 50000, 65000, 85000, 92500, 100000],
-        "preprocessDir" : "input"
+        "modelDomain": {
+            "class": "MercatorProjection",
+            "width": 111,
+            "height": 72,
+            "horizontalStaggering": "C",
+            "minLat":9,
+            "maxLat":81,
+            "minLon":-60,
+            "maxLon":51
+        },
+        
+        "outputDomain": {
+            "minLat": 9,
+            "maxLat": 81,
+            "minLon": -60,
+            "maxLon": 51,
+            "dlat": 1,
+            "dlon": 1
+        },
+        
+        "gfsdata": {
+            "class": "WGRIBTextFieldDataSource",
+            "path" : "input",
+            "times": [ 0 ],
+            "fieldsDefs": [
+                { 
+                    "names": ["U", "V", "phi"],
+                    "levels": [ 100, 15000, 35000, 50000, 65000, 85000, 92500, 100000]
+                }
+            ]
+        },
+        
+        "times": [ 0 ]
     },
+    
+    /*
+     * Définit les caractéristiques du modèle géré par cette config
+     */
+    "model": {
+        "class": "Model",
 
-    "horizontalDomain": {
+        "dynamicsCore": {
+            "class": "BarotropicCore"
+        },
+
+        "name": "PIFO barotrope",
+
+        "projection": {
+            "ref": "modelDomain"
+        },
+
+        "timeIntegrator" : {
+            "class": "LeapFrogTimeIntegrator"
+        },                 
+
         "width": 111,
         "height": 72,
-        "staggering": "C",
+        "horizontalStaggering": "C",
         "global": false,
-        //"filter": "SchumannFilter",
         "filterInterval": 1,
+        "verticalStaggering":  "L",
+        
+        "boundaryCondition": {
+            "class": "CouplingLimitedAreaBoundaryCondition",
+            "relaxation": 8
+        },
 
-        "projection": "MercatorProjection",
-        "minLat":9,
-        "maxLat":81,
-        "minLon":-60,
-        "maxLon":51
-    },  
-    
-    "verticalDomain": {
-        "staggering":  "L",
-        "ptop": 100.0,
-        "nbSurfaces": 9
-    },
-    
-    "boundaryCondition": {
-        "condition": "CouplingLimitedAreaBoundaryCondition",
-        "relaxation": 8
-    },
-       
-    "filter": "none",
-    
-    "timeIntegration": {
-        "integrator": "LeapFrogTimeIntegrator",
-        //"filter" : "RobertAsselinTimeFilter",
-        "dt": 10
-    },
+        /*"timeFilter": {
+            "class": "RobertAsselinTimeFilter"
+        },*/
 
+        "dt": 15
+    },
+    
+    /*
+     * Paramétrage des différents modes de fonctionnement, scénarios...
+     */
+    "scenario": {
+        "preprocessor": {
+            "class": "Preprocessor",
+            "dataSource": { "ref": "gfsdata"}
+            
+        },
+         
+        "run": {
+            "class": "ADefinir",
+            // Les paramètres du run, à définir...
+            "inputTimes": { "ref": "times" },
+            "stopTime": 48,
+            "inputRelief": false,
+            "historyInterval": 6,
+            "historyDir": "output"
+        }
+    },
+    
+    // TODO : gardé pour ne pas péter le code tout de suite...
     "enablePrecipitationScheme" : false,
     "enableConvectionScheme" : false,
 
@@ -129,42 +198,25 @@ var barotropeConfig = {
     "historyDir": "output"
 };
 
-
-async function createModel(config)
-{
-    var classpath = "/js/";
-    var loader = new ModelLoader(classpath);        
-    return loader.loadModel(config);
-}
-
 $(document).ready(function () {
     valids = ["000"];
-    scenario = "2018062200";
+    scenario = "2018120612";
     
     ui.setStatus("loading");
     ui.setStatusString("Initialisation");
     //$.getJSON("config.json",initialize);
-    initialize(barotropeConfig);
+    initialize(barotropeConfig).then(()=>{});
 });
 
 async function initialize(config) 
-{
-    /*ui.model = new BarotropicModel();    
-    ui.model.semiImplicite = true;
-    ui.model.projection = new MercatorProjection(Model.Rterre);
-    ui.model.width = 144;
-    ui.model.height = 72;
-    ui.model.dt = 45;
-    ui.model.dlat = 1;
-    ui.model.dlon = 1;
-    ui.model.nlat = 80;
-    ui.model.slat = ui.model.nlat - ui.model.height * ui.model.dlon;
-    ui.model.elon = 51;
-    ui.model.wlon = ui.model.elon - ui.model.width * ui.model.dlon;
-    ui.model.relaxation = 8;
-    ui.model.filterFreq = 3600*6/ui.model.dt; */
+{   
+    var classpath = "/js/";
+    manager = new ConfigManager(classpath, config);
     
-    ui.model = await createModel(config);
+    // TODO : on ne devra plus faire de "preprocesseur" ici...
+    inputDomain = await manager.getObject("inputDomain");
+    
+    ui.model = await manager.getModel()
     
     ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", levels:[1], renderer: windRenderer},
         Z500 : {group:"HistoricVariables", name:"Z500", levels:[1], renderer: z500Renderer},
@@ -241,12 +293,12 @@ async function initialize(config)
 
     ui.beforeStepCallback = function()
     {
-        /*if (ui.model.boundaryCondition!=null)
+        if (ui.model.boundaryCondition!=null)
         {
             h500.interp(ui.model.time, ui.model.getVariable("phi_couplage"));
             u500.interp(ui.model.time, ui.model.getVariable("U_couplage"));
             v500.interp(ui.model.time, ui.model.getVariable("V_couplage"));
-        }*/
+        }
     };
     
     // Init l'interpolation temporelle pour le couplage
@@ -271,6 +323,7 @@ async function initialize(config)
     
     // Charge les données
     reloadData();
+    return "ok";
 }
 
 function getLoadingString()
@@ -304,6 +357,7 @@ function reloadData()
             ui.model.startDate = dt;
         }
     });
+    console.log(scenario);
     $.ajax({
         url: "res/run/" + scenario + "/" + reslist[0],
         dataType: "text",
@@ -315,14 +369,15 @@ function onFieldDownload(data)
 {
     var f = reslist[0].substring(0, 1);
     var k = 0;
-    var buf = WGRIBFieldReader.read(data);
+    var reader = new WGRIBFormat();
+    var buf = reader.read(data);
     switch (f)
     {
         case "h":
             k = h500.variable.length;
             h500.variable[k] = [];
             ui.model.projection.interpLatLonGridToDomain(
-                barotropeConfig.preprocessor, buf, h500.variable[k], 0, 0, false, VariableDescription.NUMBER_TYPE_SCALAR);
+                inputDomain, buf, h500.variable[k], 0, 0, false, VariableDescription.NUMBER_TYPE_SCALAR);
             interpolator.z500ToModel(h500.variable[k], h500.variable[k]);
             break;
         case "u":
@@ -330,20 +385,20 @@ function onFieldDownload(data)
             u500.variable[k] = [];
             if (ui.model.horizontalStaggering=="C")
                 ui.model.projection.interpLatLonGridToDomain(
-                    barotropeConfig.preprocessor, buf, u500.variable[k], 1, 0, true, VariableDescription.NUMBER_TYPE_U_VECTOR);
+                    inputDomain, buf, u500.variable[k], 1, 0, true, VariableDescription.NUMBER_TYPE_U_VECTOR);
             else
                 ui.model.projection.interpLatLonGridToDomain(
-                    barotropeConfig.preprocessor, buf, u500.variable[k], 0, 0, true, VariableDescription.NUMBER_TYPE_U_VECTOR);
+                    inputDomain, buf, u500.variable[k], 0, 0, true, VariableDescription.NUMBER_TYPE_U_VECTOR);
             break;
         case "v":
             k = v500.variable.length;
             v500.variable[k] = [];
             if (ui.model.horizontalStaggering=="C")
                 ui.model.projection.interpLatLonGridToDomain(
-                    barotropeConfig.preprocessor, buf, v500.variable[k], 0, 1, true, VariableDescription.NUMBER_TYPE_U_VECTOR);
+                    inputDomain, buf, v500.variable[k], 0, 1, true, VariableDescription.NUMBER_TYPE_U_VECTOR);
             else
                 ui.model.projection.interpLatLonGridToDomain(
-                    barotropeConfig.preprocessor, buf, v500.variable[k], 0, 0, true, VariableDescription.NUMBER_TYPE_U_VECTOR);
+                    inputDomain, buf, v500.variable[k], 0, 0, true, VariableDescription.NUMBER_TYPE_U_VECTOR);
             break;
     }
     reslist.shift();

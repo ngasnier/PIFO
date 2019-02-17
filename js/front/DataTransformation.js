@@ -16,62 +16,27 @@
  */
 
 /**
- * Implémente une condition aux limites du modèle.
+ * 
+ * @type type
  */
-export class BoundaryCondition
-{
+export class DataTransformation {
     /**
      * 
      * @returns {undefined}
      */
-    constructor() 
-    {
-        this._model = null;
-    }
-       
-    /**
-     * 
-     * @param {type} p_model
-     * @returns {undefined}
-     */
-    set model(p_model)
-    {
-        this._model = p_model;
-    }
-    
-    /**
-     * 
-     * @returns {@param;DynamicsCore.set model:p_model}
-     */
-    get model()
-    {
-        return this._model;
-    }
-    
-    /**
-     * 
-     * @returns {Array}
-     */
-    getVariablesDescriptions()
-    {
-        return [];
-    }
-     
-    /**
-     * 
-     * @returns {undefined}
-     */
-    init()
+    constructor()
     {
         
     }
     
     /**
      * 
-     * @returns {undefined}
+     * @param {type} description Description de la variable à produire
+     * @param {type} data_in variable éventuelle à trandformer
+     * @returns {unresolved}
      */
-    doBoundaryCondition()
+    transform(description, data_in)
     {
-        
+        return null;
     }
 }

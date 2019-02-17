@@ -15,39 +15,59 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-export var VariableDescription = function ()
-{
-    this.category = "";
-    this.name = "";
-    this.description = "";
-    this.units = "";
-    this.verticalPosition = VariableDescription.VERTICAL_POSITION_LAYER;
-    this.levels = [];
-    this.number = VariableDescription.NUMBER_TYPE_SCALAR;
-    this.offsetx = 0;
-    this.offsety = 0;
-    this.scale = false;
+/**
+ * Méta-description d'une variable.
+ * @type type
+ */
+export class VariableDescription {
+    /**
+     * 
+     * @returns {undefined}
+     */
+    constructor()
+    {
+        /** @var */
+        this.category = "";
+        /** @var */
+        this.name = "";
+        /** @var */
+        this.description = "";
+        /** @var */
+        this.units = "";
+        /** @var */
+        this.verticalPosition = VariableDescription.VERTICAL_POSITION_LAYER;
+        /** @var */
+        this.levels = [];
+        /** @var */
+        this.number = VariableDescription.NUMBER_TYPE_SCALAR;
+        /** @var */
+        this.offsetx = 0;
+        /** @var */
+        this.offsety = 0;
+        /** @var */
+        this.scale = false;
+    }
 }
 
+/** @constant */
 VariableDescription.CAT_PRONOSTIC = "Pronostic";
+/** @constant */
 VariableDescription.CAT_DIAGNOSTIC = "Diagnostic";
+/** @constant */
 VariableDescription.CAT_PARAMETER = "Parameter";
+/** @constant */
 VariableDescription.CAT_INTERNAL = "Internal";
 
-// Variable décrivant des données sur une seule surface
+/** Variable décrivant des données sur une seule surface @constant */
 VariableDescription.VERTICAL_POSITION_SURFACE = "SURFACE";
-
-// Variable décrivant des données à une surface intercouche
+/** Variable décrivant des données à une surface intercouche @constant */
 VariableDescription.VERTICAL_POSITION_INTERLAYER = "INTERLAYER";
-
-// Variable décrivant des données à l'intérieur d'une couche.
+/** Variable décrivant des données à l'intérieur d'une couche. @constant */
 VariableDescription.VERTICAL_POSITION_LAYER = "LAYER";
 
-// Représente un scalaire
+/** Représente un scalaire @constant */
 VariableDescription.NUMBER_TYPE_SCALAR = "s";
-
-// Représente la composante u d'un vecteur
+/** Représente la composante u d'un vecteur @constant */
 VariableDescription.NUMBER_TYPE_U_VECTOR = "u";
-
-// Représente la composante v d'un vecteur
+/** Représente la composante v d'un vecteur @constant */
 VariableDescription.NUMBER_TYPE_V_VECTOR = "v";

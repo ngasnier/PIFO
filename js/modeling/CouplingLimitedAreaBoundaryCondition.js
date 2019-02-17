@@ -36,46 +36,36 @@ export class CouplingLimitedAreaBoundaryCondition extends BoundaryCondition
     }
     
     /**
-     * Paralètre l'objet depuis une config JSON
-     * @returns {undefined}
-     */
-    set params(p_params)
-    {
-        super.params = p_params;
-        if ("relaxation" in p_params) this.relaxation = p_params.relaxation;
-    }
-
-    /**
      * 
      * @returns {Array}
      */
     getVariablesDescriptions()
     {
         var reg_vars = [Object.assign(new VariableDescription(),{
-                    "category": VariableDescription.CAT_INTERNAL, 
-                    "name": "alpha_couplage", 
-                    "description": "coupling coefficient for boundary condition", 
-                    "units": "", 
-                    "verticalPosition": VariableDescription.VERTICAL_POSITION_SURFACE,
-                    "number": VariableDescription.NUMBER_TYPE_SCALAR
+                    category: VariableDescription.CAT_INTERNAL, 
+                    name: "alpha_couplage", 
+                    description: "coupling coefficient for boundary condition", 
+                    units: "", 
+                    verticalPosition: VariableDescription.VERTICAL_POSITION_SURFACE,
+                    number: VariableDescription.NUMBER_TYPE_SCALAR
                 })];
         var variables = this._model.getVariablesDescriptions(VariableDescription.CAT_PRONOSTIC);
         for (var i in variables)
         {
             reg_vars.push(Object.assign(new VariableDescription(),{
-                    "category": VariableDescription.CAT_INTERNAL, 
-                    "name": variables[i].name+"_couplage", 
-                    "description": "boundary coupling values for "+variables[i].name, 
-                    "units": variables[i].units, 
-                    "verticalPosition": variables[i].verticalPosition,
-                    "number": variables[i].number
+                    category: VariableDescription.CAT_INTERNAL, 
+                    name: variables[i].name+"_couplage", 
+                    description: "boundary coupling values for "+variables[i].name, 
+                    units: variables[i].units, 
+                    verticalPosition: variables[i].verticalPosition,
+                    number: variables[i].number
                 }));
         }
         return reg_vars;
     }
 
     /**
-     * Initialise le coeur avant la simulation (allocations de variables...)
+     * Initialise la zone de relaxation
      * @returns {undefined}
      */
     init()

@@ -37,21 +37,21 @@ export class BarotropicCore extends DynamicsCore
     getVariablesDescriptions()
     {
         return [
-            Object.assign(new VariableDescription(), {"category": VariableDescription.CAT_PRONOSTIC, "name":"U", "description":"U component of wind", "units":"m.s^-1", "verticalPosition":VariableDescription.VERTICAL_POSITION_SURFACE}),
-            Object.assign(new VariableDescription(), {"category": VariableDescription.CAT_PRONOSTIC, "name":"V", "description":"V component of wind", "units":"m.s^-1", "verticalPosition":VariableDescription.VERTICAL_POSITION_SURFACE}),
-            Object.assign(new VariableDescription(), {"category": VariableDescription.CAT_PRONOSTIC, "name":"phi", "description":"geopotential height of the top of the model layer", "units":"m^2.s^-1", "verticalPosition":VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PRONOSTIC, name:"U", description:"U component of wind", units:"m.s^-1", offsetx:1, offsety:0, scale:true, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_U_VECTOR}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PRONOSTIC, name:"V", description:"V component of wind", units:"m.s^-1", offsetx:0, offsety:1, scale:true, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_V_VECTOR}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PRONOSTIC, name:"phi", description:"geopotential height of the top of the model layer", units:"m^2.s^-1", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
             
-            Object.assign(new VariableDescription(), {"category": VariableDescription.CAT_INTERNAL, "name":"U_tdcy", "description":"U tendency", "units":"", "verticalPosition":VariableDescription.VERTICAL_POSITION_SURFACE}),
-            Object.assign(new VariableDescription(), {"category": VariableDescription.CAT_INTERNAL, "name":"V_tdcy", "description":"V tendency", "units":"", "verticalPosition":VariableDescription.VERTICAL_POSITION_SURFACE}),
-            Object.assign(new VariableDescription(), {"category": VariableDescription.CAT_INTERNAL, "name":"phi_tdcy", "description":"geopotential tendency", "units":"", "verticalPosition":VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"U_tdcy", description:"U tendency", units:"", offsetx:1, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"V_tdcy", description:"V tendency", units:"", offsetx:0, offsety:1, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"phi_tdcy", description:"geopotential tendency", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
 
-            Object.assign(new VariableDescription(), {"category": VariableDescription.CAT_DIAGNOSTIC, "name":"K", "description":"kinetic energy", "units":"J", "verticalPosition":VariableDescription.VERTICAL_POSITION_SURFACE}),
-            Object.assign(new VariableDescription(), {"category": VariableDescription.CAT_DIAGNOSTIC, "name":"tourbillon", "description":"absolute vorticity potential", "units": "S^-1", "verticalPosition":VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_DIAGNOSTIC, name:"K", description:"kinetic energy", units:"J", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_DIAGNOSTIC, name:"tourbillon", description:"absolute vorticity potential", units: "S^-1", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
 
             // Les variables f et m ne devraient-elles pas plutôt être considérées comme paramètre ?
             // Ou comme catégorie spéciale ?
-            Object.assign(new VariableDescription(), {"category": VariableDescription.CAT_INTERNAL, "name":"f", "description":"coriolis factor", "units":"", "verticalPosition":VariableDescription.VERTICAL_POSITION_SURFACE}),
-            Object.assign(new VariableDescription(), {"category": VariableDescription.CAT_INTERNAL, "name":"m", "description":"scaling factor", "units": "", "verticalPosition":VariableDescription.VERTICAL_POSITION_SURFACE})
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"f", description:"coriolis factor", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"m", description:"scaling factor", units: "", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE})
         ];
     }
     

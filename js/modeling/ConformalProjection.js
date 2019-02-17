@@ -28,19 +28,8 @@ export class ConformalProjection  {
      */
     constructor()
     {
-        this.domain = {};
     }
-
-    /**
-     * Définit les paramètres de la projection via un objet JSON.
-     * @param {type} p_params
-     * @returns {undefined}
-     */
-    set params(p_params)
-    {
-        this.domain = Object.assign({}, p_params);
-    }
-    
+   
     /**
      * Sphere vers plan
      * @param {type} lat en degré

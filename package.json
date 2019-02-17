@@ -11,10 +11,12 @@
     "full-icu": "^1.2.1"
   },
   "devDependencies": {
-    "jest": "^23.6.0"
+    "jest": "^23.6.0",
+    "jsdoc": "^3.5.5"
   },
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "doc": "./node_modules/.bin/jsdoc js -r -d docs"
   },
   "repository": {
     "type": "git",
