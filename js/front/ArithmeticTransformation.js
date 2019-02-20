@@ -18,6 +18,10 @@
 import { DataTransformation } from "./DataTransformation.js";
 import { Variable } from "../modeling/Variable.js";
 
+/**
+ * Transformation du champ par une simple opération arithmétique
+ * @type type
+ */
 export class ArithmeticTransformation extends DataTransformation {
     /**
      * 

@@ -16,8 +16,6 @@
  */
 
 import { Earth } from "../js/modeling/Earth.js";
-
-
 import { Model } from "../js/modeling/Model.js";
 import { Variable } from "../js/modeling/Variable.js";
 import { VariableDescription } from "../js/modeling/VariableDescription.js";
@@ -25,8 +23,8 @@ import { Scenario } from "../js/front/Scenario.js";
 import { ConfigManager } from "../js/front/ConfigManager.js";
 import { Preprocessor } from "../js/front/Preprocessor.js";
 import { WGRIBTextFieldDataSource } from "../js/front/WGRIBTextFieldDataSource.js";
-
-
+import { FileInfo } from "../js/util/FileInfo.js";
+import { TextFile } from "../js/util/TextFile.js";
 import { ProjectionTransformation } from "../js/front/ProjectionTransformation.js";
 
 
@@ -139,13 +137,14 @@ var configCible = {
             "dataSource": { "ref": "gfsdata"},
             "dataWriter": { "class": "WGRIBTextFieldDataWriter", "baseURL" : "run" },
             "transformations": [
-                // TODO : contrôler les résultats du jeu de test
                 // TODO : gérer le fileinfo dans le DataSource / DataWriter
                 { "name": "horizontal_hinterpolation", "class": "ProjectionTransformation", "projection": { "ref" : "modelDomain"}, "sourceDomain": {"ref" : "inputDomain"} },
                 { "name": "hgt_to_phi", "class": "ArithmeticTransformation", "operation":"*", "value":9.8066 },
                 { "name": "geop_epp", "class": "ArithmeticTransformation", "operation":"-", "value":40000 },
-                /*{ "name": "f_calc", "class": "CoriolisFactorTransform" },
-                { "name": "m_calc", "class": "ScalingFactorTransform" }*/
+                // TODO : ajouter la gestion d'un varRef.
+                // TODO : gérer un "cache" d'instanciation au niveau de la config pour ne pas dupliquer le modèle...
+                /*{ "name": "f_calc", "class": "CoriolisFactorTransformation", "latitudes": {"varRef":"latitudes" } },*/
+                /*{ "name": "m_calc", "class": "ScalingFactorTransformation", "projection": { "ref" : "modelDomain"} }*/
             ],
             "processus": [
                 { "name": "basic_projection", "transformations": [ "horizontal_hinterpolation"] },
@@ -158,8 +157,9 @@ var configCible = {
                 { "variable":"U", "source":"ugrd_500", "processus" : "basic_projection" },
                 { "variable":"V", "source":"vgrd_500", "processus" : "basic_projection" },
                 { "variable":"phi", "source": "hgt_500", "processus" : "z500_preparation" },
-                /*{ "variable":"f", "processus" : "f_generation" },
-                { "variable":"m", "processus" : "m_generation" },*/
+                // TODO : il faudra mettre ces variables en "PARAMETER" dans le BarotropicCore
+                /*{ "variable":"f", "processus" : "f_generation" },*/
+                /*{ "variable":"m", "processus" : "m_generation" },*/
             ],
             "outputDir": "run",
             "times": [0] // liste des temps qu'on veut traiter (peut différer de ce qui est dispo dans la datasource)
@@ -541,6 +541,19 @@ test('Transformations', () => {
         
         
         return;
+    });
+});
+
+test("fileinfo", () =>{
+    expect.assertions(2);
+    return TextFile.readFile("res/run/2018120612/fileinfo.txt").then((data) => {
+            var file = new FileInfo(data);
+
+            expect(file.recordList.length).toBe(17);
+            
+            var txt = file.getText();
+            
+            expect(txt).toBe(data);
     });
 });
 
