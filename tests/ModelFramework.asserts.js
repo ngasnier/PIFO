@@ -84,13 +84,18 @@ var configCible = {
         "gfsdata": {
             "class": "WGRIBTextFieldDataSource",
             "baseURL" : "res/run/2018120612",
-            "times": [ 0 ], // nb : peut être déterminé par le file info ?
+            "catalog" : [ 
+                {"name": "ugrd_500", "description":"", "units":""},
+                {"name": "vgrd_500", "description":"", "units":""},
+                {"name": "hgt_500", "description":"", "units":""}
+            ]/*, 
+                    
             "fieldsDefs": [
                 { 
                     "names": ["ugrd_500", "vgrd_500", "hgt_500"],
                     "levels": [  ]
                 }
-            ]
+            ]*/
         }        
     },
     
@@ -571,22 +576,18 @@ test('Préprocesseur - barotrope', () => {
                         {
                             var ds_orig = new WGRIBTextFieldDataSource();
                             ds_orig.baseURL = "res/verif/barotrope/2018120612";
-                            ds_orig.times =  [ 0 ];
-                            ds_orig.fieldsDefs =  [
-                                { 
-                                    names: ["U", "V", "phi"],
-                                    levels: [  ]
-                                }
+                            ds_orig.catalog = [
+                                { "name":"U"},
+                                { "name":"V"},
+                                { "name":"phi"}
                             ];
 
                             var ds_res = new WGRIBTextFieldDataSource();
                             ds_res.baseURL = "run";
-                            ds_res.times =  [ 0 ];
-                            ds_res.fieldsDefs =  [
-                                { 
-                                    names: ["U", "V", "phi"],
-                                    levels: [  ]
-                                }
+                            ds_res.catalog = [
+                                { "name":"U"},
+                                { "name":"V"},
+                                { "name":"phi"}
                             ];
                             
                             var u_orig = await ds_orig.getField("U", 0);
@@ -596,11 +597,11 @@ test('Préprocesseur - barotrope', () => {
                             var u_res = await ds_res.getField("U", 0);
                             var v_res = await ds_res.getField("V", 0);
                             var phi_res = await ds_res.getField("phi", 0);
-                            
+
                             expect(u_res).arrayBeCloseTo(u_orig, 5);
                             expect(v_res).arrayBeCloseTo(v_orig, 5);
                             expect(phi_res).arrayBeCloseTo(phi_orig, 5);
-                            
+
                             return "OK";
                         }
                         catch (e)

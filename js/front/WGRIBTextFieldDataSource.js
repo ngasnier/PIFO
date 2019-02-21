@@ -15,8 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { DataSource } from "./DataSource.js"
-import { WGRIBFormat } from "../util/WGRIBFormat.js"
+import { DataSource } from "./DataSource.js";
+import { WGRIBFormat } from "../util/WGRIBFormat.js";
+import { FileInfo } from "../util/FileInfo.js";
+import { TextFile  } from "../util/TextFile.js";
 
 /**
  * Source de données basée sur les fichiers textes issus de WGRIB.
@@ -34,9 +36,26 @@ export class WGRIBTextFieldDataSource extends DataSource {
     constructor()
     {
         super();
+        this.fileInfo = null;
         this.baseURL = "./";
         this.times = [];
-        this.fieldsDefs = [];
+        this.catalog = [];
+    }
+    
+    /**
+     * 
+     * @returns {undefined}
+     */
+    async getCatalog()
+    {
+        try
+        {
+            return this.catalog;
+        }
+        catch (e)
+        {
+            throw e;
+        }
     }
 
     /**
@@ -46,22 +65,24 @@ export class WGRIBTextFieldDataSource extends DataSource {
      * @returns {undefined} variable contenant les données
      */
     async getField(p_field, p_time)
-    {
-        var levels = this.getFieldLevels(p_field);
-        if (levels==null) throw `field ${p_field} not available at time ${p_time}`;
-        if (!this.times.includes(p_time)) throw `field ${p_field} not available at time ${p_time}`;
-
-        var reader = new WGRIBFormat();
-        var variable;
+    {       
         try {
+            if (this.fileInfo==null) await this.getFileInfo();
+            var field = this.getFieldInfo(p_field);
+            if (field==null) throw `field ${p_field} not available at time ${p_time}`;
+            if (!this.times.includes(p_time)) throw `field ${p_field} not available at time ${p_time}`;
+
+            var reader = new WGRIBFormat();
+            var variable;
+        
             var timefmt = p_time.toString();
             if (timefmt.length<3) timefmt="0".repeat(3-timefmt.length)+timefmt;
-                        
-            if (levels.length>0)
+          
+            if ("levels" in field && field.levels.length>0)
             {
                 variable = [];
-                variable.nbLevels = levels.height;
-                levels.forEach(async (lev)=>
+                variable.nbLevels = field.levels.length;
+                field.levels.forEach(async (lev)=>
                 {
                     var fname = p_field+"_"+(lev/100)+"_"+timefmt+".txt";
                     var data = await this.getFile(fname);
@@ -71,7 +92,7 @@ export class WGRIBTextFieldDataSource extends DataSource {
                     variable.height = var_data.height;
                 });
                 
-                variable.levels = levels.slice();
+                variable.levels = field.levels.slice();
                 
                 return variable;
             }
@@ -100,20 +121,9 @@ export class WGRIBTextFieldDataSource extends DataSource {
     {
         try {
             // Node ou navigateur ?
-            if (typeof module !== 'undefined' && module.exports) 
-            {
-                const fs = require('fs');
-                const path = require('path');
-                var file = path.join(this.baseURL, p_name);
-                return fs.readFileSync(file, "utf8");
-            }
-            else
-            {
-                return $.when($.ajax({
-                    url: this.baseURL+p_name,
-                    dataType: "text"
-                }));
-            }
+            if (!this.baseURL.endsWith("/")) this.baseURL += "/";
+            var file = this.baseURL+p_name;
+            return TextFile.readFile(file);
         }
         catch (e)
         {
@@ -126,17 +136,33 @@ export class WGRIBTextFieldDataSource extends DataSource {
      * @param {type} p_field
      * @returns {undefined}
      */
-    getFieldLevels(p_field)
+    getFieldInfo(p_field)
     {
-        for (var f in this.fieldsDefs)
+        for (var f in this.catalog)
         {
-            var index = this.fieldsDefs[f].names.indexOf(p_field);           
-            
-            if (index>=0)
-            {
-                return this.fieldsDefs[f].levels;
-            }
+            if (this.catalog[f].name==p_field) return this.catalog[f];
         }
         return null;
+    }
+    
+    /**
+     * Chargement du fileinfo et de la liste des temps
+     * @returns {undefined}
+     */
+    async getFileInfo()
+    {
+        try {
+            var fi_data = await this.getFile("fileinfo.txt");
+            this.fileInfo = new FileInfo(fi_data);
+            this.times = [];
+            for (var i in this.fileInfo.recordList)
+            {
+                this.times.push(this.fileInfo.recordList[i].hoursFromInit);
+            }
+        }
+        catch (e)
+        {
+            throw e;
+        }
     }
 }

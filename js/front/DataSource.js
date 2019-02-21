@@ -28,11 +28,30 @@ export class DataSource {
     {
         
     }
-       
+    
+    /**
+     * 
+     * @returns {DataSource} la datasource
+     */
+    async open()
+    {
+        throw `this is an abstract datasource, it cannot be opened.`;
+    }
+    
+    /**
+     * Renvoie la liste des variables de la datasource avec les dimensions 
+     * et temps.
+     * @returns {undefined} tableau de VariableDescription
+     */
+    async getCatalog()
+    {
+        throw "this datasource has no catalog.";
+    }
+    
     /**
      * Renvoie un champ au temps demandé.
      * @param {type} p_field
-     * @param {type} p_time
+     * @param {type} p_time en heures
      * @returns {undefined} tableau 
      */
     async getField(p_field, p_time)
