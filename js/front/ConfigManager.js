@@ -39,6 +39,8 @@ export class ConfigManager {
         this.classPath = p_classPath;
         this.config = p_config;
         this.loader = new ModuleLoader(this.classPath, this.config.modules);
+        this.globals = {};
+        this.model = null;
     }
         
     /**
@@ -50,7 +52,10 @@ export class ConfigManager {
     {        
         if (!(p_object in this.config.global)) throw `object ${p_object} not found in global section.`;
         try {
-            return await this.getObjectFromNode(this.config.global[p_object]);
+            if (p_object in this.globals) return this.globals[p_object];
+            var obj = await this.getObjectFromNode(this.config.global[p_object]);
+            this.globals[p_object] = obj;
+            return obj;
         }
         catch (e)
         {
@@ -65,8 +70,8 @@ export class ConfigManager {
     async getModel()
     {
         try {
-            var obj = await this.getObjectFromNode(this.config.model);
-            return obj;
+            if (this.model==null) this.model = await this.getObjectFromNode(this.config.model);
+            return this.model;
         }
         catch (e)
         {
@@ -109,23 +114,6 @@ export class ConfigManager {
             for (var prop in p_node)
             {
                 obj[prop] = await this.getValue(p_node[prop]);
-                /*if (Array.isArray(p_node[prop]))
-                {
-                    obj[prop] = [];
-                    for (var i in p_node[prop])
-                    {
-                        if (p_node[prop][i] instanceof Object)
-                    }
-                    obj[prop] = p_node[prop].slice();
-                }
-                else if ( p_node[prop] instanceof Object)
-                {
-                    obj[prop] = await this.getObjectFromNode(p_node[prop]);
-                }
-                else 
-                {
-                    obj[prop] = p_node[prop];
-                }*/
             }
 
             return obj;

@@ -45,7 +45,9 @@ var configCible = {
         "WGRIBTextFieldDataWriter": "front/WGRIBTextFieldDataWriter.js",
         "Preprocessor": "front/Preprocessor.js",
         "ProjectionTransformation": "front/ProjectionTransformation.js",
-        "ArithmeticTransformation": "front/ArithmeticTransformation.js"        
+        "ArithmeticTransformation": "front/ArithmeticTransformation.js",
+        "CoriolisFactorTransformation": "front/CoriolisFactorTransformation.js",
+        "ScalingFactorTransformation": "front/ScalingFactorTransformation.js"
     },
     
     /*
@@ -142,14 +144,11 @@ var configCible = {
             "dataSource": { "ref": "gfsdata"},
             "dataWriter": { "class": "WGRIBTextFieldDataSource", "baseURL" : "run" },
             "transformations": [
-                // TODO : gérer le fileinfo dans le DataSource / DataWriter
                 { "name": "horizontal_hinterpolation", "class": "ProjectionTransformation", "projection": { "ref" : "modelDomain"}, "sourceDomain": {"ref" : "inputDomain"} },
                 { "name": "hgt_to_phi", "class": "ArithmeticTransformation", "operation":"*", "value":9.8066 },
                 { "name": "geop_epp", "class": "ArithmeticTransformation", "operation":"-", "value":40000 },
-                // TODO : ajouter la gestion d'un varRef.
-                // TODO : gérer un "cache" d'instanciation au niveau de la config pour ne pas dupliquer le modèle...
-                /*{ "name": "f_calc", "class": "CoriolisFactorTransformation", "latitudes": {"varRef":"latitudes" } },*/
-                /*{ "name": "m_calc", "class": "ScalingFactorTransformation", "projection": { "ref" : "modelDomain"} }*/
+                { "name": "f_calc", "class": "CoriolisFactorTransformation" },
+                { "name": "m_calc", "class": "ScalingFactorTransformation" }
             ],
             "processus": [
                 { "name": "basic_projection", "transformations": [ "horizontal_hinterpolation"] },
@@ -163,8 +162,8 @@ var configCible = {
                 { "variable":"V", "source":"vgrd_500", "processus" : "basic_projection" },
                 { "variable":"phi", "source": "hgt_500", "processus" : "z500_preparation" },
                 // TODO : il faudra mettre ces variables en "PARAMETER" dans le BarotropicCore
-                /*{ "variable":"f", "processus" : "f_generation" },*/
-                /*{ "variable":"m", "processus" : "m_generation" },*/
+                { "variable":"f", "processus" : "f_generation" },
+                { "variable":"m", "processus" : "m_generation" }
             ],
             "outputDir": "run",
             "times": [0] // liste des temps qu'on veut traiter (peut différer de ce qui est dispo dans la datasource)
@@ -565,7 +564,7 @@ test("fileinfo", () =>{
 test('Préprocesseur - barotrope', () => {
     var config = Object.assign({}, configCible);
     var manager = new ConfigManager("../", config);
-    expect.assertions(3);
+    expect.assertions(5);
     return manager.getScenario("preprocessor").then((preprocessor) => { 
         try {
             preprocessor.model.init();
@@ -579,7 +578,9 @@ test('Préprocesseur - barotrope', () => {
                             ds_orig.catalog = [
                                 { "name":"U"},
                                 { "name":"V"},
-                                { "name":"phi"}
+                                { "name":"phi"},
+                                { "name":"f"},
+                                { "name":"m"}
                             ];
                             await ds_orig.open("R");
 
@@ -588,21 +589,29 @@ test('Préprocesseur - barotrope', () => {
                             ds_res.catalog = [
                                 { "name":"U"},
                                 { "name":"V"},
-                                { "name":"phi"}
+                                { "name":"phi"},
+                                { "name":"f"},
+                                { "name":"m"}
                             ];
                             await ds_res.open("R");
                             
                             var u_orig = await ds_orig.getField("U", 0);
                             var v_orig = await ds_orig.getField("V", 0);
                             var phi_orig = await ds_orig.getField("phi", 0);
+                            var f_orig = await ds_orig.getField("f", 0);
+                            var m_orig = await ds_orig.getField("m", 0);
                             
                             var u_res = await ds_res.getField("U", 0);
                             var v_res = await ds_res.getField("V", 0);
                             var phi_res = await ds_res.getField("phi", 0);
+                            var f_res = await ds_res.getField("f", 0);
+                            var m_res = await ds_res.getField("m", 0);
 
-                            expect(u_res).arrayBeCloseTo(u_orig, 5);
-                            expect(v_res).arrayBeCloseTo(v_orig, 5);
-                            expect(phi_res).arrayBeCloseTo(phi_orig, 5);
+                            expect(u_res).arrayBeCloseTo(u_orig, 0.00001);
+                            expect(v_res).arrayBeCloseTo(v_orig, 0.00001);
+                            expect(phi_res).arrayBeCloseTo(phi_orig, 0.00001);
+                            expect(f_res).arrayBeCloseTo(f_orig, 0.000000001);
+                            expect(m_res).arrayBeCloseTo(m_orig, 0.00001);
 
                             return "OK";
                         }

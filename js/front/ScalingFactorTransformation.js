@@ -15,29 +15,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import { DataTransformation } from "./DataTransformation.js";
+import { Variable } from "../modeling/Variable.js";
+
 /**
- * 
+ * Interpole les données lat lon vers une projection
  * @type type
  */
-export class DataTransformation {
+export class ScalingFactorTransformation extends DataTransformation {
     /**
      * 
      * @returns {undefined}
      */
     constructor()
     {
-        /** model */
-        this.model = null;
+        super();
+        this.projection = null;
     }
-    
+
     /**
-     * 
-     * @param {type} description Description de la variable à produire
-     * @param {type} data_in variable éventuelle à trandformer
-     * @returns {unresolved}
+     * Projette la variable data_in de description description dans le 
+     * domaine de la projection.
+     * @param {type} data_in
+     * @returns {undefined} data_out
      */
     transform(description, data_in)
     {
-        return null;
+        var data_out = Variable.createVariable(0, this.model.projection.width, this.model.projection.height, false);
+        this.model.projection.getScaleFactors(this.model.getVariable("latitudes"), this.model.getVariable("longitudes"), data_out);
+        return data_out;
     }
 }

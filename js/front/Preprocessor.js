@@ -137,7 +137,8 @@ export class Preprocessor
                         if (process==null) throw `processus ${output_var.processus} not defined.`;
                         
                         // Obtenir les données
-                        data_var = await this._dataSource.getField(output_var.source, time);
+                        if ("source" in output_var) data_var = await this._dataSource.getField(output_var.source, time);
+                        else data_var = null;
 
                         // Chainage des transformations du processus
                         var result_var = data_var;
@@ -179,6 +180,7 @@ export class Preprocessor
         {
             if (this.transformations[i].name == p_trans)
             {
+                this.transformations[i].model = this.model;
                 return this.transformations[i];
             }
         }

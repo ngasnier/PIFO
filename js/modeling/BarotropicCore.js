@@ -50,8 +50,8 @@ export class BarotropicCore extends DynamicsCore
 
             // Les variables f et m ne devraient-elles pas plutôt être considérées comme paramètre ?
             // Ou comme catégorie spéciale ?
-            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"f", description:"coriolis factor", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
-            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"m", description:"scaling factor", units: "", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE})
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PARAMETER, name:"f", description:"coriolis factor", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PARAMETER, name:"m", description:"scaling factor", units: "", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE})
         ];
     }
     
