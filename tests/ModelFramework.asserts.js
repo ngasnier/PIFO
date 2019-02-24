@@ -140,7 +140,7 @@ var configCible = {
         "preprocessor" : {
             "class": "Preprocessor",
             "dataSource": { "ref": "gfsdata"},
-            "dataWriter": { "class": "WGRIBTextFieldDataWriter", "baseURL" : "run" },
+            "dataWriter": { "class": "WGRIBTextFieldDataSource", "baseURL" : "run" },
             "transformations": [
                 // TODO : gérer le fileinfo dans le DataSource / DataWriter
                 { "name": "horizontal_hinterpolation", "class": "ProjectionTransformation", "projection": { "ref" : "modelDomain"}, "sourceDomain": {"ref" : "inputDomain"} },
@@ -581,6 +581,7 @@ test('Préprocesseur - barotrope', () => {
                                 { "name":"V"},
                                 { "name":"phi"}
                             ];
+                            await ds_orig.open("R");
 
                             var ds_res = new WGRIBTextFieldDataSource();
                             ds_res.baseURL = "run";
@@ -589,6 +590,7 @@ test('Préprocesseur - barotrope', () => {
                                 { "name":"V"},
                                 { "name":"phi"}
                             ];
+                            await ds_res.open("R");
                             
                             var u_orig = await ds_orig.getField("U", 0);
                             var v_orig = await ds_orig.getField("V", 0);

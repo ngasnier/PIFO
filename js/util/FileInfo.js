@@ -61,6 +61,74 @@ export class FileInfo
     }   
     
     /**
+     * 
+     * @returns {undefined}
+     */
+    addRecord(p_date)
+    {
+        var hours = Math.ceil((p_date.getTime()-this.initDate.getTime())/(3600*1000));
+        var rec = this.getRecord(p_date);
+        if (rec==null)
+        {
+            rec = {
+                date: p_date,
+                hoursFromInit: hours,
+                fileList: [],
+                precFileList: [],
+                dateFormatted: p_date.toLocaleDateString("fr-FR", {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                }),
+                hourFormatted: p_date.toLocaleTimeString("fr-FR", {
+                    hour:'2-digit', minute:'2-digit'
+                })
+            };
+            this.recordList.push(rec);
+        }
+        this.recordList.sort(function (a, b) {
+            if (a.date.getTime()<b.date.getTime()) return -1;
+            if (a.date.getTime()>b.date.getTime()) return 1;
+            return 0;
+        });
+        return rec;
+    }
+    
+    /**
+     * 
+     * @param {type} p_date
+     * @returns {undefined}
+     */
+    getRecord(p_date)
+    {
+        var time = p_date.getTime();
+        for (var i in this.recordList)
+        {
+            if (this.recordList[i].date.getTime()==time)
+            {
+                return this.recordList[i];
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * 
+     * @param {type} p_date
+     * @returns {undefined}
+     */
+    addFile(p_date, p_file)
+    {
+        var rec = this.getRecord(p_date);
+        if (rec==null) rec = this.addRecord(p_date);
+        var idx = this.recordList.indexOf(rec);
+        
+        if (!rec.fileList.includes(p_file)) rec.fileList.push(p_file);
+        if (idx<this.recordList.length-1)
+        {
+            this.recordList[idx+1].precFileList = rec.fileList.slice();
+        }
+    }
+    
+    /**
      * Exporte le fileinfo au format texte.
      * @returns {string}
      */

@@ -15,6 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import { DataSource } from "./DataSource.js"
 import { VariableDescription } from "../modeling/VariableDescription.js"
 import { VerticalInterpolator } from "../util/VerticalInterpolator.js";
 
@@ -109,6 +110,12 @@ export class Preprocessor
     async run()
     {
         try {
+            await this._dataSource.open(DataSource.MODE_READ);
+            await this._dataWriter.open(DataSource.MODE_WRITE);
+            
+            // Passage des informations temporelles...           
+            this._dataWriter.initDate = this._dataSource.initDate;
+            
             var model_vars = this._model.getVariablesDescriptions();
             var data_var;
 
@@ -143,15 +150,21 @@ export class Preprocessor
                         }
                         
                         // Ecriture des fichiers
-                        this.dataWriter.writeField(v.name, time, result_var);
+                        this.dataWriter.addTime(time);
+                        await this.dataWriter.writeField(v.name, time, result_var);
                     }
                 }
             }
-            return "OK";
+            return this;
         }
         catch (e)
         {
             throw e;
+        }
+        finally
+        {
+            await this._dataSource.close();
+            await this._dataWriter.close();
         }
     }
     
@@ -201,69 +214,4 @@ export class Preprocessor
             }
         }
     }
-    
-    
-/*{
-                        return new Promise((resolve, reject)=>{
-                            switch (v.category)
-                            {
-                                case VariableDescription.CAT_PRONOSTIC, VariableDescription.CAT_PARAMETER:
-                                    // 1 Obtention des données
-                                    // Le contrat : la datasource sait d'elle-même si le
-                                    // champ demandé est 2D ou 3D. 
-                                    // Besoin: connaitre les niveaux en entrée !
-                                    //[variable, levels] = this.dataSource.getData(v.name, t);
-                                    console.log(time, v);
-                                    resolve();
-
-                                    // 2 Prévoir une transformation pré-projection ?
-
-                                    // 3 Projection dans la grille du modèle
-
-                                    // 4 Transformation éventuelle des champs
-
-                                    // 5 Ecriture des fichiers
-                                    break;
-
-                                default:
-                                    console.log(time, v, "ignorée");
-                                    resolve();
-                           }
-                        }*/    
-
-    /*function interpWGRIB2DField(pField, pValid, pOffsetX, pOffsetY, pScale, pVariable, pFieldType="s")
-    {
-        var filename, valid;
-        var data;
-        valid = pValid.toString();
-        if (valid.length<3)
-        {
-            valid ="00"+valid;
-            valid = valid.substr(valid.length-3);
-        }
-        filename = path.join(config.preprocessor.preprocessDir, pField+"_"+valid+".txt");
-        console.log("loading "+filename);
-        data = WGRIBFieldReader.read(fs.readFileSync(filename, 'utf8'));
-        projection.interpLatLonGridToDomain(config.preprocessor, data, pVariable, pOffsetX, pOffsetY, pScale, pFieldType);
-    }
-
-    function interpWGRIB3DField(pField, pValid, pOffsetX, pOffsetY, pScale, pVariable, pFieldType="s")
-    {
-        var filename, lev, valid;
-        var data;
-        for (var k=0;k<config.preprocessor.levels.length;k++)
-        {
-            lev = Math.floor(verticalInterpolator.inputLevels[k]/100);
-            valid = pValid.toString();
-            if (valid.length<3)
-            {
-                valid ="00"+valid;
-                valid = valid.substr(valid.length-3);
-            }
-            filename = path.join(config.preprocessor.preprocessDir, pField+"_"+lev.toString()+"_"+valid+".txt");
-            console.log("loading "+filename);
-            data = WGRIBFieldReader.read(fs.readFileSync(filename, 'utf8'));
-            projection.interpLatLonGridToDomain(config.preprocessor, data, pVariable[k], pOffsetX, pOffsetY, pScale, pFieldType);
-        }
-    }*/
 }
