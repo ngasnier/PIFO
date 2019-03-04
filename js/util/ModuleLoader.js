@@ -41,7 +41,14 @@ export class ModuleLoader {
         if (!(p_module in this.config)) throw `module ${p_module} not found in config.`;
 
         var exp = this.config[p_module].includes("/") ? this.config[p_module].split("/"): [];
-        relate_to_path += exp.slice(0, exp.length-1).join("/")+"/";
+        relate_to_path += exp.slice(0, exp.length-1).join("/");
+        
+        exp = relate_to_path.split("/");
+        var relate_parent = exp.slice(0, exp.length-1).join("/");
+        
+        if (!relate_to_path.endsWith("/")) relate_to_path+="/";
+        if (!relate_parent.endsWith("/")) relate_parent+="/";
+
         return new Promise((resolve, reject) => {
             var module_path = this.config[p_module].startsWith("/") ? this.config[p_module]: this.searchPath+this.config[p_module];
             if (p_module in this.config)
@@ -68,7 +75,9 @@ export class ModuleLoader {
                                 resolve(cls);
                             };
                             var textContent = xhr.responseText.replace(/from ".\//g, "from \""+relate_to_path)
-                                .replace(/from '.\//g, "from '"+relate_to_path);
+                                .replace(/from '.\//g, "from '"+relate_to_path)
+                                .replace(/from "..\//g, "from \""+relate_parent)
+                                .replace(/from '..\//g, "from '"+relate_parent);
                             textContent += "\n"+module_resolver+"({"+p_module+"});";
                             var html = document.documentElement;
                             var script = document.createElement('script');

@@ -28,9 +28,13 @@ export class DataSource {
      */
     constructor()
     {
+        /** Date de début des données */
         this._initDate = new Date();
+        /** Dates contenues dans la source */
         this._dates = [];
+        /** Catalogue des champs disponibles */
         this._catalog = [];
+        /** Heures d'échéance depuis date d'init */
         this.times = [];
     }
     
@@ -52,7 +56,16 @@ export class DataSource {
     {
         throw `this is an abstract datasource, it cannot be closed.`;
     }
-       
+     
+    /**
+     * 
+     * @returns {Boolean}
+     */
+    isOpen()
+    {
+        return false;
+    }
+    
     /**
      * Renvoie la liste des variables de la datasource avec les dimensions 
      * et temps.

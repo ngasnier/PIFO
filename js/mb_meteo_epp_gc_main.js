@@ -16,13 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { ConfigManager } from "/js/front/ConfigManager.js";
-import { Earth } from "/js/modeling/Earth.js";
-
-import { BarotropicInterpolator } from "/js/modeling/BarotropicInterpolator.js";
-import { WGRIBInterpolator } from "/js/modeling/WGRIBInterpolator.js";
-import { TimeInterpolator } from "/js/modeling/TimeInterpolator.js";
-import { Model } from "/js/modeling/Model.js";
-import { BarotropicModel } from "/js/modeling/BarotropicModel.js";
+import { BarotropicInterpolator } from "/js/ui/BarotropicInterpolator.js";
 import { Variable } from "/js/modeling/Variable.js";
 import { VariableDescription } from "/js/modeling/VariableDescription.js";
 
@@ -32,33 +26,21 @@ import { Z500HTMLRenderer } from "/js/ui/Z500HTMLRenderer.js";
 import { BarotropicVerificationHTMLRenderer } from "/js/ui/BarotropicVerificationHTMLRenderer.js";
 import { ModelUI } from "/js/ui/ModelUI.js";
 
-import { WGRIBFormat } from "./util/WGRIBFormat.js";
-
 import { HumpDisturbance } from "/js/cases/HumpDisturbance.js";
 
 var ui = new ModelUI();
 
 var interpolator = new BarotropicInterpolator();
-var wgribInterpolator = new WGRIBInterpolator();
 var windRenderer = new WindHTMLRenderer();
 var z500Renderer = new Z500HTMLRenderer();
 var tourbillonRenderer = new TourbillonHTMLRenderer();
 var verificationRenderer = new BarotropicVerificationHTMLRenderer();
 
-var h500 = new TimeInterpolator();
-var u500 = new TimeInterpolator();
-var v500 = new TimeInterpolator();
-
 var z500_display = [];
 var latitudes = [];
 var longitudes = [];
 
-var valids = [];
-var scenario = "current";
-var reslist = [];
-
 var manager = null;
-var inputDomain = null;
 
 var barotropeConfig = {
     /*
@@ -72,7 +54,18 @@ var barotropeConfig = {
         "RobertAsselinTimeFilter": "modeling/RobertAsselinTimeFilter.js",
         "SchumannFilter": "modeling/SchumannFilter.js",
         "CouplingLimitedAreaBoundaryCondition": "modeling/CouplingLimitedAreaBoundaryCondition.js",
-        "WGRIBTextFieldDataSource": "front/WGRIBTextFieldDataSource.js"
+        
+        "WGRIBTextFieldDataSource": "front/WGRIBTextFieldDataSource.js",
+        "WGRIBTextFieldDataWriter": "front/WGRIBTextFieldDataWriter.js",
+        "Preprocessor": "front/Preprocessor.js",
+        "ProjectionTransformation": "front/ProjectionTransformation.js",
+        "ArithmeticTransformation": "front/ArithmeticTransformation.js",
+        "CoriolisFactorTransformation": "front/CoriolisFactorTransformation.js",
+        "ScalingFactorTransformation": "front/ScalingFactorTransformation.js",
+        
+        "RunScenario": "front/RunScenario.js",
+        "CouplingStep": "front/CouplingStep.js",
+        "HistoryStep": "front/HistoryStep.js"
     },
     
     /*
@@ -110,17 +103,38 @@ var barotropeConfig = {
         
         "gfsdata": {
             "class": "WGRIBTextFieldDataSource",
-            "path" : "input",
-            "times": [ 0 ],
-            "fieldsDefs": [
-                { 
-                    "names": ["U", "V", "phi"],
-                    "levels": [ 100, 15000, 35000, 50000, 65000, 85000, 92500, 100000]
-                }
+            "baseURL" : "res/run/2018120612",
+            "catalog" : [ 
+                {"name": "ugrd_500", "description":"", "units":""},
+                {"name": "vgrd_500", "description":"", "units":""},
+                {"name": "hgt_500", "description":"", "units":""}
             ]
         },
         
-        "times": [ 0 ]
+        "inputdata": {
+            "class": "WGRIBTextFieldDataSource", 
+            "baseURL" : "run" ,
+            "catalog" : [ 
+                {"name": "U", "description":"", "units":""},
+                {"name": "V", "description":"", "units":""},
+                {"name": "phi", "description":"", "units":""},
+                {"name": "f", "description":"", "units":""},
+                {"name": "m", "description":"", "units":""}
+            ]
+        },
+        
+        "outputdir" : {
+            "ref": "inputdata",
+            "class": "WGRIBTextFieldDataSource", 
+            "baseURL" : "output",
+            "catalog" : [ 
+                {"name": "U", "description":"", "units":""},
+                {"name": "V", "description":"", "units":""},
+                {"name": "phi", "description":"", "units":""},
+                {"name": "f", "description":"", "units":""},
+                {"name": "m", "description":"", "units":""}
+            ]            
+        },
     },
     
     /*
@@ -166,43 +180,70 @@ var barotropeConfig = {
      * Paramétrage des différents modes de fonctionnement, scénarios...
      */
     "scenario": {
-        "preprocessor": {
+        "preprocessor" : {
             "class": "Preprocessor",
-            "dataSource": { "ref": "gfsdata"}
-            
+            "dataSource": { "ref": "gfsdata"},
+            "dataWriter": { "class": "WGRIBTextFieldDataSource", "baseURL" : "run" },
+            "transformations": [
+                { "name": "horizontal_hinterpolation", "class": "ProjectionTransformation", "projection": { "ref" : "modelDomain"}, "sourceDomain": {"ref" : "inputDomain"} },
+                { "name": "hgt_to_phi", "class": "ArithmeticTransformation", "operation":"*", "value":9.8066 },
+                { "name": "geop_epp", "class": "ArithmeticTransformation", "operation":"-", "value":40000 },
+                { "name": "f_calc", "class": "CoriolisFactorTransformation" },
+                { "name": "m_calc", "class": "ScalingFactorTransformation" }
+            ],
+            "processus": [
+                { "name": "basic_projection", "transformations": [ "horizontal_hinterpolation"] },
+                { "name": "z500_preparation", "transformations": [ "horizontal_hinterpolation", "hgt_to_phi", "geop_epp"] }, 
+                { "name": "f_generation", "transformations": [ "f_calc"] },
+                { "name": "m_generation", "transformations": [ "m_calc"] }
+                
+            ],
+            "output": [
+                { "variable":"U", "source":"ugrd_500", "processus" : "basic_projection" },
+                { "variable":"V", "source":"vgrd_500", "processus" : "basic_projection" },
+                { "variable":"phi", "source": "hgt_500", "processus" : "z500_preparation" },
+                { "variable":"f", "processus" : "f_generation" },
+                { "variable":"m", "processus" : "m_generation" }
+            ],
+            "outputDir": "run",
+            "times": [0] 
         },
-         
+        
         "run": {
-            "class": "ADefinir",
-            // Les paramètres du run, à définir...
-            "inputTimes": { "ref": "times" },
-            "stopTime": 48,
-            "inputRelief": false,
-            "historyInterval": 6,
-            "historyDir": "output"
-        }
-    },
-    
-    // TODO : gardé pour ne pas péter le code tout de suite...
-    "enablePrecipitationScheme" : false,
-    "enableConvectionScheme" : false,
+            "class": "RunScenario",
+            "dataSource": {"ref": "inputdata"},
 
-    // A partir d'ici on a des paramètres liés au scénario souhaité et au jeu 
-    // de données
-    "inputRelief": false,
-    "inputDir": "run",
-    
-    "inputTimes": [ 0 ],
-    "stopTime": 48,
-    "historyInterval": 6,
-    "historyDir": "output"
+            "stopTime": 1,
+            
+            "steps": [
+                { 
+                    "class":"CouplingStep",
+                    "dataSource" : {"ref": "inputdata"},
+                    "variables": [
+                        {"name":"U_couplage", "source": "U"},
+                        {"name":"V_couplage", "source": "V"},
+                        {"name":"phi_couplage", "source": "phi"}
+                    ]
+                },
+                {
+                    "class":"HistoryStep",
+                    "dataSource" : {"ref": "outputdir"},
+                    "historyInterval" : 1,
+                    "variables": [
+                        {"name":"U"},
+                        {"name":"V"},
+                        {"name":"phi"},
+                        {"name":"m"},
+                        {"name":"f"},
+                        {"name": "latitudes"}, 
+                        {"name": "longitudes"}
+                    ]
+                }]
+        }
+    }
 };
 
-$(document).ready(function () {
-    valids = ["000"];
-    scenario = "2018120612";
-    
-    ui.setStatus("loading");
+$(document).ready(function () {   
     ui.setStatusString("Initialisation");
     //$.getJSON("config.json",initialize);
     initialize(barotropeConfig).then(()=>{});
@@ -210,212 +251,70 @@ $(document).ready(function () {
 
 async function initialize(config) 
 {   
-    var classpath = "/js/";
-    manager = new ConfigManager(classpath, config);
-    
-    // TODO : on ne devra plus faire de "preprocesseur" ici...
-    inputDomain = await manager.getObject("inputDomain");
-    
-    ui.model = await manager.getModel()
-    
-    ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", levels:[1], renderer: windRenderer},
-        Z500 : {group:"HistoricVariables", name:"Z500", levels:[1], renderer: z500Renderer},
-        Tourbillon : {group:"DiagnosticVariables", name:"Tourbillon", levels:[1], renderer: tourbillonRenderer},
-        Verifications : {group:"DiagnosticVariables", name:"Verifications", levels:[1], renderer: verificationRenderer},
-        latitudes : {group:"InternalVariables", name:"latitudes", levels:[1], data:latitudes},
-        longitudes : {group:"InternalVariables", name:"longitudes", levels:[1], data:longitudes}
-    };
-    
-    ui.historyList = ["U", "V", "Z500", "latitudes", "longitudes"];
-    
-    ui.afterResetCallback = function()
+    try
     {
-        h500.interp(0, ui.model.getVariable("phi"));
-        u500.interp(0, ui.model.getVariable("U"));
-        v500.interp(0, ui.model.getVariable("V"));
-        ui.model.projection.getScaleFactors(ui.model.getVariable("latitudes"), ui.model.getVariable("longitudes"), ui.model.getVariable("m"));
-        var lats = Variable.createVariable(1, ui.model.width, ui.model.height, false);
-        var lons = Variable.createVariable(1, ui.model.width, ui.model.height, false);
-        ui.model.getCoriolisPointCoords(lats, lons);
-        var earth = new Earth();
-        earth.getCoriolisFactors(lats, ui.model.getVariable("f"));
-        
-        h500.interp(ui.model.time, ui.model.getVariable("phi_couplage"));
-        u500.interp(ui.model.time, ui.model.getVariable("U_couplage"));
-        v500.interp(ui.model.time, ui.model.getVariable("V_couplage"));
-    };
-    
-    
-    ui.beforeDisplayCallback = function()
-    {
-        switch (ui.getDisplayVariable())
+        var classpath = "/js/";
+        manager = new ConfigManager(classpath, config);
+
+        ui.scenario = await manager.getScenario("run");
+
+        ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", levels:[1], renderer: windRenderer},
+            Z500 : {group:"HistoricVariables", name:"Z500", levels:[1], renderer: z500Renderer},
+            Tourbillon : {group:"DiagnosticVariables", name:"Tourbillon", levels:[1], renderer: tourbillonRenderer},
+            Verifications : {group:"DiagnosticVariables", name:"Verifications", levels:[1], renderer: verificationRenderer}
+        };
+
+        ui.beforeDisplayCallback = function()
         {
-            case "Vent":
-                windRenderer.width = ui.model.width;
-                windRenderer.height = ui.model.height;
-                windRenderer.U = ui.model.getVariable("U");
-                windRenderer.V = ui.model.getVariable("V");
-                break;
-            case "Z500":
-                z500Renderer.width = ui.model.width;
-                z500Renderer.height = ui.model.height;
-                interpolator.modelToZ500(ui.model.getVariable("phi"), z500_display);
-                z500Renderer.variable = z500_display;
-                break;
-            case "Tourbillon":
-                tourbillonRenderer.width = ui.model.width;
-                tourbillonRenderer.height = ui.model.height;
-                tourbillonRenderer.variable = ui.model.getVariable("tourbillon");
-                break;
-            case "Verifications":
-                verificationRenderer.model = ui.model;
-                break;
-        }
-    };
-    
-    ui.beforeExportCallback = function()
-    {
-        var k = ui.getDisplayLevel();
-        switch (ui.getDisplayVariable())
+            switch (ui.getDisplayVariable())
+            {
+                case "Vent":
+                    windRenderer.width = ui.model.width;
+                    windRenderer.height = ui.model.height;
+                    windRenderer.U = ui.model.getVariable("U");
+                    windRenderer.V = ui.model.getVariable("V");
+                    break;
+                case "Z500":
+                    z500Renderer.width = ui.model.width;
+                    z500Renderer.height = ui.model.height;
+                    interpolator.modelToZ500(ui.model.getVariable("phi"), z500_display);
+                    z500Renderer.variable = z500_display;
+                    break;
+                case "Tourbillon":
+                    tourbillonRenderer.width = ui.model.width;
+                    tourbillonRenderer.height = ui.model.height;
+                    tourbillonRenderer.variable = ui.model.getVariable("tourbillon");
+                    break;
+                case "Verifications":
+                    verificationRenderer.model = ui.model;
+                    break;
+            }
+        };
+
+        ui.beforeExportCallback = function()
         {
-            case "Z500":
-                interpolator.modelToZ500(ui.model.getVariable("phi"), z500_display);
-                ui.variableRepresentations["Z500"].data = z500_display;
-                break;
-            case "latitudes":
-                ui.variableRepresentations["latitudes"].data = latitudes;
-                break;
-            case "longitudes":
-                ui.variableRepresentations["longitudes"].data = longitudes;
-                break;
-        }
-    };
+            var k = ui.getDisplayLevel();
+            switch (ui.getDisplayVariable())
+            {
+                case "Z500":
+                    interpolator.modelToZ500(ui.model.getVariable("phi"), z500_display);
+                    ui.variableRepresentations["Z500"].data = z500_display;
+                    break;
+            }
+        };
 
-    ui.beforeStepCallback = function()
-    {
-        if (ui.model.boundaryCondition!=null)
-        {
-            h500.interp(ui.model.time, ui.model.getVariable("phi_couplage"));
-            u500.interp(ui.model.time, ui.model.getVariable("U_couplage"));
-            v500.interp(ui.model.time, ui.model.getVariable("V_couplage"));
-        }
-    };
-    
-    // Init l'interpolation temporelle pour le couplage
-    var times = [];
-    for (var i=0;i<valids.length;i++)
-    {
-        times[i] = Number(valids[i]) * 3600;
-    }    
-    h500.times = times;
-    u500.times = times;
-    v500.times = times;
-    
+        // Bind l'UI...
+    /*    $("#testCaseButton").click(function () { 
+            initTestCase();
+        });*/
 
-    // Bind l'UI...
-    $("#gridType").change(function () { 
-        reloadData();
-    });
-
-    $("#testCaseButton").click(function () { 
-        initTestCase();
-    });
-    
-    // Charge les données
-    reloadData();
-    return "ok";
-}
-
-function getLoadingString()
-{
-    return "Chargement "+reslist[0];
-}
-
-
-function reloadData()
-{
-    ui.model.gridType = $("#gridType").val();
-    for (var i = 0; i < valids.length; i++)
-    {
-        reslist.push("hgt_500_" + valids[i] + ".txt");
-        reslist.push("ugrd_500_" + valids[i] + ".txt");
-        reslist.push("vgrd_500_" + valids[i] + ".txt");
-    }
-    
-    calcCoords();
-
-    $.ajax({
-        url: "res/run/" + scenario + "/fileinfo.txt",
-        dataType: "text",
-        success: function (data)
-        {
-            var fileinfo = data.split(";");
-            var info = "Run "+fileinfo[1]+" "+fileinfo[2]+"z du "+fileinfo[3];
-            var parts = fileinfo[3].split("/");
-            $("#runinit").html(info);
-            var dt = new Date(parts[2]+"-"+parts[1]+"-"+parts[0]);
-            ui.model.startDate = dt;
-        }
-    });
-    console.log(scenario);
-    $.ajax({
-        url: "res/run/" + scenario + "/" + reslist[0],
-        dataType: "text",
-        success: onFieldDownload
-    });
-}
-
-function onFieldDownload(data)
-{
-    var f = reslist[0].substring(0, 1);
-    var k = 0;
-    var reader = new WGRIBFormat();
-    var buf = reader.read(data);
-    switch (f)
-    {
-        case "h":
-            k = h500.variable.length;
-            h500.variable[k] = [];
-            ui.model.projection.interpLatLonGridToDomain(
-                inputDomain, buf, h500.variable[k], 0, 0, false, VariableDescription.NUMBER_TYPE_SCALAR);
-            interpolator.z500ToModel(h500.variable[k], h500.variable[k]);
-            break;
-        case "u":
-            k = u500.variable.length;
-            u500.variable[k] = [];
-            if (ui.model.horizontalStaggering=="C")
-                ui.model.projection.interpLatLonGridToDomain(
-                    inputDomain, buf, u500.variable[k], 1, 0, true, VariableDescription.NUMBER_TYPE_U_VECTOR);
-            else
-                ui.model.projection.interpLatLonGridToDomain(
-                    inputDomain, buf, u500.variable[k], 0, 0, true, VariableDescription.NUMBER_TYPE_U_VECTOR);
-            break;
-        case "v":
-            k = v500.variable.length;
-            v500.variable[k] = [];
-            if (ui.model.horizontalStaggering=="C")
-                ui.model.projection.interpLatLonGridToDomain(
-                    inputDomain, buf, v500.variable[k], 0, 1, true, VariableDescription.NUMBER_TYPE_U_VECTOR);
-            else
-                ui.model.projection.interpLatLonGridToDomain(
-                    inputDomain, buf, v500.variable[k], 0, 0, true, VariableDescription.NUMBER_TYPE_U_VECTOR);
-            break;
-    }
-    reslist.shift();
-    if (reslist.length > 0)
-    {
-        ui.setStatusString(getLoadingString());
-        $.ajax({
-            url: "res/run/" + scenario + "/" + reslist[0],
-            dataType: "text",
-            success: onFieldDownload
-        });
-    } 
-    else
-    {
-        ui.setStatusString("Prêt");
-        ui.setStatus("ready");       
+        // Charge les données
         ui.reset();
+        return "ok";
+    }
+    catch (e)
+    {
+        console.log(e);
     }
 }
 
@@ -439,7 +338,6 @@ function initTestCase()
     ui.model.relaxation = 0;   */
     
     ui.setStatusString("Prêt");
-    ui.setStatus("ready");       
     ui.model.init();
 
     /*Variable.copy(ui.model.getVariable("U"), testcase.getInitialU());
@@ -454,25 +352,4 @@ function initTestCase()
     Variable.init(ui.model.getVariable("m"), 1);
     Variable.init(ui.model.getVariable("inv_m"), 1);
     Variable.init(ui.model.getVariable("f"), 0);*/
-}
-
-function calcCoords()
-{
-    latitudes = Variable.createVariable(1, ui.model.width, ui.model.height);
-    longitudes = Variable.createVariable(1, ui.model.width, ui.model.height);
-    var lat = ui.model.nlat;
-    var lon = ui.model.wlon;
-    var i = 0;
-    for (var y=0;y<ui.model.height;y++)
-    {
-        lon = ui.model.wlon;
-        for (var x=0;x<ui.model.width;x++)
-        {
-            latitudes[i] = lat;
-            longitudes[i] = lon;
-            lon += ui.model.dlon;
-            i++;
-        }
-        lat-=ui.model.dlat;
-    }
 }

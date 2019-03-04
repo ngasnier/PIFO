@@ -15,10 +15,57 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import { ModuleLoader } from "./ModuleLoader.js";
+
 /**
- * Lecture d'un fichier texte.
+ * Lecture/écriture d'un fichier texte avec abstraction node/navigateur.
  */
 export class TextFile {
+    /**
+     * Ouvre un chemin pour la lecture/écriture de plusieurs fichiers.
+     * @param {type} p_pathUrl
+     * @returns {undefined}
+     */
+    constructor(p_pathUrl)
+    {
+        this.path = p_pathUrl;
+        if (!this.path.endsWith("/")) this.path += "/";
+        this.zip = null;
+    }
+    
+    async read(p_file)
+    {
+        return TextFile.readFile(this.path+p_file);
+    }
+    
+    async write(p_file, p_data)
+    {
+        if (typeof module !== 'undefined' && module.exports) 
+        {
+            return TextFile.writeFile(this.path+p_file, p_data);
+        }
+        else
+        {
+            if (this.zip==null) this.zip = new JSZip();
+            this.zip.file(p_file, p_data);            
+        }
+    }
+    
+    async close()
+    {
+        if (this.zip!=null)
+        {
+            var loader = new ModuleLoader("./js/util", {"FileSaver": "FileSaver.js"});
+            var saver = await loader.loadModule("FileSaver");
+            return this.zip.generateAsync({type:"blob"})
+                    .then((content) => {
+                        
+                        var name = this.path.substring(0, this.path.length-1);
+                        name = name.replace("/", "_").replace(":", "_");                
+                        saver.saveAs(content, name+".zip");
+                    });
+        }
+    }
     
     /**
      * 
@@ -71,8 +118,9 @@ export class TextFile {
             }
             else
             {
-                // TODO un plan B pour le mode navigateur ? genre jszip ?
-                throw "write not supported on browser yet.";
+                var blob = new Blob([p_data], {type: 'text/plain'});
+                var p = p_url.split("/");
+                saveAs(blob, p[p.length-1]);
             }
         }
         catch (e)
@@ -81,3 +129,4 @@ export class TextFile {
         }
     }
 }
+

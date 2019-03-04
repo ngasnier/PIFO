@@ -90,14 +90,7 @@ var configCible = {
                 {"name": "ugrd_500", "description":"", "units":""},
                 {"name": "vgrd_500", "description":"", "units":""},
                 {"name": "hgt_500", "description":"", "units":""}
-            ]/*, 
-                    
-            "fieldsDefs": [
-                { 
-                    "names": ["ugrd_500", "vgrd_500", "hgt_500"],
-                    "levels": [  ]
-                }
-            ]*/
+            ]
         }        
     },
     
@@ -161,7 +154,6 @@ var configCible = {
                 { "variable":"U", "source":"ugrd_500", "processus" : "basic_projection" },
                 { "variable":"V", "source":"vgrd_500", "processus" : "basic_projection" },
                 { "variable":"phi", "source": "hgt_500", "processus" : "z500_preparation" },
-                // TODO : il faudra mettre ces variables en "PARAMETER" dans le BarotropicCore
                 { "variable":"f", "processus" : "f_generation" },
                 { "variable":"m", "processus" : "m_generation" }
             ],
@@ -567,8 +559,7 @@ test('Préprocesseur - barotrope', () => {
     expect.assertions(5);
     return manager.getScenario("preprocessor").then((preprocessor) => { 
         try {
-            preprocessor.model.init();
-            return preprocessor.run().then(ret => {
+            return preprocessor.start().then(ret => {
                     var checkdata = async function()
                     {
                         try
@@ -632,3 +623,4 @@ test('Préprocesseur - barotrope', () => {
         }
     });
 });
+

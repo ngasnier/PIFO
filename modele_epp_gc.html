@@ -21,7 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <title>Modèle météo en eau peu profonde - Grille C</title>    
     <script src="js/vendor/jquery-3.2.1.min.js"></script>
     <script src="js/vendor/jszip.min.js"></script>
-    <!--<script src="js/vendor/import.js" data-main="/js/util/ModuleLoader.js"></script>-->
     <script src="js/mb_meteo_epp_gc_main.js" type="module"></script>
     <style>
         html, body {
@@ -57,8 +56,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 <body>
     <form action="#">
         <p>
-            <label for="gridType">Type de grille</label><select name="gridType" id="gridType"><option value="A">A</option><option selected value="C">C</option></select> | 
-            <input type="checkbox" name="filtering" id="filtering" title="Applique le filtre de Schumann."/><label for="filtering">Filtrer</label> |
             <a href="#" id="resetButton" title="Réinitialiser la simulation à T=0.">[Reset]</a> - 
             <a href="#" id="testCaseButton" title="Initialiser avec un cas de test.">[Test]</a> - 
             <a href="#" id="stepButton" title="Avancer la simulation d'un pas de temps.">[Step]</a> 
@@ -67,12 +64,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <span id="statistics"></span>
         </p>
         <p id="runinit"></p>
-        <p>
+        <!--<p>
             <label for="runHours">Nombre d'heures du run</label> <input type="text" name="runHours" id="runHours" value="48"/> | 
             <input type="checkbox" name="history" id="history" title="Active la génération de fichiers d'historique au cours du run."/><label for="history">Générer l'historique</label> |
             <label for="historyInterval">Intervalle d'historique (en h)</label> <input type="text" name="historyInterval" id="historyInterval" value="3"/> | 
             <a href="#" id="downloadHistoryButton" title="Télécharger.">[Télécharger l'historique]</a>
-        </p>
+        </p>-->
         <p>
             <fieldset>
                 <legend> Affichage des champs</legend>

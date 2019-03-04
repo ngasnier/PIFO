@@ -15,15 +15,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { DataSource } from "./DataSource.js"
-import { VariableDescription } from "../modeling/VariableDescription.js"
-import { VerticalInterpolator } from "../util/VerticalInterpolator.js";
+import { DataSource } from "./DataSource.js";
+import { Scenario } from "./Scenario.js";
+import { VariableDescription } from "../modeling/VariableDescription.js";
 
 /**
  * Traite des données en entrée pour les fournir au format du modèle.
  * @type type
  */
-export class Preprocessor
+export class Preprocessor extends Scenario
 {
     /**
      * 
@@ -31,45 +31,13 @@ export class Preprocessor
      */
     constructor() 
     {
-        this._model = null;
-        this.verticalInterpolator = new VerticalInterpolator();
-        this.inputDir = "./";
+        super();
         this._dataSource = null;
         this._dataWriter = null;
-    }
+    }    
     
     /**
-     * Paramètre depuis un objet JSON
-     * @param {type} p_params
-     * @returns {undefined}
-     */
-    set params(p_params)
-    {
-        this.inputDir = p_params.preprocessDir;        
-        this.verticalInterpolatorinputLevels = p_params.levels.slice();
-    }
-    
-    /**
-     * Modèle à traiter, supposé déjà initialisé.
-     * @param {type} p_model
-     * @returns {undefined}
-     */
-    set model(p_model)
-    {
-        this._model = p_model;
-    }
-    
-    /**
-     * 
-     * @returns {@param;DynamicsCore.set model:p_model}
-     */
-    get model()
-    {
-        return this._model;
-    }
-    
-    /**
-     * 
+     * La source de données pour les variables d'entrée.
      */
     get dataSource()
     {
@@ -77,7 +45,7 @@ export class Preprocessor
     }
     
     /**
-     * 
+     * La source de données pour les variables d'entrée.
      */
     set dataSource(p_dataSource)
     {
@@ -85,7 +53,7 @@ export class Preprocessor
     }
     
     /**
-     * 
+     * La source de données pour les variables de sortie.
      * @returns {undefined}
      */
     get dataWriter()
@@ -94,7 +62,7 @@ export class Preprocessor
     }
     
     /**
-     * 
+     * La source de données pour les variables de sortie.
      * @param {type} p_dataWriter
      * @returns {undefined}
      */
@@ -107,9 +75,13 @@ export class Preprocessor
      * Lance le traitement de preprocess en mode asynchrone
      * @returns {undefined}
      */
-    async run()
+    async start()
     {
         try {
+            await super.start();
+            
+            this.model.init();
+
             await this._dataSource.open(DataSource.MODE_READ);
             await this._dataWriter.open(DataSource.MODE_WRITE);
             
@@ -156,19 +128,35 @@ export class Preprocessor
                     }
                 }
             }
+            
+            this._status = Scenario.STATE_END;
+                    
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }        
+    }
+    
+    /**
+     * 
+     * @returns {undefined}
+     */
+    async finish()
+    {
+        try
+        {
+            if (this._dataSource.isOpen()) await this._dataSource.close();
+            if (this._dataWriter.isOpen()) await this._dataWriter.close();
             return this;
         }
         catch (e)
         {
             throw e;
         }
-        finally
-        {
-            await this._dataSource.close();
-            await this._dataWriter.close();
-        }
     }
-    
+       
     /**
      * 
      * @param {type} p_trans

@@ -40,6 +40,16 @@ export class WGRIBTextFieldDataSource extends DataSource {
         this.openMode = "";
         this.fileInfo = null;
         this.baseURL = "./";
+        this.textFile = null;
+    }
+    
+    /**
+     * 
+     * @returns {Boolean}
+     */
+    isOpen()
+    {
+        return this.openMode!="";
     }
     
     /**
@@ -81,6 +91,7 @@ export class WGRIBTextFieldDataSource extends DataSource {
     async open(p_mode)
     {
         try {
+            this.textFile = new TextFile(this.baseURL);
             switch (p_mode)
             {
                 case DataSource.MODE_WRITE:
@@ -91,7 +102,7 @@ export class WGRIBTextFieldDataSource extends DataSource {
                     this.fileInfo = await this.readFileInfo();
                     break;
                 default:
-                    throw "invalid open mode.";
+                    throw "invalid open mode. ("+p_mode+")";
             }
             this.openMode = p_mode;
             
@@ -129,8 +140,9 @@ export class WGRIBTextFieldDataSource extends DataSource {
                 case DataSource.MODE_READ:
                     break;
                 default:
-                    throw "invalid open mode.";
+                    throw "source not opened.";
             }
+            await this.textFile.close();
             this.openMode = "";
             return this;
         }
@@ -228,14 +240,14 @@ export class WGRIBTextFieldDataSource extends DataSource {
                         filename = p_name+"_"+k.toString()+"_"+timefmt+".txt";
                     
                     this.fileInfo.addFile(dt, filename);
-                    await TextFile.writeFile(this.baseURL+filename, writer.write(p_data[k]));
+                    await this.writeFile(filename, writer.write(p_data[k]));
                 }
             }
             else
             {
                 filename = p_name+"_"+timefmt+".txt";
                 this.fileInfo.addFile(dt, filename);
-                await TextFile.writeFile(this.baseURL+filename, writer.write(p_data));
+                await this.writeFile(filename, writer.write(p_data));
             }
         }
         catch (e)
@@ -256,9 +268,10 @@ export class WGRIBTextFieldDataSource extends DataSource {
     {
         try {
             // Node ou navigateur ?
-            if (!this.baseURL.endsWith("/")) this.baseURL += "/";
+            /*if (!this.baseURL.endsWith("/")) this.baseURL += "/";
             var file = this.baseURL+p_name;
-            return TextFile.readFile(file);
+            return TextFile.readFile(file);*/
+            return this.textFile.read(p_name);
         }
         catch (e)
         {
@@ -275,9 +288,10 @@ export class WGRIBTextFieldDataSource extends DataSource {
     async writeFile(p_name, p_data)
     {
         try {
-            if (!this.baseURL.endsWith("/")) this.baseURL += "/";
+            /*if (!this.baseURL.endsWith("/")) this.baseURL += "/";
             var file = this.baseURL+p_name;
-            return TextFile.writeFile(file, p_data);
+            return TextFile.writeFile(file, p_data);*/
+            return this.textFile.write(p_name, p_data);
         }
         catch (e)
         {
@@ -346,6 +360,4 @@ export class WGRIBTextFieldDataSource extends DataSource {
             throw e;
         }
     }
-    
-
 }

@@ -16,47 +16,150 @@
  */
 
 import { Scenario } from "./Scenario.js";
+import { DataSource } from "./DataSource.js";
 import { VariableDescription } from "../modeling/VariableDescription.js";
 
-export var RunScenario = function ()
-{
-    Scenario.call(this);
+/**
+ * Scénario de run standard.
+ * 
+ * <p>Ce scénario utilise des données réelles.</p>
+ */
+export class RunScenario extends Scenario {
+    /**
+     * 
+     * @returns {undefined}
+     */
+    constructor()
+    {
+        super();
+        
+        this.firstExecTime = 0;
+
+        this.lastExecTime = 0;
+
+        this.totalTime = 0;
+
+        this.totalStep = 0;
     
-    this.stopTime = 0;
+        this.stopTime = 0;
+        this.dataSource = null;
+        this._dataWriter = null;
+    }
     
-    this.variableSource = null;
-}
-
-RunScenario.prototype = Object.create(Scenario.prototype);
-RunScenario.prototype.constructor = RunScenario;
-
-RunScenario.prototype.init = function()
-{
-    // Setup l'objet modele
-    // TODO
-
-    // Obtient les données de départ
-    var descriptions = this.getModel().getVariables();
-    descriptions.forEach(function (variable) {
-        switch (variable.category)
+    /**
+     * Initialise le run.
+     * 
+     * <p>Les données de départ sont chargées depuis la DataSource et 
+     * fournies au modèle.</p>
+     * @returns {RunScenario}
+     */
+    async start()
+    {
+        try
         {
-            case VariableDescription.CAT_HISTORIC,VariableDescription.CAT_PARAMETER:
-                this.model.setVariable(variable.name, 
-                    this.variableSource.getVariable(variable));
-                break;
-            default:
-        }
-    });
+            await super.start();
+            
+            // Initialisation du modèle
+            this.model.init();
+            
+            // Ouverture des données
+            await this.dataSource.open(DataSource.MODE_READ);
+            //if (this.dataWriter!=null ) await this.dataWriter.open(DataSource.MODE_WRITE);
+            // Obtient les données de départ
+            var variables = this.model.getVariablesDescriptions();
+            for (var v in variables)
+            {
+                var variable = variables[v];
+                if (variable.category == VariableDescription.CAT_PRONOSTIC 
+                        || variable.category == VariableDescription.CAT_PARAMETER)
+                {
+                    this.sendMessage(`loading variable data ${variable.name} at t=0`);
+                    this.model.setVariable(variable.name, 
+                        await this.dataSource.getField(variable.name, 0));
+                }
+            }
+            this.model.totalTime = 0;
+            this.model.totalStep = 0;
+            this.firstExecTime = new Date();
     
-    this.getModel().init();
-}
+            this._status = Scenario.STATE_RUN;
+            this.sendMessage("scenario "+this.status);           
+            
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    /**
+     * 
+     * @returns {RunScenario}
+     */
+    async finish()
+    {
+        try
+        {
+            await super.finish();
+            if (this.dataSource.isOpen()) await this.dataSource.close();
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    async stepDo()
+    {
+        try
+        {
+            var firstTimestamp = new Date().getTime();
+            this.model.step();
+            var secondTimestamp = new Date().getTime();
+            this.lastExecTime = secondTimestamp - firstTimestamp;
+            this.totalStep++;
+            this.totalTime += this.lastExecTime;
+            this.sendMessage(this.getMessage());
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
 
-RunScenario.prototype.step = function()
-{
-    this.status = Scenario.STATE_END;
-}
-
-RunScenario.prototype.step = function()
-{
-    this.status = Scenario.STATE_END;
+    async stepEnd()
+    {
+        try
+        {
+            if (this.model.time>=this.stopTime*3600) // TODO : paramétrage en secondes ?
+            {
+                this._status = Scenario.STATE_END;
+                var now = new Date();
+                this.sendMessage("total calc time (ms) : "+(now.getTime()-this.firstExecTime.getTime()));
+            }
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    getMessage()
+    {
+        var t = this.model.time;
+        var jours = Math.floor(t / 86400);
+        t -= jours * 86400;
+        var heures = Math.floor(t / 3600);
+        t -= heures * 3600;
+        var minutes = Math.floor(t / 60);
+        return "Time = " + this.model.time.toString() + " s ("
+                + jours.toString() + " d " + heures.toString() + " h "
+                + minutes.toString() + " m) - dt=" + this.model.dt.toString() + "s, dx="
+                + this.model.dx.toString() + ", dy=" + this.model.dx.toString() + ", "
+                + "step time = " + this.lastExecTime.toString() + "ms, "
+                + "total time = " + this.totalTime.toString() + "ms, "
+                + "nb steps = " + this.totalStep.toString();
+    }
 }
