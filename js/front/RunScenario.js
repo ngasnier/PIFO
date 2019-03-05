@@ -59,11 +59,13 @@ export class RunScenario extends Scenario {
         {
             await super.start();
             
-            // Initialisation du modèle
-            this.model.init();
-            
             // Ouverture des données
             await this.dataSource.open(DataSource.MODE_READ);
+            
+            // Initialisation du modèle
+            this.model.startDate = this.dataSource.initDate;
+            this.model.init();
+            
             //if (this.dataWriter!=null ) await this.dataWriter.open(DataSource.MODE_WRITE);
             // Obtient les données de départ
             var variables = this.model.getVariablesDescriptions();

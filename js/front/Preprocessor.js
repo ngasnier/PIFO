@@ -87,6 +87,7 @@ export class Preprocessor extends Scenario
             
             // Passage des informations temporelles...           
             this._dataWriter.initDate = this._dataSource.initDate;
+            this._dataWriter.name = this._dataSource.name;
             
             var model_vars = this._model.getVariablesDescriptions();
             var data_var;

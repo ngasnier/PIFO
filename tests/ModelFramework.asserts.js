@@ -27,6 +27,9 @@ import { FileInfo } from "../js/util/FileInfo.js";
 import { TextFile } from "../js/util/TextFile.js";
 import { ProjectionTransformation } from "../js/front/ProjectionTransformation.js";
 
+const fs = require('fs');
+const path = require('path');
+
 
 var configCible = {
     /*
@@ -180,6 +183,19 @@ function getVariableNames(p_descriptions)
         names.push(v.name);
     });
     return names;
+}
+
+function cleandir(directory)
+{
+    fs.readdir(directory, (err, files) => {
+      if (err) throw err;
+
+      for (const file of files) {
+        fs.unlink(path.join(directory, file), err => {
+          if (err) throw err;
+        });
+      }
+    });
 }
 
 test('Barotrope - tests fonctionnement basiques', () => {
@@ -556,12 +572,15 @@ test("fileinfo", () =>{
 test('Préprocesseur - barotrope', () => {
     var config = Object.assign({}, configCible);
     var manager = new ConfigManager("../", config);
+    cleandir("run");
     expect.assertions(5);
     return manager.getScenario("preprocessor").then((preprocessor) => { 
         try {
             return preprocessor.start().then(ret => {
                     var checkdata = async function()
                     {
+                        await preprocessor.finish();
+                        
                         try
                         {
                             var ds_orig = new WGRIBTextFieldDataSource();

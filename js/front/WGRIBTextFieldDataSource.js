@@ -54,9 +54,29 @@ export class WGRIBTextFieldDataSource extends DataSource {
     
     /**
      * 
-     * @returns {super.initDate}
+     * @returns {@param;DataSource.set name:p_name}
      */
-    get  initDate()
+    get name()
+    {
+        return this._name;
+    }
+    
+    /**
+     * 
+     * @param {type} p_name
+     * @returns {undefined}
+     */
+    set name(p_name)
+    {
+        super.name = p_name;
+        this.fileInfo.name = p_name;
+    }
+    
+    /**
+     * 
+     * @returns {undefined}
+     */
+    get initDate()
     {
         return super.initDate;
     }
@@ -100,6 +120,7 @@ export class WGRIBTextFieldDataSource extends DataSource {
                 case DataSource.MODE_READ:
                 case DataSource.MODE_READ_WRITE:
                     this.fileInfo = await this.readFileInfo();
+                    this.name = this.fileInfo.name;
                     break;
                 default:
                     throw "invalid open mode. ("+p_mode+")";

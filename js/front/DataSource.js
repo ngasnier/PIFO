@@ -28,12 +28,11 @@ export class DataSource {
      */
     constructor()
     {
-        /** Date de début des données */
         this._initDate = new Date();
-        /** Dates contenues dans la source */
         this._dates = [];
-        /** Catalogue des champs disponibles */
         this._catalog = [];
+        this._name = "";
+        
         /** Heures d'échéance depuis date d'init */
         this.times = [];
     }
@@ -64,6 +63,25 @@ export class DataSource {
     isOpen()
     {
         return false;
+    }
+    
+    /**
+     * 
+     * @returns {@param;DataSource.set name:p_name}
+     */
+    get name()
+    {
+        return this._name;
+    }
+    
+    /**
+     * 
+     * @param {type} p_name
+     * @returns {undefined}
+     */
+    set name(p_name)
+    {
+        this._name = p_name;
     }
     
     /**

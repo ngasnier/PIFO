@@ -96,8 +96,7 @@ export class HistoryStep extends Step
     async stepDo(p_model)
     {
         try
-        {
-            
+        {            
             return this;
         }
         catch (e)
@@ -121,6 +120,8 @@ export class HistoryStep extends Step
 
                 if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_WRITE);
 
+                this.dataSource.name = p_model.name;
+                this.dataSource.initDate = p_model.startDate;
                 this.dataSource.addTime(hours);
 
                 for (var i in this.variables)
