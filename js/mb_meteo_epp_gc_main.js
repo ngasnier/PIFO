@@ -49,6 +49,7 @@ var barotropeConfig = {
     "modules" : {
         "Model": "modeling/Model.js",
         "BarotropicCore": "modeling/BarotropicCore.js",
+        "BarotropicSemiImplicitCore": "modeling/BarotropicSemiImplicitCore.js",
         "MercatorProjection": "modeling/MercatorProjection.js",
         "LeapFrogTimeIntegrator": "modeling/LeapFrogTimeIntegrator.js",
         "RobertAsselinTimeFilter": "modeling/RobertAsselinTimeFilter.js",
@@ -213,7 +214,7 @@ var barotropeConfig = {
             "class": "RunScenario",
             "dataSource": {"ref": "inputdata"},
 
-            "stopTime": 1,
+            "stopTime": 48,
             
             "steps": [
                 { 
@@ -224,7 +225,7 @@ var barotropeConfig = {
                         {"name":"V_couplage", "source": "V"},
                         {"name":"phi_couplage", "source": "phi"}
                     ]
-                },
+                }/*,
                 {
                     "class":"HistoryStep",
                     "dataSource" : {"ref": "outputdir"},
@@ -238,7 +239,7 @@ var barotropeConfig = {
                         {"name": "latitudes"}, 
                         {"name": "longitudes"}
                     ]
-                }]
+                }*/]
         }
     }
 };

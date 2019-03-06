@@ -128,8 +128,16 @@ export class ModelUI
             this.initVariableList();
         }).catch((e)=>
         {
-            console.log("error in init : "+e);
-            this.setStatusString(e.toString());
+            if (e instanceof Error) 
+            {
+                console.log("reset() : ", e);
+                this.setStatusString(e.toString());
+            }
+            else
+            {
+                console.log("reset() : "+e);
+                this.setStatusString(e.toString());
+            }
         });
     }
 

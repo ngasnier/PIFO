@@ -63,7 +63,9 @@ export class DynamicsCore
     }
      
     /**
-     * Initialise le coeur avant la simulation (allocations de variables...)
+     * Initialise le coeur avant la simulation 
+     * 
+     * <p>allocations de variables...</p>
      * @returns {undefined}
      */
     init()
@@ -72,7 +74,33 @@ export class DynamicsCore
     }
 
     /**
-     * Calcule les tendances d'une variable pronostiques
+     * Placeholder pour les calculs de pré-intégration temporelle
+     * 
+     * <p>e.g. interpolations semi-lagrangiennes, transformation spectrale...</p>
+     * @returns {undefined}
+     */
+    solveBegin()
+    {
+        
+    }
+    
+    /**
+     * Placeholder pour les calculs post-intégration temporelle
+     * 
+     * <p>e.g résolution semi-implicite, transformation spectrale...</p>
+     * @returns {undefined}
+     */
+    solveEnd()
+    {
+        
+    }
+
+    /**
+     * Calcule les tendances d'une variable pronostiques.
+     * 
+     * <p>Les tendances doivent permetre de calculer les valeurs transitoires
+     * dans le cas d'une intégration semi-implicite ou semi-lagrangienne.</p>
+     * 
      * @returns {undefined}
      */
     calcTendency(p_variable)

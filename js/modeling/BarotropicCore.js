@@ -19,6 +19,10 @@ import { DynamicsCore } from "./DynamicsCore.js";
 import { Model } from "./Model.js"
 import { VariableDescription } from "./VariableDescription.js"
 
+/**
+ * Coeur dynamique barotrope, calcul explicite.
+ * @type type
+ */
 export class BarotropicCore extends DynamicsCore
 {
     /**
@@ -48,8 +52,6 @@ export class BarotropicCore extends DynamicsCore
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_DIAGNOSTIC, name:"K", description:"kinetic energy", units:"J", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_DIAGNOSTIC, name:"tourbillon", description:"absolute vorticity potential", units: "S^-1", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
 
-            // Les variables f et m ne devraient-elles pas plutôt être considérées comme paramètre ?
-            // Ou comme catégorie spéciale ?
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PARAMETER, name:"f", description:"coriolis factor", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PARAMETER, name:"m", description:"scaling factor", units: "", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE})
         ];

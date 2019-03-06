@@ -206,9 +206,13 @@ export class Model {
         // *** Le filtrage temporel peut être commencé ***
         if (this.timeFilter!=null) this.timeFilter.preStep();
         
-        // *** Intégration temporelle ***
+        // *** Intégration temporelle ***        
+        this.dynamicsCore.solveBegin();
+        
         // Nb : prévoir méthodes de calcul en début de semi-implicite ou semi-lagrangien...
         this.timeIntegrator.step();
+        
+        this.dynamicsCore.solveEnd();
         
         // *** Filtrage des champs ***
         this.spatialFilterCounter++
