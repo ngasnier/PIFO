@@ -28,6 +28,17 @@ export class ModuleLoader {
     {
         this.searchPath = p_path;
         if (!this.searchPath.endsWith("/")) this.searchPath += "/";
+        if (!this.searchPath.startsWith("/") && !this.searchPath.startsWith("../")) 
+        {
+            // Node : esm ne prends pas les chemins relatifs à ./
+            if (typeof module !== 'undefined' && module.exports) 
+            {
+                var cwd = process.cwd();
+                if (!cwd.endsWith("/")) cwd += "/";
+                if (this.searchPath.startsWith("./")) this.searchPath = this.searchPath.substring(2, this.searchPath.length);
+                this.searchPath = cwd + this.searchPath;
+            }
+        }
         this.config = p_config;
     }
     

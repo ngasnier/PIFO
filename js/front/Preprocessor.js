@@ -110,14 +110,19 @@ export class Preprocessor extends Scenario
                         if (process==null) throw `processus ${output_var.processus} not defined.`;
                         
                         // Obtenir les données
-                        if ("source" in output_var) data_var = await this._dataSource.getField(output_var.source, time);
-                        else data_var = null;
+                        if ("source" in output_var) {
+                            this.sendMessage(`loading field ${output_var.source} ${time}`);
+                            data_var = await this._dataSource.getField(output_var.source, time);
+                        } 
+                        else 
+                            data_var = null;
 
                         // Chainage des transformations du processus
                         var result_var = data_var;
                         for (var p in process.transformations)
                         {
                             var trans_name = process.transformations[p];
+                            this.sendMessage(`transformation ${v.name} ${trans_name}`);
                             var trans = this.getTransformation(trans_name);
                             if (trans==null) throw `transformation ${trans_name} not defined.`;
                             result_var = trans.transform(v, result_var);
@@ -125,6 +130,8 @@ export class Preprocessor extends Scenario
                         
                         // Ecriture des fichiers
                         this.dataWriter.addTime(time);
+                        
+                        this.sendMessage(`saving field ${v.name} ${time}`);
                         await this.dataWriter.writeField(v.name, time, result_var);
                     }
                 }

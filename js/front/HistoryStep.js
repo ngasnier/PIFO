@@ -116,6 +116,7 @@ export class HistoryStep extends Step
         {
             if (p_model.time>=this.nextHistory)
             {
+                this.sendMessage(`history time ${p_model.time}`);
                 var hours = Math.floor(p_model.time/3600);
 
                 if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_WRITE);
@@ -127,6 +128,7 @@ export class HistoryStep extends Step
                 for (var i in this.variables)
                 {
                     var v = this.variables[i];
+                    this.sendMessage(`writing field ${v.name} ${hours}`);
                     await this.dataSource.writeField(v.name, hours, p_model.getVariable(v.name));
                 }
 

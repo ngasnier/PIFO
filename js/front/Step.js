@@ -27,7 +27,36 @@ export class Step
      */
     constructor()
     {
-        
+        this._onMessage = function(msg) {};
+    }
+    
+    /**
+     * 
+     * @returns {Step._onMessage}
+     */
+    get onMessage()
+    {
+        return this._onMessage;
+    }
+    
+    /**
+     * 
+     * @param {type} msg
+     * @returns {undefined}
+     */
+    set onMessage(msg)
+    {
+        this._onMessage = msg;
+    }
+    
+    /**
+     * 
+     * @param {type} msg
+     * @returns {undefined}
+     */
+    sendMessage(msg)
+    {
+        if (this._onMessage!=null) this._onMessage(msg);
     }
     
     /**

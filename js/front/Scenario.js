@@ -70,6 +70,7 @@ export class Scenario {
     {
         try
         {
+            this.registerStepsMessages();
             await this.runStepsInit();
             return this;
         }
@@ -238,6 +239,15 @@ export class Scenario {
     {
         if (this.onMessage!=null) this.onMessage(msg);
     }
+
+    registerStepsMessages()
+    {
+        for (var i in this.steps)
+        {
+            this.steps[i].onMessage = this.onMessage;
+        }
+    }
+
     
     async runStepsInit()
     {

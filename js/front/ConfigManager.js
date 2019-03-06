@@ -31,10 +31,10 @@ export class ConfigManager {
      */
     constructor(p_classPath, p_config)
     {
-        if (!("modules" in p_config)) throw "no modules section found.";
-        if (!("global" in p_config)) throw "no global section found.";
-        if (!("model" in p_config)) throw "no model definition found.";        
-        if (!("scenario" in p_config)) throw "no scenario section found.";
+        if (!("modules" in p_config)) throw "ConfigManager : no modules section found.";
+        if (!("global" in p_config)) throw "ConfigManager : no global section found.";
+        if (!("model" in p_config)) throw "ConfigManager : no model definition found.";        
+        if (!("scenario" in p_config)) throw "ConfigManager : no scenario section found.";
        
         this.classPath = p_classPath;
         this.config = p_config;

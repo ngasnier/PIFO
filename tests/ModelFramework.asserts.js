@@ -50,11 +50,15 @@ var configCible = {
         "ProjectionTransformation": "front/ProjectionTransformation.js",
         "ArithmeticTransformation": "front/ArithmeticTransformation.js",
         "CoriolisFactorTransformation": "front/CoriolisFactorTransformation.js",
-        "ScalingFactorTransformation": "front/ScalingFactorTransformation.js"
+        "ScalingFactorTransformation": "front/ScalingFactorTransformation.js",
+        
+        "RunScenario": "front/RunScenario.js",
+        "CouplingStep": "front/CouplingStep.js",
+        "HistoryStep": "front/HistoryStep.js"
     },
     
     /*
-     * Définit des objets globaux pouvait être référencés dans la config
+     * Définit des objets globaux pouvant être référencés dans la config
      */
     "global": {
         "inputDomain":{
@@ -94,7 +98,32 @@ var configCible = {
                 {"name": "vgrd_500", "description":"", "units":""},
                 {"name": "hgt_500", "description":"", "units":""}
             ]
-        }        
+        },        
+
+        "inputdata": {
+            "class": "WGRIBTextFieldDataSource", 
+            "baseURL" : "run" ,
+            "catalog" : [ 
+                {"name": "U", "description":"", "units":""},
+                {"name": "V", "description":"", "units":""},
+                {"name": "phi", "description":"", "units":""},
+                {"name": "f", "description":"", "units":""},
+                {"name": "m", "description":"", "units":""}
+            ]
+        },
+        
+        "outputdir" : {
+            "ref": "inputdata",
+            "class": "WGRIBTextFieldDataSource", 
+            "baseURL" : "res/test",
+            "catalog" : [ 
+                {"name": "U", "description":"", "units":""},
+                {"name": "V", "description":"", "units":""},
+                {"name": "phi", "description":"", "units":""},
+                {"name": "f", "description":"", "units":""},
+                {"name": "m", "description":"", "units":""}
+            ]            
+        }
     },
     
     /*
@@ -123,10 +152,6 @@ var configCible = {
         "global": false,
         "filterInterval": 1,
         "verticalStaggering":  "L",
-
-        /*"timeFilter": {
-            "class": "RobertAsselinTimeFilter"
-        },*/
 
         "dt": 15
     },
@@ -160,19 +185,41 @@ var configCible = {
                 { "variable":"f", "processus" : "f_generation" },
                 { "variable":"m", "processus" : "m_generation" }
             ],
-            "outputDir": "run",
-            "times": [0] // liste des temps qu'on veut traiter (peut différer de ce qui est dispo dans la datasource)
-        }/*,
+            "times": [0]
+        },
+        
         "run": {
-            "class": "ADefinir",
-            // Les paramètres du run, à définir...
-            "inputTimes": { "ref": "times" },
-            "stopTime": 48,
-            "inputRelief": false,
-            "historyInterval": 6,
-            "historyDir": "output"
-        }*/
-    },
+            "class": "RunScenario",
+            "dataSource": {"ref": "inputdata"},
+
+            "stopTime": 1,
+            
+            "steps": [
+                { 
+                    "class":"CouplingStep",
+                    "dataSource" : {"ref": "inputdata"},
+                    "variables": [
+                        {"name":"U_couplage", "source": "U"},
+                        {"name":"V_couplage", "source": "V"},
+                        {"name":"phi_couplage", "source": "phi"}
+                    ]
+                },
+                {
+                    "class":"HistoryStep",
+                    "dataSource" : {"ref": "outputdir"},
+                    "historyInterval" : 1,
+                    "variables": [
+                        {"name":"U"},
+                        {"name":"V"},
+                        {"name":"phi"},
+                        {"name":"m"},
+                        {"name":"f"},
+                        {"name": "latitudes"}, 
+                        {"name": "longitudes"}
+                    ]
+                }]
+        }
+    }
 };
 
 function getVariableNames(p_descriptions)
@@ -187,15 +234,10 @@ function getVariableNames(p_descriptions)
 
 function cleandir(directory)
 {
-    fs.readdir(directory, (err, files) => {
-      if (err) throw err;
-
-      for (const file of files) {
-        fs.unlink(path.join(directory, file), err => {
-          if (err) throw err;
-        });
-      }
-    });
+    var files = fs.readdirSync(directory);
+    for (const file of files) {
+        fs.unlinkSync(path.join(directory, file));
+    }
 }
 
 test('Barotrope - tests fonctionnement basiques', () => {
@@ -401,7 +443,7 @@ test('Barotrope - initialisation coriolis et scaling factor', () => {
 });
 
 test('Barotrope - condition aux limites', () => {
-    var config = Object.assign({}, configCible);
+    var config = JSON.parse(JSON.stringify(configCible));
     config.model = Object.assign(config.model, {
          "boundaryCondition": {
             "class": "CouplingLimitedAreaBoundaryCondition",
@@ -491,7 +533,7 @@ test('Barotrope - condition aux limites', () => {
 });
 
 test('Barotrope - filtre de schumann', () => {
-    var config = Object.assign({}, configCible);
+    var config = JSON.parse(JSON.stringify(configCible));
     config.model = Object.assign(config.model, {
          "spatialFilter": {
             "class": "SchumannFilter"
@@ -570,17 +612,22 @@ test("fileinfo", () =>{
 });
 
 test('Préprocesseur - barotrope', () => {
-    var config = Object.assign({}, configCible);
+    var config = JSON.parse(JSON.stringify(configCible));
     var manager = new ConfigManager("../", config);
     cleandir("run");
     expect.assertions(5);
     return manager.getScenario("preprocessor").then((preprocessor) => { 
         try {
+            //preprocessor.onMessage = (msg) => console.log(msg);
             return preprocessor.start().then(ret => {
                     var checkdata = async function()
                     {
-                        await preprocessor.finish();
+                        while (preprocessor.status==Scenario.STATE_RUN)
+                        {
+                            await preprocessor.step();
+                        }
                         
+                        await preprocessor.finish();
                         try
                         {
                             var ds_orig = new WGRIBTextFieldDataSource();
@@ -643,3 +690,93 @@ test('Préprocesseur - barotrope', () => {
     });
 });
 
+
+test('Run - barotrope', () => {
+    var config = JSON.parse(JSON.stringify(configCible));
+    // La condition aux limites doit être ajoutée (pas inclue dans la config
+    // test de base)
+    config.model = Object.assign(config.model, {
+         "boundaryCondition": {
+            "class": "CouplingLimitedAreaBoundaryCondition",
+            "relaxation": 8
+        }
+    });
+    
+    var manager = new ConfigManager("../", config);
+    cleandir("res/test");
+    expect.assertions(5);
+    return manager.getScenario("run").then((run) => { 
+        try {
+            //run.onMessage = (msg) => console.log(msg);
+            return run.start().then(ret => {
+                
+                    var checkdata = async function()
+                    {
+                        while (run.status==Scenario.STATE_RUN)
+                        {
+                            await run.step();
+                        }
+                        
+                        await run.finish();
+                        
+                        try
+                        {
+                            var ds_orig = new WGRIBTextFieldDataSource();
+                            ds_orig.baseURL = "res/verif/barotrope/2018120612";
+                            ds_orig.catalog = [
+                                { "name":"U"},
+                                { "name":"V"},
+                                { "name":"phi"},
+                                { "name":"f"},
+                                { "name":"m"}
+                            ];
+                            await ds_orig.open("R");
+
+                            var ds_res = new WGRIBTextFieldDataSource();
+                            ds_res.baseURL = "res/test";
+                            ds_res.catalog = [
+                                { "name":"U"},
+                                { "name":"V"},
+                                { "name":"phi"},
+                                { "name":"f"},
+                                { "name":"m"}
+                            ];
+                            await ds_res.open("R");
+                            
+                            var u_orig = await ds_orig.getField("U", 1);
+                            var v_orig = await ds_orig.getField("V", 1);
+                            var phi_orig = await ds_orig.getField("phi", 1);
+                            var f_orig = await ds_orig.getField("f", 1);
+                            var m_orig = await ds_orig.getField("m", 1);
+                            
+                            var u_res = await ds_res.getField("U", 1);
+                            var v_res = await ds_res.getField("V", 1);
+                            var phi_res = await ds_res.getField("phi", 1);
+                            var f_res = await ds_res.getField("f", 1);
+                            var m_res = await ds_res.getField("m", 1);
+
+                            expect(u_res).arrayBeCloseTo(u_orig, 0.00001);
+                            expect(v_res).arrayBeCloseTo(v_orig, 0.00001);
+                            expect(phi_res).arrayBeCloseTo(phi_orig, 0.00001);
+                            expect(f_res).arrayBeCloseTo(f_orig, 0.000000001);
+                            expect(m_res).arrayBeCloseTo(m_orig, 0.00001);
+
+                            return "OK";
+                        }
+                        catch (e)
+                        {
+                            throw e;
+                        }
+                    }
+                    return checkdata();                
+                })
+                .catch(e=>{
+                    throw e;
+                });
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    });
+});

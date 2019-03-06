@@ -58,7 +58,7 @@ export class RunScenario extends Scenario {
         try
         {
             await super.start();
-            
+
             // Ouverture des données
             await this.dataSource.open(DataSource.MODE_READ);
             

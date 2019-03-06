@@ -1,0 +1,184 @@
+{
+    "modules" : {
+        "Model": "modeling/Model.js",
+        "BarotropicCore": "modeling/BarotropicCore.js",
+        "MercatorProjection": "modeling/MercatorProjection.js",
+        "LeapFrogTimeIntegrator": "modeling/LeapFrogTimeIntegrator.js",
+        "RobertAsselinTimeFilter": "modeling/RobertAsselinTimeFilter.js",
+        "SchumannFilter": "modeling/SchumannFilter.js",
+        "CouplingLimitedAreaBoundaryCondition": "modeling/CouplingLimitedAreaBoundaryCondition.js",
+        
+        "WGRIBTextFieldDataSource": "front/WGRIBTextFieldDataSource.js",
+        "WGRIBTextFieldDataWriter": "front/WGRIBTextFieldDataWriter.js",
+        "Preprocessor": "front/Preprocessor.js",
+        "ProjectionTransformation": "front/ProjectionTransformation.js",
+        "ArithmeticTransformation": "front/ArithmeticTransformation.js",
+        "CoriolisFactorTransformation": "front/CoriolisFactorTransformation.js",
+        "ScalingFactorTransformation": "front/ScalingFactorTransformation.js",
+        
+        "RunScenario": "front/RunScenario.js",
+        "CouplingStep": "front/CouplingStep.js",
+        "HistoryStep": "front/HistoryStep.js"
+    },
+    
+    "global": {
+        "inputDomain":{
+            "minLat": -90,
+            "maxLat": 90,
+            "minLon": 0,
+            "maxLon": 359.5,
+            "dlat": 0.5,
+            "dlon": 0.5
+        },
+        
+        "modelDomain": {
+            "class": "MercatorProjection",
+            "width": 111,
+            "height": 72,
+            "horizontalStaggering": "C",
+            "minLat":9,
+            "maxLat":81,
+            "minLon":-60,
+            "maxLon":51
+        },
+        
+        "outputDomain": {
+            "minLat": 9,
+            "maxLat": 81,
+            "minLon": -60,
+            "maxLon": 51,
+            "dlat": 1,
+            "dlon": 1
+        },
+        
+        "gfsdata": {
+            "class": "WGRIBTextFieldDataSource",
+            "baseURL" : "res/run/2018120612",
+            "catalog" : [ 
+                {"name": "ugrd_500", "description":"", "units":""},
+                {"name": "vgrd_500", "description":"", "units":""},
+                {"name": "hgt_500", "description":"", "units":""}
+            ]
+        },
+        
+        "inputdata": {
+            "class": "WGRIBTextFieldDataSource", 
+            "baseURL" : "run" ,
+            "catalog" : [ 
+                {"name": "U", "description":"", "units":""},
+                {"name": "V", "description":"", "units":""},
+                {"name": "phi", "description":"", "units":""},
+                {"name": "f", "description":"", "units":""},
+                {"name": "m", "description":"", "units":""}
+            ]
+        },
+
+        "outputdir" : {
+            "ref": "inputdata",
+            "class": "WGRIBTextFieldDataSource", 
+            "baseURL" : "res/test",
+            "catalog" : [ 
+                {"name": "U", "description":"", "units":""},
+                {"name": "V", "description":"", "units":""},
+                {"name": "phi", "description":"", "units":""},
+                {"name": "f", "description":"", "units":""},
+                {"name": "m", "description":"", "units":""}
+            ]            
+        }
+    },
+    
+    "model": {
+        "class": "Model",
+
+        "dynamicsCore": {
+            "class": "BarotropicCore"
+        },
+
+        "name": "PIFO barotrope",
+
+        "projection": {
+            "ref": "modelDomain"
+        },
+
+        "timeIntegrator" : {
+            "class": "LeapFrogTimeIntegrator"
+        },                 
+
+        "width": 111,
+        "height": 72,
+        "horizontalStaggering": "C",
+        "global": false,
+        "filterInterval": 1,
+        "verticalStaggering":  "L",
+        
+        "boundaryCondition": {
+            "class": "CouplingLimitedAreaBoundaryCondition",
+            "relaxation": 8
+        },
+
+        "dt": 15
+    },
+    
+    "scenario": {
+        "preprocessor" : {
+            "class": "Preprocessor",
+            "dataSource": { "ref": "gfsdata"},
+            "dataWriter": { "class": "WGRIBTextFieldDataSource", "baseURL" : "run" },
+            "transformations": [
+                { "name": "horizontal_hinterpolation", "class": "ProjectionTransformation", "projection": { "ref" : "modelDomain"}, "sourceDomain": {"ref" : "inputDomain"} },
+                { "name": "hgt_to_phi", "class": "ArithmeticTransformation", "operation":"*", "value":9.8066 },
+                { "name": "geop_epp", "class": "ArithmeticTransformation", "operation":"-", "value":40000 },
+                { "name": "f_calc", "class": "CoriolisFactorTransformation" },
+                { "name": "m_calc", "class": "ScalingFactorTransformation" }
+            ],
+            "processus": [
+                { "name": "basic_projection", "transformations": [ "horizontal_hinterpolation"] },
+                { "name": "z500_preparation", "transformations": [ "horizontal_hinterpolation", "hgt_to_phi", "geop_epp"] }, 
+                { "name": "f_generation", "transformations": [ "f_calc"] },
+                { "name": "m_generation", "transformations": [ "m_calc"] }
+                
+            ],
+            "output": [
+                { "variable":"U", "source":"ugrd_500", "processus" : "basic_projection" },
+                { "variable":"V", "source":"vgrd_500", "processus" : "basic_projection" },
+                { "variable":"phi", "source": "hgt_500", "processus" : "z500_preparation" },
+                { "variable":"f", "processus" : "f_generation" },
+                { "variable":"m", "processus" : "m_generation" }
+            ],
+            "outputDir": "run",
+            "times": [0]
+        },
+        
+        "run": {
+            "class": "RunScenario",
+            "dataSource": {"ref": "inputdata"},
+
+            "stopTime": 1,
+            
+            "steps": [
+                { 
+                    "class":"CouplingStep",
+                    "dataSource" : {"ref": "inputdata"},
+                    "variables": [
+                        {"name":"U_couplage", "source": "U"},
+                        {"name":"V_couplage", "source": "V"},
+                        {"name":"phi_couplage", "source": "phi"}
+                    ]
+                },
+                {
+                    "class":"HistoryStep",
+                    "dataSource" : {"ref": "outputdir"},
+                    "historyInterval" : 1,
+                    "variables": [
+                        {"name":"U"},
+                        {"name":"V"},
+                        {"name":"phi"},
+                        {"name":"m"},
+                        {"name":"f"},
+                        {"name": "latitudes"}, 
+                        {"name": "longitudes"}
+                    ]
+                }]
+        }
+    }
+}

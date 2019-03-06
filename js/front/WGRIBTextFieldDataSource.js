@@ -288,11 +288,7 @@ export class WGRIBTextFieldDataSource extends DataSource {
     async readFile(p_name)
     {
         try {
-            // Node ou navigateur ?
-            /*if (!this.baseURL.endsWith("/")) this.baseURL += "/";
-            var file = this.baseURL+p_name;
-            return TextFile.readFile(file);*/
-            return this.textFile.read(p_name);
+            return await this.textFile.read(p_name);
         }
         catch (e)
         {
@@ -309,10 +305,7 @@ export class WGRIBTextFieldDataSource extends DataSource {
     async writeFile(p_name, p_data)
     {
         try {
-            /*if (!this.baseURL.endsWith("/")) this.baseURL += "/";
-            var file = this.baseURL+p_name;
-            return TextFile.writeFile(file, p_data);*/
-            return this.textFile.write(p_name, p_data);
+            return await this.textFile.write(p_name, p_data);
         }
         catch (e)
         {
@@ -374,7 +367,7 @@ export class WGRIBTextFieldDataSource extends DataSource {
     async writeFileInfo()
     {
         try {            
-            return this.writeFile("fileinfo.txt", this.fileInfo.getText());
+            return await this.writeFile("fileinfo.txt", this.fileInfo.getText());
         }
         catch (e)
         {

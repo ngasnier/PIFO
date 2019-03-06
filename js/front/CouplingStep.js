@@ -209,16 +209,17 @@ export class CouplingStep extends Step
         }
     }
 
-    
     async loadFields(time)
     {
         try
         {
             var fields = [];
+            this.sendMessage(`coupling fields needed for time ${time/3600} (${time/3600}h)`);
             if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_READ);
             for (var i in this.variables)
             {
                 var v = this.variables[i];
+                this.sendMessage(`loading coupling field ${v.name} ${time/3600}`);
                 fields[v.name] = await this.dataSource.getField(v.source, time/3600);
             }
             return fields;

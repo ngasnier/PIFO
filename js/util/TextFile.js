@@ -35,19 +35,20 @@ export class TextFile {
     
     async read(p_file)
     {
-        return TextFile.readFile(this.path+p_file);
+        return await TextFile.readFile(this.path+p_file);
     }
     
     async write(p_file, p_data)
     {
         if (typeof module !== 'undefined' && module.exports) 
         {
-            return TextFile.writeFile(this.path+p_file, p_data);
+            return await TextFile.writeFile(this.path+p_file, p_data);
         }
         else
         {
             if (this.zip==null) this.zip = new JSZip();
-            this.zip.file(p_file, p_data);            
+            this.zip.file(p_file, p_data); 
+            return p_data;
         }
     }
     
@@ -109,18 +110,15 @@ export class TextFile {
             {
                 var fs = require('fs');
                 var path = require('path');
-                return new Promise(function (resolve, reject) {
-                    fs.writeFile(p_url, p_data, "", function (err) {
-                       if (err) reject(err);
-                       else resolve(p_data);
-                    });
-                }, p_data);
+                fs.writeFileSync(p_url, p_data, "");
+                return p_data;
             }
             else
             {
                 var blob = new Blob([p_data], {type: 'text/plain'});
                 var p = p_url.split("/");
                 saveAs(blob, p[p.length-1]);
+                return p_data;
             }
         }
         catch (e)
