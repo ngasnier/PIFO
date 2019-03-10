@@ -130,12 +130,12 @@ export class ModelUI
         {
             if (e instanceof Error) 
             {
-                console.log("reset() : ", e);
+                console.log("reset() : error : ", e.message, e);
                 this.setStatusString(e.toString());
             }
             else
             {
-                console.log("reset() : "+e);
+                console.trace("reset() : error :", e);
                 this.setStatusString(e.toString());
             }
         });
