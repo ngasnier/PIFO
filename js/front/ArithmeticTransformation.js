@@ -57,6 +57,44 @@ export class ArithmeticTransformation extends DataTransformation {
             case "/":
                 Variable.mulConst(data_out, 1/this.value, data_out);
                 break;
+            case "log":
+                if (data_in.nbLevels>0)
+                {
+                    for (var k=0;k<data_in.nbLevels;k++)
+                    {
+                        for (var i=0;i<data_in[k].length;i++)
+                        {
+                            data_out[k][i] = Math.log(data_in[k][i]);
+                        }
+                    }
+                }
+                else
+                {
+                    for (var i=0;i<data_in.length;i++)
+                    {
+                        data_out[i] = Math.log(data_in[i]);
+                    }
+                }
+                break;
+            case "exp":
+                if (data_in.nbLevels>0)
+                {
+                    for (var k=0;k<data_in.nbLevels;k++)
+                    {
+                        for (var i=0;i<data_in[k].length;i++)
+                        {
+                            data_out[k][i] = Math.exp(data_in[k][i]);
+                        }
+                    }
+                }
+                else
+                {
+                    for (var i=0;i<data_in.length;i++)
+                    {
+                        data_out[i] = Math.exp(data_in[i]);
+                    }
+                }
+                break;
         }
         
         return data_out;
