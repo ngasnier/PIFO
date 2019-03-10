@@ -234,9 +234,10 @@ function getVariableNames(p_descriptions)
 
 function cleandir(directory)
 {
-    var files = fs.readdirSync(directory);
+    var files = fs.readdirSync(directory, {withFileTypes:true});
     for (const file of files) {
-        fs.unlinkSync(path.join(directory, file));
+        if (!file.isDirectory())
+            fs.unlinkSync(path.join(directory, file.name));
     }
 }
 
