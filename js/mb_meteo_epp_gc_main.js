@@ -20,11 +20,19 @@ import { BarotropicInterpolator } from "/js/ui/BarotropicInterpolator.js";
 import { Variable } from "/js/modeling/Variable.js";
 import { VariableDescription } from "/js/modeling/VariableDescription.js";
 
-import { WindHTMLRenderer } from "/js/ui/WindHTMLRenderer.js";
-import { TourbillonHTMLRenderer } from "/js/ui/TourbillonHTMLRenderer.js";
-import { Z500HTMLRenderer } from "/js/ui/Z500HTMLRenderer.js";
+import { WindHTMLRenderer } from "./ui/WindHTMLRenderer.js";
+import { TourbillonHTMLRenderer } from "./ui/TourbillonHTMLRenderer.js";
+import { Z500HTMLRenderer } from "./ui/Z500HTMLRenderer.js";
+import { T850HTMLRenderer } from "./ui/T850HTMLRenderer.js";
+import { VerticalVelocityHTMLRenderer } from "./ui/VerticalVelocityHTMLRenderer.js";
+import { QvHTMLRenderer } from "./ui/QvHTMLRenderer.js";
+import { PressureHTMLRenderer } from "./ui/PressureHTMLRenderer.js";
+import { TemperatureHTMLRenderer } from "./ui/TemperatureHTMLRenderer.js";
+import { RainHTMLRenderer } from "./ui/RainHTMLRenderer.js";
 import { BarotropicVerificationHTMLRenderer } from "/js/ui/BarotropicVerificationHTMLRenderer.js";
 import { ModelUI } from "/js/ui/ModelUI.js";
+
+import { VerticalInterpolator } from "./ui/VerticalInterpolator.js";
 
 import { HumpDisturbance } from "/js/cases/HumpDisturbance.js";
 
@@ -33,10 +41,20 @@ var ui = new ModelUI();
 var interpolator = new BarotropicInterpolator();
 var windRenderer = new WindHTMLRenderer();
 var z500Renderer = new Z500HTMLRenderer();
+var t850Renderer = new T850HTMLRenderer();
+var verticalVelocityRenderer = new VerticalVelocityHTMLRenderer();
 var tourbillonRenderer = new TourbillonHTMLRenderer();
+var qvRenderer = new QvHTMLRenderer();
+var pressureRenderer = new PressureHTMLRenderer();
+var rainRenderer = new RainHTMLRenderer();
+var temperatureRenderer = new TemperatureHTMLRenderer();
 var verificationRenderer = new BarotropicVerificationHTMLRenderer();
 
+var verticalInterpolator = new VerticalInterpolator();
+
+
 var z500_display = [];
+var t850_display = [];
 var latitudes = [];
 var longitudes = [];
 
@@ -50,6 +68,7 @@ var barotropeConfig = {
         "Model": "modeling/Model.js",
         "BarotropicCore": "modeling/BarotropicCore.js",
         "BarotropicSemiImplicitCore": "modeling/BarotropicSemiImplicitCore.js",
+        "BaroclinicHydrostaticCore": "modeling/BaroclinicHydrostaticCore.js",
         "MercatorProjection": "modeling/MercatorProjection.js",
         "LeapFrogTimeIntegrator": "modeling/LeapFrogTimeIntegrator.js",
         "RobertAsselinTimeFilter": "modeling/RobertAsselinTimeFilter.js",
@@ -73,6 +92,15 @@ var barotropeConfig = {
      * Définit des objets globaux pouvait être référencés dans la config
      */
     "global": {
+        "layers": [0.0481350396465511,
+            0.184775644761717,
+            0.3110947031394134,
+            0.4365726975546128,
+            0.5617802104119394,
+            0.6868661597951571,
+            0.8118869790121533,
+            0.9368688226982536],
+        
         "inputDomain":{
             "minLat": -90,
             "maxLat": 90,
@@ -114,13 +142,16 @@ var barotropeConfig = {
         
         "inputdata": {
             "class": "WGRIBTextFieldDataSource", 
-            "baseURL" : "run" ,
+            "baseURL" : "res/verif/barocline/2018120612" ,
             "catalog" : [ 
-                {"name": "U", "description":"", "units":""},
-                {"name": "V", "description":"", "units":""},
-                {"name": "phi", "description":"", "units":""},
+                {"name": "U", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "V", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "T", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "Z", "description":"", "units":""},
+                {"name": "qv", "description":"", "units":"", "levels": {"ref": "layers"}},
                 {"name": "f", "description":"", "units":""},
-                {"name": "m", "description":"", "units":""}
+                {"name": "m", "description":"", "units":""},
+                {"name": "sfcgeop", "description":"", "units":""}
             ]
         },
         
@@ -131,9 +162,13 @@ var barotropeConfig = {
             "catalog" : [ 
                 {"name": "U", "description":"", "units":""},
                 {"name": "V", "description":"", "units":""},
-                {"name": "phi", "description":"", "units":""},
+                {"name": "T", "description":"", "units":""},
+                {"name": "Z", "description":"", "units":""},
+                {"name": "qv", "description":"", "units":""},
                 {"name": "f", "description":"", "units":""},
-                {"name": "m", "description":"", "units":""}
+                {"name": "m", "description":"", "units":""},
+                {"name": "tourbillon", "description":"", "units":""},
+                {"name": "sfcgeop", "description":"", "units":""}
             ]            
         },
     },
@@ -145,10 +180,10 @@ var barotropeConfig = {
         "class": "Model",
 
         "dynamicsCore": {
-            "class": "BarotropicCore"
+            "class": "BaroclinicHydrostaticCore"
         },
 
-        "name": "PIFO barotrope",
+        "name": "PIFO",
 
         "projection": {
             "ref": "modelDomain"
@@ -164,15 +199,30 @@ var barotropeConfig = {
         "global": false,
         "filterInterval": 1,
         "verticalStaggering":  "L",
+                
+        "verticalCoords": [
+            0.001,
+            0.0481350396465511,
+            0.125875,
+            0.184775644761717,
+            0.25075,
+            0.3110947031394134,
+            0.375625,
+            0.4365726975546128,
+            0.5005,
+            0.5617802104119394,
+            0.6253749999999999,
+            0.6868661597951571,
+            0.7502499999999999,
+            0.8118869790121533,
+            0.8751249999999998,
+            0.9368688226982536,
+            0.9999999999999998],
         
         "boundaryCondition": {
             "class": "CouplingLimitedAreaBoundaryCondition",
             "relaxation": 8
         },
-
-        /*"timeFilter": {
-            "class": "RobertAsselinTimeFilter"
-        },*/
 
         "dt": 15
     },
@@ -186,23 +236,30 @@ var barotropeConfig = {
             "dataSource": { "ref": "gfsdata"},
             "dataWriter": { "class": "WGRIBTextFieldDataSource", "baseURL" : "run" },
             "transformations": [
-                { "name": "horizontal_hinterpolation", "class": "ProjectionTransformation", "projection": { "ref" : "modelDomain"}, "sourceDomain": {"ref" : "inputDomain"} },
+                { "name": "horizontal_interpolation", "class": "ProjectionTransformation", "projection": { "ref" : "modelDomain"}, "sourceDomain": {"ref" : "inputDomain"} },
+                { "name": "vertical_interpolation", "class": "VerticalInterpolationTransformation" },
+                { "name": "rh_to_qv", "class": "HumidityTransformation" },
                 { "name": "hgt_to_phi", "class": "ArithmeticTransformation", "operation":"*", "value":9.8066 },
-                { "name": "geop_epp", "class": "ArithmeticTransformation", "operation":"-", "value":40000 },
+                { "name": "ln_ps", "class": "ArithmeticTransformation", "operation":"log"},
                 { "name": "f_calc", "class": "CoriolisFactorTransformation" },
                 { "name": "m_calc", "class": "ScalingFactorTransformation" }
             ],
             "processus": [
-                { "name": "basic_projection", "transformations": [ "horizontal_hinterpolation"] },
-                { "name": "z500_preparation", "transformations": [ "horizontal_hinterpolation", "hgt_to_phi", "geop_epp"] }, 
+                { "name": "basic_projection", "transformations": [ "horizontal_interpolation", "vertical_interpolation"] },
+                { "name": "rh_preparation", "transformations": [ "horizontal_interpolation", "vertical_interpolation", "rh_to_qv"] },
+                { "name": "z_preparation", "transformations": [ "horizontal_interpolation", "ln_ps"] },
+                { "name": "sfchgt_preparation", "transformations": [ "horizontal_interpolation", "hgt_to_phi"] }, 
                 { "name": "f_generation", "transformations": [ "f_calc"] },
                 { "name": "m_generation", "transformations": [ "m_calc"] }
                 
             ],
             "output": [
-                { "variable":"U", "source":"ugrd_500", "processus" : "basic_projection" },
-                { "variable":"V", "source":"vgrd_500", "processus" : "basic_projection" },
-                { "variable":"phi", "source": "hgt_500", "processus" : "z500_preparation" },
+                { "variable":"U", "source":"ugrd", "processus" : "basic_projection" },
+                { "variable":"V", "source":"vgrd", "processus" : "basic_projection" },
+                { "variable":"T", "source":"tmp", "processus" : "basic_projection" },
+                { "variable":"qv", "source":"rh", "processus" : "rh_preparation" },
+                { "variable":"Z", "source":"sfcprs", "processus" : "z_preparation" },
+                { "variable":"sfcgeop", "source": "sfchgt", "processus" : "sfchgt_preparation" },
                 { "variable":"f", "processus" : "f_generation" },
                 { "variable":"m", "processus" : "m_generation" }
             ],
@@ -223,9 +280,11 @@ var barotropeConfig = {
                     "variables": [
                         {"name":"U_couplage", "source": "U"},
                         {"name":"V_couplage", "source": "V"},
-                        {"name":"phi_couplage", "source": "phi"}
+                        {"name":"T_couplage", "source": "T"},
+                        {"name":"Z_couplage", "source": "Z"},
+                        {"name":"qv_couplage", "source": "qv"}
                     ]
-                }/*,
+                },
                 {
                     "class":"HistoryStep",
                     "dataSource" : {"ref": "outputdir"},
@@ -233,16 +292,20 @@ var barotropeConfig = {
                     "variables": [
                         {"name":"U"},
                         {"name":"V"},
+                        {"name":"T"},
+                        {"name":"Z"},
+                        {"name":"qv"},
                         {"name":"phi"},
                         {"name":"m"},
                         {"name":"f"},
                         {"name": "latitudes"}, 
                         {"name": "longitudes"}
                     ]
-                }*/]
+                }]
         }
     }
 };
+
 
 $(document).ready(function () {   
     ui.setStatusString("Initialisation");
@@ -258,8 +321,101 @@ async function initialize(config)
         manager = new ConfigManager(classpath, config);
 
         ui.scenario = await manager.getScenario("run");
+        
+        /* -------- BAROCLINE ------------ */
+        ui.beforeResetCallback = function()
+        {
+            z500_display = Variable.createVariable(1, ui.model.width, ui.model.height);
+            t850_display = Variable.createVariable(1, ui.model.width, ui.model.height);        
+        };
+        ui.afterResetCallback = function()
+        {
+            ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", levels:ui.model.layersCoords, renderer: windRenderer},
+                Temperature: {group:"HistoricVariables", name:"Temperature", levels:ui.model.layersCoords, renderer: temperatureRenderer},
+                Z500 : {group:"HistoricVariables", name:"Z500", levels:[1], renderer: z500Renderer, data:z500_display},
+                T850 : {group:"HistoricVariables", name:"T850", levels:[1], renderer: t850Renderer, data:t850_display},
+                QV : {group:"HistoricVariables", name:"QV", levels:ui.model.layersCoords, renderer: qvRenderer},
+                SfcPrs : {group:"HistoricVariables", name:"SfcPrs", levels:[1], renderer: pressureRenderer},
+                Tourbillon : {group:"DiagnosticVariables", name:"Tourbillon", levels:ui.model.layersCoords, renderer: tourbillonRenderer},
+                VV : {group:"DiagnosticVariables", name:"VV", levels:ui.model.surfacesCoords, renderer: verticalVelocityRenderer},
+                Pluie : {group:"DiagnosticVariables", name:"Pluie", levels:[1], renderer: rainRenderer},
+                Neige : {group:"DiagnosticVariables", name:"Neige", levels:[1], renderer: rainRenderer}
+            };        
+        };
+        
+        ui.beforeDisplayCallback = function()
+        {
+            var k = ui.getDisplayLevel();
+            switch (ui.getDisplayVariable())
+            {
+                case "Vent":
+                    windRenderer.width = ui.model.width;
+                    windRenderer.height = ui.model.height;
+                    windRenderer.U = ui.model.getVariable("U")[k];
+                    windRenderer.V = ui.model.getVariable("V")[k];
+                    break;
+                case "Z500":
+                    z500Renderer.width = ui.model.width;
+                    z500Renderer.height = ui.model.height;
+                    verticalInterpolator.sigmaLevels = ui.model.layersCoords;
+                    Variable.copy(ui.model.getVariable("ps"), verticalInterpolator.surfacePressure);
+                    verticalInterpolator.modelToPressureLevel(ui.model.getVariable("phi"), 50000, z500_display);
+                    geopInterpolator.modelToHeight(z500_display, z500_display);
+                    z500Renderer.variable = z500_display;
+                    break;
+                case "T850":
+                    t850Renderer.width = ui.model.width;
+                    t850Renderer.height = ui.model.height;
+                    verticalInterpolator.sigmaLevels = ui.model.layersCoords;
+                    Variable.copy(ui.model.getVariable("ps"), verticalInterpolator.surfacePressure);
+                    verticalInterpolator.modelToPressureLevel(ui.model.getVariable("T"), 85000, t850_display);
+                    t850Renderer.variable = t850_display;
+                    break;
+                case "Tourbillon":
+                    tourbillonRenderer.width = ui.model.width;
+                    tourbillonRenderer.height = ui.model.height;
+                    tourbillonRenderer.variable = ui.model.getVariable("tourbillon")[k];
+                    tourbillonRenderer.ps = ui.model.getVariable("ps");
+                    tourbillonRenderer.f = ui.model.getVariable("f");
+                    break;
+                case "VV":
+                    verticalVelocityRenderer.width = ui.model.width;
+                    verticalVelocityRenderer.height = ui.model.height;
+                    verticalVelocityRenderer.variable = ui.model.getVariable("sigmaf")[k];
+                    break;
+                case "QV":
+                    qvRenderer.width = ui.model.width;
+                    qvRenderer.height = ui.model.height;
+                    console.log(k, ui.model.getVariable("qv"));
+                    qvRenderer.variable = ui.model.getVariable("qv")[k];
+                    break;
+                case "Temperature":
+                    temperatureRenderer.width = ui.model.width;
+                    temperatureRenderer.height = ui.model.height;
+                    temperatureRenderer.variable = ui.model.getVariable("T")[k];
+                    break;
+                case "SfcPrs":
+                    pressureRenderer.width = ui.model.width;
+                    pressureRenderer.height = ui.model.height;
+                    pressureRenderer.variable = ui.model.getVariable("ps");
+                    break;
+                case "Pluie":
+                    rainRenderer.width = ui.model.width;
+                    rainRenderer.height = ui.model.height;
+                    rainRenderer.variable = ui.model.getVariable("apcp");
+                    break;
+                case "Neige":
+                    rainRenderer.width = ui.model.width;
+                    rainRenderer.height = ui.model.height;
+                    rainRenderer.variable = ui.model.getVariable("acsnow");
+                    break;
+            }
+        };
 
-        ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", levels:[1], renderer: windRenderer},
+
+        /* -------- BAROTROPE ------------ */
+        
+        /*ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", levels:[1], renderer: windRenderer},
             Z500 : {group:"HistoricVariables", name:"Z500", levels:[1], renderer: z500Renderer},
             Tourbillon : {group:"DiagnosticVariables", name:"Tourbillon", levels:[1], renderer: tourbillonRenderer},
             Verifications : {group:"DiagnosticVariables", name:"Verifications", levels:[1], renderer: verificationRenderer}
@@ -302,7 +458,7 @@ async function initialize(config)
                     ui.variableRepresentations["Z500"].data = z500_display;
                     break;
             }
-        };
+        };*/
 
         // Bind l'UI...
     /*    $("#testCaseButton").click(function () { 
