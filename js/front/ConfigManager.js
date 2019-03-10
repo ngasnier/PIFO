@@ -107,7 +107,16 @@ export class ConfigManager {
         try {
             var obj;
             var objparams = {};
-            if ("class" in p_node) obj = await this.loader.loadModule(p_node.class);
+            
+            if (Array.isArray(p_node)) {
+                obj = [];
+                for (var i in p_node)
+                {
+                    obj[i] = await this.getValue(p_node[i]);
+                }
+                return obj;
+            } 
+            else if ("class" in p_node) obj = await this.loader.loadModule(p_node.class);
             else if ("ref" in p_node) obj = await this.getObject(p_node.ref);
             else obj = {};
 
