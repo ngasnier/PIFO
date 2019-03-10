@@ -67,7 +67,7 @@ manager.getScenario(mode)
             });
     })
     .catch((e)=> {
-       console.log(e);
+       console.log("error :", e);
        process.exit(1);
     });
     
@@ -87,6 +87,7 @@ async function runScenario(scenario)
     }
     catch (e)
     {
+        console.log("error :", e);
         process.exit(1);
     }
 }
