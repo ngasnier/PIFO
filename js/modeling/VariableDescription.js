@@ -64,6 +64,8 @@ VariableDescription.VERTICAL_POSITION_SURFACE = "SURFACE";
 VariableDescription.VERTICAL_POSITION_INTERLAYER = "INTERLAYER";
 /** Variable décrivant des données à l'intérieur d'une couche. @constant */
 VariableDescription.VERTICAL_POSITION_LAYER = "LAYER";
+/** Variable décrivant des données à tous les niveaux verticaux. @constant */
+VariableDescription.VERTICAL_POSITION_ALL = "ALL";
 
 /** Représente un scalaire @constant */
 VariableDescription.NUMBER_TYPE_SCALAR = "s";

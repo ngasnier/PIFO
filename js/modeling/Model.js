@@ -81,7 +81,7 @@ export class Model {
         this._surfacesCoords = [1];
         this._layersCoords = [];
         this._surfacesIndices = [0];
-        this._layerIndices = [];
+        this._layersIndices = [];
 
         // Liste des descriptions de variables
         this.variables = [];
@@ -151,6 +151,39 @@ export class Model {
                 this.registerVariable(v);
             }); 
         }
+        
+        this.setupVariablesLevels();
+    }
+    
+    /**
+     * Affecte les niveaux aux variables
+     * @returns {undefined}
+     */
+    setupVariablesLevels()
+    {
+        for (var i in this.variables)
+        {
+            var v = this.variables[i];
+            switch (v.verticalPosition)
+            {
+                case VariableDescription.VERTICAL_POSITION_SURFACE:
+                    break;
+                
+                case VariableDescription.VERTICAL_POSITION_LAYER:
+                    v.levels = this.layersCoords;
+                    break;
+                    
+                case VariableDescription.VERTICAL_POSITION_INTERLAYER:
+                    v.levels = this.surfacesCoords;
+                    break;
+
+                case VariableDescription.VERTICAL_POSITION_ALL:
+                    v.levels = this._verticalCoords;
+                    break;
+                
+                default:
+            }
+        }
     }
 
     /**
@@ -172,8 +205,13 @@ export class Model {
                     break;
                 
                 case VariableDescription.VERTICAL_POSITION_INTERLAYER:
-                    nblevs = this.nbSurfaces+1;
+                    nblevs = this.nbLayers+1;
                     break;
+
+                case VariableDescription.VERTICAL_POSITION_ALL:
+                    nblevs = this.nbLayers*2+1;
+                    break;
+                
                 default:
                     // Garder les valeurs par défaut
             }
@@ -209,7 +247,6 @@ export class Model {
         // *** Intégration temporelle ***        
         this.dynamicsCore.solveBegin();
         
-        // Nb : prévoir méthodes de calcul en début de semi-implicite ou semi-lagrangien...
         this.timeIntegrator.step();
         
         this.dynamicsCore.solveEnd();
@@ -227,7 +264,7 @@ export class Model {
         
         // *** Le filtrage temporel peut être finalisé ***
         if (this.timeFilter!=null) this.timeFilter.postStep();
-        
+
         // *** C'est la fin du pas de temps ***
         // L'intégrateur a la charge de swapper les variables et faire
         // les éventuels calculs finaux nécessaires au schéma
@@ -271,20 +308,21 @@ export class Model {
         this._surfacesCoords = [];
         this._layersCoords = [];
         this._surfacesIndices = [];
-        this._layerIndices = [];
+        this._layersIndices = [];
         for (var k=0;k<p_coords.length;k++)
         {
             if (k%2==0)
             {
                 this._surfacesCoords.push(p_coords[k]);
-                this._surfacesIndices.push(this._surfacesCoords.length-1);
+                this._surfacesIndices.push(k); /*this._surfacesCoords.length-1*/
             }
             else
             {
                 this._layersCoords.push(p_coords[k]);
-                this._layersIndices.push(this._layersCoords.length-1);
+                this._layersIndices.push(k); /* this._layersCoords.length-1*/
             }
         }
+        this.setupVariablesLevels();
     }
     
     /**

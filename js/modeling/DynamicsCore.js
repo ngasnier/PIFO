@@ -105,6 +105,7 @@ export class DynamicsCore
      */
     calcTendency(p_variable)
     {
+        console.log("calcTendency : "+p_variable);
         this["calc"+p_variable+"_tdcy"]();
     }
     
@@ -115,6 +116,7 @@ export class DynamicsCore
      */
     calcDiagnostic(p_variable)
     {
+        console.log("calcDiagnostic : "+p_variable);
         this["calc"+p_variable]();
     }
 }
