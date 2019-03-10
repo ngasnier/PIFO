@@ -183,7 +183,7 @@ export class WGRIBTextFieldDataSource extends DataSource {
     {       
         try {
             if (this.openMode!=DataSource.MODE_READ_WRITE && this.openMode!=DataSource.MODE_READ) throw "datasource not opened for reading.";
-            
+                        
             var field = this.getFieldInfo(p_field);
             if (field==null) throw `field ${p_field} not available at time ${p_time}`;
             if (!this.times.includes(p_time)) throw `field ${p_field} not available at time ${p_time}`;
@@ -194,19 +194,31 @@ export class WGRIBTextFieldDataSource extends DataSource {
             var timefmt = p_time.toString();
             if (timefmt.length<3) timefmt="0".repeat(3-timefmt.length)+timefmt;
           
-            if ("levels" in field && field.levels.length>0)
+            if (("levels" in field && field.levels.length>0))
             {
+                var indices;
+                if ("indices" in field && field.indices.length>0)
+                {
+                    indices = field.indices.slice();
+                }
+                else
+                {
+                    indices = [];
+                    for (var i=0;i<field.levels.length;i++) indices[i] = i;
+                }
                 variable = [];
                 variable.nbLevels = field.levels.length;
-                field.levels.forEach(async (lev)=>
+                
+                for (var i in indices)
                 {
-                    var fname = p_field+"_"+(lev/100)+"_"+timefmt+".txt";
+                    var idx = indices[i];
+                    var fname = p_field+"_"+idx+"_"+timefmt+".txt";
                     var data = await this.readFile(fname);
                     var var_data = reader.read(data);
                     variable.push(var_data);
                     variable.width = var_data.width;
                     variable.height = var_data.height;
-                });
+                }
                 
                 variable.levels = field.levels.slice();
                 
@@ -255,10 +267,26 @@ export class WGRIBTextFieldDataSource extends DataSource {
             {
                 for (var k=0;k<p_data.nbLevels;k++)
                 {
-                    if ("levels" in p_data)
-                        filename = p_name+"_"+p_data[k].toString()+"_"+timefmt+".txt";
-                    else
-                        filename = p_name+"_"+k.toString()+"_"+timefmt+".txt";
+                    if ("levels" in p_data) {
+                        
+                        if ("indices" in p_data && p_data.indices.length>0)
+                        {
+                            filename = p_name+"_"+p_data.indices[k].toString()+"_"+timefmt+".txt";
+                        }
+                        else
+                        {
+                            filename = p_name+"_"+k.toString()+"_"+timefmt+".txt";
+                        }
+                    } else {
+                        if ("indices" in p_data && p_data.indices.length>0) 
+                        {
+                            filename = p_name+"_"+p_data.indices[k].toString()+"_"+timefmt+".txt";
+                        }
+                        else
+                        {
+                            filename = p_name+"_"+k.toString()+"_"+timefmt+".txt";
+                        }
+                    }
                     
                     this.fileInfo.addFile(dt, filename);
                     await this.writeFile(filename, writer.write(p_data[k]));
