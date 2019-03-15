@@ -2,6 +2,7 @@
     "modules" : {
         "Model": "modeling/Model.js",
         "BarotropicCore": "modeling/BarotropicCore.js",
+        "BarotropicSemiImplicitCore": "modeling/BarotropicSemiImplicitCore.js",
         "MercatorProjection": "modeling/MercatorProjection.js",
         "LeapFrogTimeIntegrator": "modeling/LeapFrogTimeIntegrator.js",
         "RobertAsselinTimeFilter": "modeling/RobertAsselinTimeFilter.js",
@@ -10,11 +11,12 @@
         
         "WGRIBTextFieldDataSource": "front/WGRIBTextFieldDataSource.js",
         "WGRIBTextFieldDataWriter": "front/WGRIBTextFieldDataWriter.js",
-        "Preprocessor": "front/Preprocessor.js",
-        "ProjectionTransformation": "front/ProjectionTransformation.js",
-        "ArithmeticTransformation": "front/ArithmeticTransformation.js",
-        "CoriolisFactorTransformation": "front/CoriolisFactorTransformation.js",
-        "ScalingFactorTransformation": "front/ScalingFactorTransformation.js",
+
+        "Preprocessor": "processing/Preprocessor.js",
+        "ProjectionTransformation": "processing/ProjectionTransformation.js",
+        "ArithmeticTransformation": "processing/ArithmeticTransformation.js",
+        "CoriolisFactorTransformation": "processing/CoriolisFactorTransformation.js",
+        "ScalingFactorTransformation": "processing/ScalingFactorTransformation.js",
         
         "RunScenario": "front/RunScenario.js",
         "CouplingStep": "front/CouplingStep.js",
@@ -153,7 +155,7 @@
             "class": "RunScenario",
             "dataSource": {"ref": "inputdata"},
 
-            "stopTime": 1,
+            "stopTime": 48,
             
             "steps": [
                 { 
@@ -168,7 +170,7 @@
                 {
                     "class":"HistoryStep",
                     "dataSource" : {"ref": "outputdir"},
-                    "historyInterval" : 1,
+                    "historyInterval" : 3,
                     "variables": [
                         {"name":"U"},
                         {"name":"V"},

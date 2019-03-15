@@ -1,1 +1,0 @@
-U_001.txt,V_001.txt,phi_001.txt,m_001.txt,f_001.txt,latitudes_001.txt,longitudes_001.txt;PIFO barotrope;12;06/12/2018;01;jeudi 6 décembre 2018;14:00;

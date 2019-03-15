@@ -21,11 +21,9 @@ import { Variable } from "../js/modeling/Variable.js";
 import { VariableDescription } from "../js/modeling/VariableDescription.js";
 import { Scenario } from "../js/front/Scenario.js";
 import { ConfigManager } from "../js/front/ConfigManager.js";
-import { Preprocessor } from "../js/front/Preprocessor.js";
 import { WGRIBTextFieldDataSource } from "../js/front/WGRIBTextFieldDataSource.js";
 import { FileInfo } from "../js/util/FileInfo.js";
 import { TextFile } from "../js/util/TextFile.js";
-import { ProjectionTransformation } from "../js/front/ProjectionTransformation.js";
 
 const fs = require('fs');
 const path = require('path');
@@ -46,11 +44,12 @@ var configCible = {
         
         "WGRIBTextFieldDataSource": "front/WGRIBTextFieldDataSource.js",
         "WGRIBTextFieldDataWriter": "front/WGRIBTextFieldDataWriter.js",
-        "Preprocessor": "front/Preprocessor.js",
-        "ProjectionTransformation": "front/ProjectionTransformation.js",
-        "ArithmeticTransformation": "front/ArithmeticTransformation.js",
-        "CoriolisFactorTransformation": "front/CoriolisFactorTransformation.js",
-        "ScalingFactorTransformation": "front/ScalingFactorTransformation.js",
+        
+        "Preprocessor": "processing/Preprocessor.js",
+        "ProjectionTransformation": "processing/ProjectionTransformation.js",
+        "ArithmeticTransformation": "processing/ArithmeticTransformation.js",
+        "CoriolisFactorTransformation": "processing/CoriolisFactorTransformation.js",
+        "ScalingFactorTransformation": "processing/ScalingFactorTransformation.js",
         
         "RunScenario": "front/RunScenario.js",
         "CouplingStep": "front/CouplingStep.js",

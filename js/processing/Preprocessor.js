@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { DataSource } from "./DataSource.js";
-import { Scenario } from "./Scenario.js";
+import { DataSource } from "../front/DataSource.js";
+import { Scenario } from "../front/Scenario.js";
 import { VariableDescription } from "../modeling/VariableDescription.js";
 
 /**
