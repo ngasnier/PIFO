@@ -43,13 +43,15 @@ var configCible = {
         "CouplingLimitedAreaBoundaryCondition": "modeling/CouplingLimitedAreaBoundaryCondition.js",
         
         "WGRIBTextFieldDataSource": "front/WGRIBTextFieldDataSource.js",
-        "WGRIBTextFieldDataWriter": "front/WGRIBTextFieldDataWriter.js",
         
         "Preprocessor": "processing/Preprocessor.js",
-        "ProjectionTransformation": "processing/ProjectionTransformation.js",
-        "ArithmeticTransformation": "processing/ArithmeticTransformation.js",
-        "CoriolisFactorTransformation": "processing/CoriolisFactorTransformation.js",
-        "ScalingFactorTransformation": "processing/ScalingFactorTransformation.js",
+        "ProjectionComponent": "processing/ProjectionComponent.js",
+        "ArithmeticComponent": "processing/ArithmeticComponent.js",
+        "CoriolisFactorComponent": "processing/CoriolisFactorComponent.js",
+        "ScalingFactorComponent": "processing/ScalingFactorComponent.js",
+        "WorkflowTask": "processing/WorkflowTask.js",
+        "WGRIBInputComponent": "processing/WGRIBInputComponent.js",
+        "WGRIBOutputComponent": "processing/WGRIBOutputComponent.js",
         
         "RunScenario": "front/RunScenario.js",
         "CouplingStep": "front/CouplingStep.js",
@@ -101,7 +103,7 @@ var configCible = {
 
         "inputdata": {
             "class": "WGRIBTextFieldDataSource", 
-            "baseURL" : "run" ,
+            "baseURL" : "res/test/run" ,
             "catalog" : [ 
                 {"name": "U", "description":"", "units":""},
                 {"name": "V", "description":"", "units":""},
@@ -114,7 +116,7 @@ var configCible = {
         "outputdir" : {
             "ref": "inputdata",
             "class": "WGRIBTextFieldDataSource", 
-            "baseURL" : "res/test",
+            "baseURL" : "res/test/output",
             "catalog" : [ 
                 {"name": "U", "description":"", "units":""},
                 {"name": "V", "description":"", "units":""},
@@ -161,31 +163,141 @@ var configCible = {
     "scenario": {
         "preprocessor" : {
             "class": "Preprocessor",
-            "dataSource": { "ref": "gfsdata"},
-            "dataWriter": { "class": "WGRIBTextFieldDataSource", "baseURL" : "run" },
-            "transformations": [
-                { "name": "horizontal_hinterpolation", "class": "ProjectionTransformation", "projection": { "ref" : "modelDomain"}, "sourceDomain": {"ref" : "inputDomain"} },
-                { "name": "hgt_to_phi", "class": "ArithmeticTransformation", "operation":"*", "value":9.8066 },
-                { "name": "geop_epp", "class": "ArithmeticTransformation", "operation":"-", "value":40000 },
-                { "name": "f_calc", "class": "CoriolisFactorTransformation" },
-                { "name": "m_calc", "class": "ScalingFactorTransformation" }
+            
+            "processList": [
+                { "name":"U", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"ugrd_500"}, {"name": "variable", "value":"U"}, {"name":"destination", "value": "U"} ]},
+                { "name":"V", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"vgrd_500"}, {"name":"variable", "value": "V"}, {"name":"destination", "value": "V"} ]},
+                { "name":"phi", "task" : "phi_interpolation", "parameters": [{"name":"source", "value":"hgt_500"}, {"name":"variable", "value": "phi"}, {"name":"destination", "value": "phi"} ]},
+                { "name":"m", "task" : "m_generation", "parameters": [{"name":"destination", "value": "m"}] },
+                { "name":"f", "task" : "f_generation", "parameters": [{"name":"destination", "value": "f"}] }
             ],
-            "processus": [
-                { "name": "basic_projection", "transformations": [ "horizontal_hinterpolation"] },
-                { "name": "z500_preparation", "transformations": [ "horizontal_hinterpolation", "hgt_to_phi", "geop_epp"] }, 
-                { "name": "f_generation", "transformations": [ "f_calc"] },
-                { "name": "m_generation", "transformations": [ "m_calc"] }
-                
+           
+            "tasks": [
+                {
+                    "name":"basic_interpolation",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"modelVariable"},
+                        {"name":"destination", "bindComponent":"variable_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "variable_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "gfsdata" }
+                        },
+                        {
+                            "name": "projection_component", 
+                            "class":"ProjectionComponent",
+                            "sourceDomain": { "ref": "inputDomain" },
+                            "projection": { "ref": "modelDomain" }
+                        },
+                        {
+                            "name": "variable_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "inputdata" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"variable_source", "output":"main", "inputComponent":"projection_component", "input":"main"},
+                        {"outputComponent":"projection_component", "output":"main", "inputComponent":"variable_destination", "input":"main"}
+                        
+                    ]
+                },
+                {
+                    "name":"phi_interpolation",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"modelVariable"},
+                        {"name":"destination", "bindComponent":"variable_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "variable_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "gfsdata" }
+                        },
+                        {
+                            "name": "projection_component", 
+                            "class":"ProjectionComponent",
+                            "sourceDomain": { "ref": "inputDomain" },
+                            "projection": { "ref": "modelDomain" }
+                        },
+                        {
+                            "name": "hgt_to_phi", 
+                            "class":"ArithmeticComponent",
+                            "operation":"*", 
+                            "value":9.8066 
+                        },
+                        { 
+                            "name": "phi_to_epp", 
+                            "class": "ArithmeticComponent", 
+                            "operation":"-", 
+                            "value":40000 
+                        },
+                        {
+                            "name": "variable_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "inputdata" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"variable_source", "output":"main", "inputComponent":"projection_component", "input":"main"},
+                        {"outputComponent":"projection_component", "output":"main", "inputComponent":"hgt_to_phi", "input":"main"},
+                        {"outputComponent":"hgt_to_phi", "output":"main", "inputComponent":"phi_to_epp", "input":"main"},
+                        {"outputComponent":"phi_to_epp", "output":"main", "inputComponent":"variable_destination", "input":"main"}
+                    ]
+                },
+                {
+                    "name":"m_generation",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"destination", "bindComponent":"m_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "m_component", 
+                            "class":"ScalingFactorComponent"
+                        },
+                        {
+                            "name": "m_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "inputdata" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"m_component", "output":"main", "inputComponent":"m_destination", "input":"main"}
+                        
+                    ]
+                },
+                {
+                    "name":"f_generation",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"destination", "bindComponent":"f_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "f_component", 
+                            "class":"CoriolisFactorComponent"
+                        },
+                        {
+                            "name": "f_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "inputdata" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"f_component", "output":"main", "inputComponent":"f_destination", "input":"main"}
+                        
+                    ]
+                }
             ],
-            "output": [
-                { "variable":"U", "source":"ugrd_500", "processus" : "basic_projection" },
-                { "variable":"V", "source":"vgrd_500", "processus" : "basic_projection" },
-                { "variable":"phi", "source": "hgt_500", "processus" : "z500_preparation" },
-                { "variable":"f", "processus" : "f_generation" },
-                { "variable":"m", "processus" : "m_generation" }
-            ],
-            "times": [0]
-        },
+            
+            "times": [0] 
+        },        
         
         "run": {
             "class": "RunScenario",
@@ -563,47 +675,14 @@ test('Barotrope - filtre de schumann', () => {
     });
 });
 
-test('Transformations', () => {
-    var manager = new ConfigManager("../", configCible);
-    expect.assertions(4);
-    return manager.getScenario("preprocessor").then((preprocessor) => { 
-        // Assure qu'on a bien les variables
-        preprocessor.model.init();
-        
-        // Test avec une variable 2D initialisée avec une constante
-        var data = Variable.createVariable(0, 720, 361, false);
-        Variable.init(data, 1);
-        
-        var udesc = preprocessor.model.getVariableDescription("U");
-        var trans = preprocessor.getTransformation("horizontal_hinterpolation");
-        
-        // 1 - la tranformation est correctement instanciée
-        expect(trans).toBeDefined();
-        
-        var data_interp = trans.transform(udesc, data);
-        
-        // 2 - Déjà on veut un tableau de la bonne taille...
-        expect(data_interp.length).toBe(preprocessor.model.getVariable("U").length);
-        
-        // 3 - Ca fait pas de undefined ou des trucs comme ça
-        expect(Variable.containsBadValues(data_interp)).toBe(false);
-        
-        // 4 - Sur le vent le 1 est mis au facteur d'échelle...
-        expect(data_interp[0]).toBeCloseTo(0.1564434465);
-        
-        // Test avec une variable 3D
-        
-        
-        return;
-    });
-});
-
 test("fileinfo", () =>{
     expect.assertions(2);
     return TextFile.readFile("res/run/2018120612/fileinfo.txt").then((data) => {
             var file = new FileInfo(data);
 
-            expect(file.recordList.length).toBe(17);
+            // Nb : modifié la source pour ne contenir que t=0
+            //expect(file.recordList.length).toBe(17);
+            expect(file.recordList.length).toBe(1);
             
             var txt = file.getText();
             
@@ -642,7 +721,7 @@ test('Préprocesseur - barotrope', () => {
                             await ds_orig.open("R");
 
                             var ds_res = new WGRIBTextFieldDataSource();
-                            ds_res.baseURL = "run";
+                            ds_res.baseURL = "res/test/run";
                             ds_res.catalog = [
                                 { "name":"U"},
                                 { "name":"V"},
@@ -733,7 +812,7 @@ test('Run - barotrope', () => {
                             await ds_orig.open("R");
 
                             var ds_res = new WGRIBTextFieldDataSource();
-                            ds_res.baseURL = "res/test";
+                            ds_res.baseURL = "res/test/output";
                             ds_res.catalog = [
                                 { "name":"U"},
                                 { "name":"V"},

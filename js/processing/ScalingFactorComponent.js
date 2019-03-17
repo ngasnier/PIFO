@@ -15,15 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { DataTransformation } from "./DataTransformation.js";
-import { Earth } from "../modeling/Earth.js";
+import { Component } from "./Component.js";
 import { Variable } from "../modeling/Variable.js";
 
 /**
  * Interpole les données lat lon vers une projection
  * @type type
  */
-export class CoriolisFactorTransformation extends DataTransformation {
+export class ScalingFactorComponent extends Component {
     /**
      * 
      * @returns {undefined}
@@ -31,25 +30,37 @@ export class CoriolisFactorTransformation extends DataTransformation {
     constructor()
     {
         super();
-    }
-
-    /**
-     * Projette la variable data_in de description description dans le 
-     * domaine de la projection.
-     * @param {type} data_in
-     * @returns {undefined} data_out
-     */
-    transform(description, data_in)
-    {
-        var data_out = Variable.createVariable(0, this.model.projection.width, this.model.projection.height, false);
-        var lats = Variable.createVariable(0, this.model.projection.width, this.model.projection.height, false);
-        var lons = Variable.createVariable(0, this.model.projection.width, this.model.projection.height, false);
-
-        this.model.getCoriolisPointCoords(lats, lons);
-        
-        var earth = new Earth();
-        earth.getCoriolisFactors(lats, data_out);
        
-        return data_out;
+        this.done = false;
+    }
+    
+    async setup()
+    {
+        this.done = false;
+    }
+    
+    
+    get outputs()
+    {
+        return ["main"];
+    }
+    
+    async process(data_in, data_out)
+    {
+        try {
+            if (!this.done)
+            {
+                var data = Variable.createVariable(0, this.model.projection.width, this.model.projection.height, false);
+                this.model.projection.getScaleFactors(this.model.getVariable("latitudes"), this.model.getVariable("longitudes"), data);
+                data.time = 0;
+                data_out["main"].setData(data);
+                this.done = true;
+            }
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
     }
 }

@@ -60,10 +60,7 @@ var longitudes = [];
 
 var manager = null;
 
-var barotropeConfig = {
-    /*
-     * Définit les noms de modules et les fichiers à charger correspondants
-     */
+/*var barotropeConfig = {
     "modules" : {
         "Model": "modeling/Model.js",
         "BarotropicCore": "modeling/BarotropicCore.js",
@@ -76,21 +73,21 @@ var barotropeConfig = {
         "CouplingLimitedAreaBoundaryCondition": "modeling/CouplingLimitedAreaBoundaryCondition.js",
         
         "WGRIBTextFieldDataSource": "front/WGRIBTextFieldDataSource.js",
-        "WGRIBTextFieldDataWriter": "front/WGRIBTextFieldDataWriter.js",
-        "Preprocessor": "front/Preprocessor.js",
-        "ProjectionTransformation": "front/ProjectionTransformation.js",
-        "ArithmeticTransformation": "front/ArithmeticTransformation.js",
-        "CoriolisFactorTransformation": "front/CoriolisFactorTransformation.js",
-        "ScalingFactorTransformation": "front/ScalingFactorTransformation.js",
+        
+        "Preprocessor": "processing/Preprocessor.js",
+        "ProjectionComponent": "processing/ProjectionComponent.js",
+        "ArithmeticComponent": "processing/ArithmeticComponent.js",
+        "CoriolisFactorComponent": "processing/CoriolisFactorComponent.js",
+        "ScalingFactorComponent": "processing/ScalingFactorComponent.js",
+        "WorkflowTask": "processing/WorkflowTask.js",
+        "WGRIBInputComponent": "processing/WGRIBInputComponent.js",
+        "WGRIBOutputComponent": "processing/WGRIBOutputComponent.js",
         
         "RunScenario": "front/RunScenario.js",
         "CouplingStep": "front/CouplingStep.js",
         "HistoryStep": "front/HistoryStep.js"
     },
     
-    /*
-     * Définit des objets globaux pouvait être référencés dans la config
-     */
     "global": {
         "layers": [0.0481350396465511,
             0.184775644761717,
@@ -173,9 +170,6 @@ var barotropeConfig = {
         },
     },
     
-    /*
-     * Définit les caractéristiques du modèle géré par cette config
-     */
     "model": {
         "class": "Model",
 
@@ -227,22 +221,19 @@ var barotropeConfig = {
         "dt": 15
     },
     
-    /*
-     * Paramétrage des différents modes de fonctionnement, scénarios...
-     */
     "scenario": {
         "preprocessor" : {
             "class": "Preprocessor",
             "dataSource": { "ref": "gfsdata"},
             "dataWriter": { "class": "WGRIBTextFieldDataSource", "baseURL" : "run" },
             "transformations": [
-                { "name": "horizontal_interpolation", "class": "ProjectionTransformation", "projection": { "ref" : "modelDomain"}, "sourceDomain": {"ref" : "inputDomain"} },
-                { "name": "vertical_interpolation", "class": "VerticalInterpolationTransformation" },
-                { "name": "rh_to_qv", "class": "HumidityTransformation" },
-                { "name": "hgt_to_phi", "class": "ArithmeticTransformation", "operation":"*", "value":9.8066 },
-                { "name": "ln_ps", "class": "ArithmeticTransformation", "operation":"log"},
-                { "name": "f_calc", "class": "CoriolisFactorTransformation" },
-                { "name": "m_calc", "class": "ScalingFactorTransformation" }
+                { "name": "horizontal_interpolation", "class": "ProjectionComponent", "projection": { "ref" : "modelDomain"}, "sourceDomain": {"ref" : "inputDomain"} },
+                { "name": "vertical_interpolation", "class": "VerticalInterpolationComponent" },
+                { "name": "rh_to_qv", "class": "HumidityComponent" },
+                { "name": "hgt_to_phi", "class": "ArithmeticComponent", "operation":"*", "value":9.8066 },
+                { "name": "ln_ps", "class": "ArithmeticComponent", "operation":"log"},
+                { "name": "f_calc", "class": "CoriolisFactorComponent" },
+                { "name": "m_calc", "class": "ScalingFactorComponent" }
             ],
             "processus": [
                 { "name": "basic_projection", "transformations": [ "horizontal_interpolation", "vertical_interpolation"] },
@@ -304,13 +295,16 @@ var barotropeConfig = {
                 }]
         }
     }
-};
+};*/
 
 
 $(document).ready(function () {   
     ui.setStatusString("Initialisation");
-    //$.getJSON("config.json",initialize);
-    initialize(barotropeConfig).then(()=>{});
+    $.getJSON("/barotrope.default.json", function (config)
+    {
+        initialize(config).then(()=>{});
+    });
+//    initialize(barotropeConfig).then(()=>{});
 });
 
 async function initialize(config) 
@@ -323,7 +317,7 @@ async function initialize(config)
         ui.scenario = await manager.getScenario("run");
         
         /* -------- BAROCLINE ------------ */
-        ui.beforeResetCallback = function()
+        /*ui.beforeResetCallback = function()
         {
             z500_display = Variable.createVariable(1, ui.model.width, ui.model.height);
             t850_display = Variable.createVariable(1, ui.model.width, ui.model.height);        
@@ -410,12 +404,12 @@ async function initialize(config)
                     rainRenderer.variable = ui.model.getVariable("acsnow");
                     break;
             }
-        };
+        };*/
 
 
         /* -------- BAROTROPE ------------ */
         
-        /*ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", levels:[1], renderer: windRenderer},
+        ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", levels:[1], renderer: windRenderer},
             Z500 : {group:"HistoricVariables", name:"Z500", levels:[1], renderer: z500Renderer},
             Tourbillon : {group:"DiagnosticVariables", name:"Tourbillon", levels:[1], renderer: tourbillonRenderer},
             Verifications : {group:"DiagnosticVariables", name:"Verifications", levels:[1], renderer: verificationRenderer}
@@ -458,7 +452,7 @@ async function initialize(config)
                     ui.variableRepresentations["Z500"].data = z500_display;
                     break;
             }
-        };*/
+        };
 
         // Bind l'UI...
     /*    $("#testCaseButton").click(function () { 

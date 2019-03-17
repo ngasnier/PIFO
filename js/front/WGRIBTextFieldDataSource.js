@@ -118,15 +118,25 @@ export class WGRIBTextFieldDataSource extends DataSource {
                     this.fileInfo = new FileInfo("");
                     break;
                 case DataSource.MODE_READ:
-                case DataSource.MODE_READ_WRITE:
                     this.fileInfo = await this.readFileInfo();
+                    this.name = this.fileInfo.name;
+                    break;
+                case DataSource.MODE_READ_WRITE:
+                    try {
+                       this.fileInfo = await this.readFileInfo();
+                    }
+                    catch (e)
+                    {
+                         //pas lisible : nouveau fichier
+                        this.fileInfo = new FileInfo("");
+                    }
                     this.name = this.fileInfo.name;
                     break;
                 default:
                     throw "invalid open mode. ("+p_mode+")";
             }
             this.openMode = p_mode;
-            
+
             this._initDate = new Date(this.fileInfo.initDate.getTime());
             this.times = [];
             this._dates = [];
@@ -135,7 +145,7 @@ export class WGRIBTextFieldDataSource extends DataSource {
                 this.times.push(this.fileInfo.recordList[i].hoursFromInit);
                 this._dates.push(this.fileInfo.recordList[i].date);
             }
-            
+
             return this;
         }
         catch (e)
@@ -208,6 +218,8 @@ export class WGRIBTextFieldDataSource extends DataSource {
                 }
                 variable = [];
                 variable.nbLevels = field.levels.length;
+                variable.time = p_time;
+                variable.initDate = this.initDate;
                 
                 for (var i in indices)
                 {
@@ -228,7 +240,10 @@ export class WGRIBTextFieldDataSource extends DataSource {
             {
                 var fname = p_field+"_"+timefmt+".txt";
                 var data = await this.readFile(fname);
-                return reader.read(data);
+                var variable = reader.read(data);
+                variable.time = p_time;
+                variable.initDate = this.initDate;
+                return variable;
             }
         }
         catch (e)

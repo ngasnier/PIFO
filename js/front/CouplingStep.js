@@ -53,6 +53,7 @@ export class CouplingStep extends Step
 
             this.times = this.dataSource.times.slice();
             for (var i in this.times) this.times[i] *= 3600;
+            console.log(this.times);
             
             return this;
         }

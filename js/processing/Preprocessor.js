@@ -32,45 +32,16 @@ export class Preprocessor extends Scenario
     constructor() 
     {
         super();
-        this._dataSource = null;
-        this._dataWriter = null;
+        
+        this.dataSources = [];
+        
+        this.processList = [];
+        
+        this.tasks = []; 
+        
+        this.currentProcess = 0;
     }    
-    
-    /**
-     * La source de données pour les variables d'entrée.
-     */
-    get dataSource()
-    {
-        return this._dataSource;
-    }
-    
-    /**
-     * La source de données pour les variables d'entrée.
-     */
-    set dataSource(p_dataSource)
-    {
-        this._dataSource = p_dataSource;
-    }
-    
-    /**
-     * La source de données pour les variables de sortie.
-     * @returns {undefined}
-     */
-    get dataWriter()
-    {
-        return this._dataWriter;
-    }
-    
-    /**
-     * La source de données pour les variables de sortie.
-     * @param {type} p_dataWriter
-     * @returns {undefined}
-     */
-    set dataWriter(p_dataWriter)
-    {
-        this._dataWriter = p_dataWriter;
-    }
-    
+
     /**
      * Lance le traitement de preprocess en mode asynchrone
      * @returns {undefined}
@@ -81,63 +52,10 @@ export class Preprocessor extends Scenario
             await super.start();
             
             this.model.init();
-
-            await this._dataSource.open(DataSource.MODE_READ);
-            await this._dataWriter.open(DataSource.MODE_WRITE);
-            
-            // Passage des informations temporelles...           
-            this._dataWriter.initDate = this._dataSource.initDate;
-            this._dataWriter.name = this._dataSource.name;
-            
-            var model_vars = this._model.getVariablesDescriptions();
-            var data_var;
-
-            for (var t=0;t<this.times.length;t++)
-            {
-                var time = this.times[t];
-                
-                for (var i=0;i<model_vars.length;i++)
-                {
-                    var v = model_vars[i];
-                    if (v.category==VariableDescription.CAT_PRONOSTIC || v.category==VariableDescription.CAT_PARAMETER)
-                    {
-                        // Informations de traitement de la variable
-                        var output_var = this.getOutputVariable(v.name);
-                        if (output_var==null) throw `variable ${v.name} has no processus for output.`;
-                        
-                        // Processus par lequel traiter cette variable
-                        var process = this.getProcessus(output_var.processus);
-                        if (process==null) throw `processus ${output_var.processus} not defined.`;
-                        
-                        // Obtenir les données
-                        if ("source" in output_var) {
-                            this.sendMessage(`loading field ${output_var.source} ${time}`);
-                            data_var = await this._dataSource.getField(output_var.source, time);
-                        } 
-                        else 
-                            data_var = null;
-
-                        // Chainage des transformations du processus
-                        var result_var = data_var;
-                        for (var p in process.transformations)
-                        {
-                            var trans_name = process.transformations[p];
-                            this.sendMessage(`transformation ${v.name} ${trans_name}`);
-                            var trans = this.getTransformation(trans_name);
-                            if (trans==null) throw `transformation ${trans_name} not defined.`;
-                            result_var = trans.transform(v, result_var);
-                        }
-                        
-                        // Ecriture des fichiers
-                        this.dataWriter.addTime(time);
-                        
-                        this.sendMessage(`saving field ${v.name} ${time}`);
-                        await this.dataWriter.writeField(v.name, time, result_var);
-                    }
-                }
-            }
-            
-            this._status = Scenario.STATE_END;
+           
+            this.currentProcess = 0;            
+                       
+            this._status = Scenario.STATE_RUN;
                     
             return this;
         }
@@ -147,6 +65,44 @@ export class Preprocessor extends Scenario
         }        
     }
     
+    
+    async stepDo()
+    {
+        try {
+            if (this.currentProcess<this.processList.length)
+            {
+                this.sendMessage("processing "+this.processList[this.currentProcess].name);
+                var task = this.getTask(this.processList[this.currentProcess].task);
+                
+                task.model = this.model;
+                
+                await task.setup();
+                
+                // Passage des paramètres
+                for (var i=0;i<task.parameters.length;i++)
+                {
+                    var paramValue = this.getProcessParameterValue(this.processList[this.currentProcess], task.parameters[i]);
+                    task.setParameterValue(task.parameters[i], paramValue);
+                }
+                
+                await task.process();
+                
+                await task.terminate();
+                
+                this.currentProcess++;
+            }
+            else
+            {
+                this._status = Scenario.STATE_END;
+            }
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
     /**
      * 
      * @returns {undefined}
@@ -154,9 +110,7 @@ export class Preprocessor extends Scenario
     async finish()
     {
         try
-        {
-            if (this._dataSource.isOpen()) await this._dataSource.close();
-            if (this._dataWriter.isOpen()) await this._dataWriter.close();
+        {            
             return this;
         }
         catch (e)
@@ -167,33 +121,16 @@ export class Preprocessor extends Scenario
        
     /**
      * 
-     * @param {type} p_trans
-     * @returns {Preprocessor.transformations}
-     */
-    getTransformation(p_trans)
-    {
-        for (var i in this.transformations)
-        {
-            if (this.transformations[i].name == p_trans)
-            {
-                this.transformations[i].model = this.model;
-                return this.transformations[i];
-            }
-        }
-    }
-    
-    /**
-     * 
-     * @param {type} p_field
+     * @param {type} p_task
      * @returns {undefined}
      */
-    getProcessus(p_process)
+    getTask(p_task)
     {
-        for (var i in this.processus)
+        for (var i in this.tasks)
         {
-            if (this.processus[i].name == p_process)
+            if (this.tasks[i].name == p_task)
             {
-                return this.processus[i];
+                return this.tasks[i];
             }
         }
     }
@@ -210,6 +147,25 @@ export class Preprocessor extends Scenario
             {
                 return this.output[i];
             }
+        }
+    }
+        
+    getProcessParameterValue(p, name)
+    {
+        if ("parameters" in p)
+        {
+            for (var i=0;i<p.parameters.length;i++)
+            {
+                if (p.parameters[i].name==name)
+                {
+                    return p.parameters[i].value;
+                }
+            }
+            throw `${p.name} : no parameter value for ${name}`;
+        }
+        else
+        {
+            throw `${p.name} : no parameter value for ${name}`;
         }
     }
 }

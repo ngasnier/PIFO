@@ -19,25 +19,65 @@
  * 
  * @type type
  */
-export class DataTransformation {
+export class Task {
     /**
      * 
      * @returns {undefined}
      */
     constructor()
     {
-        /** model */
-        this.model = null;
+        this._model = null;
+    }
+    
+    get model()
+    {
+        return this._model;
+    }
+    
+    set model(model)
+    {
+        this._model = model;
+    }
+    
+    get parameters()
+    {
+        return [];
+    }
+    
+    setParameterValue(name, value)
+    {
+        this[name] = value;
+    }
+    
+    getParameterValue(name)
+    {
+        return this[name];
     }
     
     /**
      * 
-     * @param {type} description Description de la variable à produire
-     * @param {type} data_in variable éventuelle à trandformer
-     * @returns {unresolved}
+     * @returns {undefined}
      */
-    transform(description, data_in)
+    async setup()
     {
-        return null;
+        return this;
+    }
+    
+    /**
+     * 
+     * @returns {undefined}
+     */
+    async process()
+    {
+        return this;
+    }
+    
+    /**
+     * 
+     * @returns {undefined}
+     */    
+    async terminate()
+    {
+        return this;
     }
 }

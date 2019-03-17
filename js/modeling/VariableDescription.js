@@ -46,6 +46,10 @@ export class VariableDescription {
         this.offsety = 0;
         /** @var */
         this.scale = false;
+        /** @var */
+        this.initDate = new Date();
+        /** @var */
+        this.time = 0;
     }
 }
 
