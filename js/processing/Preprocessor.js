@@ -71,10 +71,13 @@ export class Preprocessor extends Scenario
         try {
             if (this.currentProcess<this.processList.length)
             {
-                this.sendMessage("processing "+this.processList[this.currentProcess].name);
+                this.sendMessage(`preprocessor : processing ${this.processList[this.currentProcess].name}`);
                 var task = this.getTask(this.processList[this.currentProcess].task);
+                task.onMessage = this.onMessage;
                 
                 task.model = this.model;
+                
+                this.sendMessage(`preprocessor : task ${task.name}`);
                 
                 await task.setup();
                 

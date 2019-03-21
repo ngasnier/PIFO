@@ -65,6 +65,7 @@ export class WorkflowTask extends Task {
             for (var i in this.components)
             {
                 this.components[i].model = this.model;
+                this.components[i].onMessage = this.onMessage;
                 await this.components[i].setup();
             }
             return this;

@@ -51,6 +51,7 @@ export class WGRIBInputComponent extends Component {
     async setup()
     {
         try {
+            this.sendMessage(`${this.name} : opening ${this.dataSource.name}`);
             if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_READ);
             this.currentTime = 0;
             return this;
@@ -68,6 +69,7 @@ export class WGRIBInputComponent extends Component {
     async terminate()
     {
         try {
+            this.sendMessage(`${this.name} : closing ${this.dataSource.name}`);
             if (this.dataSource.isOpen()) await this.dataSource.close();
             return this;
         }
@@ -90,6 +92,7 @@ export class WGRIBInputComponent extends Component {
             {
                 this.dataSource.times;
 
+                this.sendMessage(`${this.name} : loading ${this.source}[${this.dataSource.times[this.currentTime]}]`);
                 var data = await this.dataSource.getField(this.source, this.dataSource.times[this.currentTime]);
                 
                 data_out["main"].setData(data);

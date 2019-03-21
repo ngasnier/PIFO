@@ -17,7 +17,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Variable } from "./Variable.js";
 import { VariableDescription } from "./VariableDescription.js";
-import { MercatorProjection } from "./MercatorProjection.js";
 
 /**
  * 

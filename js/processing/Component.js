@@ -35,6 +35,36 @@ export class Component {
     
     /**
      * 
+     * @returns {Step._onMessage}
+     */
+    get onMessage()
+    {
+        return this._onMessage;
+    }
+    
+    /**
+     * 
+     * @param {type} msg
+     * @returns {undefined}
+     */
+    set onMessage(msg)
+    {
+        this._onMessage = msg;
+    }
+    
+    /**
+     * 
+     * @param {type} msg
+     * @returns {undefined}
+     */
+    sendMessage(msg)
+    {
+        if (this._onMessage!=null) this._onMessage(msg);
+    }
+    
+    
+    /**
+     * 
      * @returns {Component}
      */
     async setup()
@@ -107,15 +137,4 @@ export class Component {
     {
         return this;
     }    
-    
-    /**
-     * 
-     * @param {type} description Description de la variable à produire
-     * @param {type} data_in variable éventuelle à trandformer
-     * @returns {unresolved}
-     */
-    transform(description, data_in)
-    {
-        return null;
-    }
 }

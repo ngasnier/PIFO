@@ -61,6 +61,7 @@ export class WGRIBOutputComponent extends Component {
     async setup()
     {
         try {
+            this.sendMessage(`${this.name} : opening ${this.dataSource.name}`);
             if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_READ_WRITE);
             return this;
         }
@@ -77,6 +78,7 @@ export class WGRIBOutputComponent extends Component {
     async terminate()
     {
         try {
+            this.sendMessage(`${this.name} : closing ${this.dataSource.name}`);
             if (this.dataSource.isOpen()) await this.dataSource.close();
             return this;
         }
@@ -95,8 +97,9 @@ export class WGRIBOutputComponent extends Component {
         try {
             if ("destination"==null) throw `component ${this.name}: destination not set`;
             var data = data_in["main"].getData();
-            if (data==null) throw `${this.name}: error : no data provided`;
+            if (data==null) throw `${this.name}: error : no data provided`;           
             if (!("time" in data)) throw `${this.name}: error : no time information provided in data flow`;
+            this.sendMessage(`${this.name} : writing ${this.destination}[${data.time}]`);
             this.dataSource.addTime(data.time);
             await this.dataSource.writeField(this.destination, data.time, data);
             
