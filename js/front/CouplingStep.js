@@ -53,7 +53,6 @@ export class CouplingStep extends Step
 
             this.times = this.dataSource.times.slice();
             for (var i in this.times) this.times[i] *= 3600;
-            console.log(this.times);
             
             return this;
         }
@@ -215,7 +214,8 @@ export class CouplingStep extends Step
         try
         {
             var fields = [];
-            this.sendMessage(`coupling fields needed for time ${time/3600} (${time/3600}h)`);
+            console.log(`coupling fields needed for time ${time} (${time/3600}h)`);
+            this.sendMessage(`coupling fields needed for time ${time} (${time/3600}h)`);
             if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_READ);
             for (var i in this.variables)
             {

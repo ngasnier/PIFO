@@ -18,6 +18,7 @@
 
 import { DynamicsCore } from "./DynamicsCore.js";
 import { Model } from "./Model.js"
+import { Variable } from "./Variable.js"
 import { VariableDescription } from "./VariableDescription.js"
 
 /**
@@ -83,16 +84,16 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
     {
         return [
             // Variables prognostiques de base
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PRONOSTIC, name:"Z", description:"ln(ps)", units:"ln(pa)", offsetx:0, offsety:0, scale:false, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_SCALAR}),
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PRONOSTIC, name:"U", description:"U component of wind", units:"m.s^-1", offsetx:1, offsety:0, scale:true, verticalPosition:VariableDescription.VERTICAL_POSITION_LAYER, number:VariableDescription.NUMBER_TYPE_U_VECTOR}),
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PRONOSTIC, name:"V", description:"V component of wind", units:"m.s^-1", offsetx:0, offsety:1, scale:true, verticalPosition:VariableDescription.VERTICAL_POSITION_LAYER, number:VariableDescription.NUMBER_TYPE_V_VECTOR}),
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PRONOSTIC, name:"T", description:"temperature", units:"K", offsetx:0, offsety:0, scale:false, verticalPosition:VariableDescription.VERTICAL_POSITION_LAYER, number:VariableDescription.NUMBER_TYPE_SCALAR}),
-            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PRONOSTIC, name:"Z", description:"ln(ps)", units:"ln(pa)", offsetx:0, offsety:0, scale:false, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_SCALAR}),
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PRONOSTIC, name:"qv", description:"specific humidity", units:"kg/kg", offsetx:0, offsety:0, scale:false, verticalPosition:VariableDescription.VERTICAL_POSITION_LAYER, number:VariableDescription.NUMBER_TYPE_SCALAR}),
             
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"Z_tdcy", description:"Z tendency", units:"", offsetx:0, offsety:0, scale:false, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_SCALAR}),
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"U_tdcy", description:"U tendency", units:"", offsetx:1, offsety:0, scale:true, verticalPosition:VariableDescription.VERTICAL_POSITION_LAYER, number:VariableDescription.NUMBER_TYPE_U_VECTOR}),
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"V_tdcy", description:"V tendency", units:"", offsetx:0, offsety:1, scale:true, verticalPosition:VariableDescription.VERTICAL_POSITION_LAYER, number:VariableDescription.NUMBER_TYPE_V_VECTOR}),
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"T_tdcy", description:"temperature tendency", units:"", offsetx:0, offsety:0, scale:false, verticalPosition:VariableDescription.VERTICAL_POSITION_LAYER, number:VariableDescription.NUMBER_TYPE_SCALAR}),
-            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"Z_tdcy", description:"Z tendency", units:"", offsetx:0, offsety:0, scale:false, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_SCALAR}),
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"qv_tdcy", description:"qv tendency", units:"", offsetx:0, offsety:0, scale:false, verticalPosition:VariableDescription.VERTICAL_POSITION_LAYER, number:VariableDescription.NUMBER_TYPE_SCALAR}),
 
             // Variables diagnostiques de base
@@ -304,7 +305,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                     )
                     +this._model.dSigmaf[k][i];
             }
-       }           
+       }
     }    
 
 /*
@@ -668,7 +669,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
 
                 // Verif Ok 14/06/2018
                 // TODO : y'a une coquille dans ce terme, c'est lui qui cause l'instabilité
-                /*adv = (d_ktilde*(t_k_plus_1-t_k)+d_ktilde_moins_1*(t_k-t_k_moins_1)) / (this._model.ps[i]*2*this.dsigma[k]);
+                adv = (d_ktilde*(t_k_plus_1-t_k)+d_ktilde_moins_1*(t_k-t_k_moins_1)) / (this._model.ps[i]*2*this.dsigma[k]);
 
                 // Verif Ok 15/06/2018
                 part2 = Model.R*this._model.T[k][i]*m2
@@ -687,13 +688,13 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                             +(this._model.ps[i]+this._model.ps[i+this._model.width])*this._model.V[k][i]*(this._model.T[k][i]+this._model.T[k][i+this._model.width])*(this._model.Z[i]-this._model.Z[i+this._model.width])
                         )/(8*this._model.dy)
 
-                    ) / (this._model.Cph[k][i]*this._model.ps[i]);*/
+                    ) / (this._model.Cph[k][i]*this._model.ps[i]);
 
                 this._model.T_tdcy[k][i] = - part1 - adv - part2 + part3  
 
                         // complage thermodynamique avec les paramétrisations
-                        /*+ (this._model.Q[k][i] 
-                        + Model.R * this._model.T[k][i] * this._model.Z_tdcy[i]/this._model.dt)/this._model.Cph[k][i]*/
+                        + (this._model.Q[k][i] 
+                        + Model.R * this._model.T[k][i] * this._model.Z_tdcy[i]/this._model.dt)/this._model.Cph[k][i]
             }
             i+=2;
         }

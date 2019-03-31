@@ -15,56 +15,39 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 import { Component } from "./Component.js";
-import { Earth } from "../modeling/Earth.js";
 import { Variable } from "../modeling/Variable.js";
 
-/**
- * Interpole les données lat lon vers une projection
- * @type type
- */
-export class CoriolisFactorComponent extends Component {
-    /**
-     * 
-     * @returns {undefined}
-     */
+export class MultiDiffusionComponent extends Component {
     constructor()
     {
         super();
-        this.done = false;
+        
+        this.outputList = [];
     }
     
-    async setup()
-    {
-        this.done = false;
-    }
-    
-    
-    get outputs()
+    get inputs()
     {
         return ["main"];
     }
-
-    process(data_in, data_out)
+    
+    get outputs()
     {
-        try {
-            if (!this.done)
+        return this.outputList;
+    }
+
+    async process(data_in, data_out)
+    {
+        try
+        {
+            var variable_in = data_in["main"].getData();
+            
+            for (var k in this.outputList)
             {
-                var data = Variable.createVariable(0, this.model.projection.width, this.model.projection.height, false);
-                var lats = Variable.createVariable(0, this.model.projection.width, this.model.projection.height, false);
-                var lons = Variable.createVariable(0, this.model.projection.width, this.model.projection.height, false);
-
-                this.model.getCoriolisPointCoords(lats, lons);
-                var earth = new Earth();
-                earth.getCoriolisFactors(lats, data);
-
-                data.time = 0;
-
-                data_out["main"].setData(data);
-                
-                this.done = true;
+                data_out[this.outputList[k]].setData(variable_in);
             }
-
+            
             return this;
         }
         catch (e)

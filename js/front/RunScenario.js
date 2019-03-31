@@ -64,7 +64,7 @@ export class RunScenario extends Scenario {
             
             // Initialisation du modèle
             this.model.startDate = this.dataSource.initDate;
-            this.model.init();
+            this.model.setup();
             
             //if (this.dataWriter!=null ) await this.dataWriter.open(DataSource.MODE_WRITE);
             // Obtient les données de départ
@@ -83,6 +83,8 @@ export class RunScenario extends Scenario {
             this.model.totalTime = 0;
             this.model.totalStep = 0;
             this.firstExecTime = new Date();
+    
+            this.model.calcDiagnostics();
     
             this._status = Scenario.STATE_RUN;
             this.sendMessage("scenario "+this.status);           
@@ -159,8 +161,8 @@ export class RunScenario extends Scenario {
         return "Time = " + this.model.time.toString() + " s ("
                 + jours.toString() + " d " + heures.toString() + " h "
                 + minutes.toString() + " m) - dt=" + this.model.dt.toString() + "s, dx="
-                + this.model.dx.toString() + ", dy=" + this.model.dx.toString() + ", "
-                + "step time = " + this.lastExecTime.toString() + "ms, "
+                + this.model.dx.toString() + ", dy=" + this.model.dy.toString() + ", "
+                + "step time = " + (this.lastExecTime).toString() + "ms, "
                 + "total time = " + this.totalTime.toString() + "ms, "
                 + "nb steps = " + this.totalStep.toString();
     }

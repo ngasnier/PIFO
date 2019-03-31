@@ -300,7 +300,7 @@ var manager = null;
 
 $(document).ready(function () {   
     ui.setStatusString("Initialisation");
-    $.getJSON("/barotrope.default.json", function (config)
+    $.getJSON("/barocline.default.json", function (config)
     {
         initialize(config).then(()=>{});
     });
@@ -317,7 +317,7 @@ async function initialize(config)
         ui.scenario = await manager.getScenario("run");
         
         /* -------- BAROCLINE ------------ */
-        /*ui.beforeResetCallback = function()
+        ui.beforeResetCallback = function()
         {
             z500_display = Variable.createVariable(1, ui.model.width, ui.model.height);
             t850_display = Variable.createVariable(1, ui.model.width, ui.model.height);        
@@ -380,7 +380,6 @@ async function initialize(config)
                 case "QV":
                     qvRenderer.width = ui.model.width;
                     qvRenderer.height = ui.model.height;
-                    console.log(k, ui.model.getVariable("qv"));
                     qvRenderer.variable = ui.model.getVariable("qv")[k];
                     break;
                 case "Temperature":
@@ -404,12 +403,12 @@ async function initialize(config)
                     rainRenderer.variable = ui.model.getVariable("acsnow");
                     break;
             }
-        };*/
+        };
 
 
         /* -------- BAROTROPE ------------ */
         
-        ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", levels:[1], renderer: windRenderer},
+/*        ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", levels:[1], renderer: windRenderer},
             Z500 : {group:"HistoricVariables", name:"Z500", levels:[1], renderer: z500Renderer},
             Tourbillon : {group:"DiagnosticVariables", name:"Tourbillon", levels:[1], renderer: tourbillonRenderer},
             Verifications : {group:"DiagnosticVariables", name:"Verifications", levels:[1], renderer: verificationRenderer}
@@ -452,7 +451,7 @@ async function initialize(config)
                     ui.variableRepresentations["Z500"].data = z500_display;
                     break;
             }
-        };
+        };*/
 
         // Bind l'UI...
     /*    $("#testCaseButton").click(function () { 
@@ -465,7 +464,7 @@ async function initialize(config)
     }
     catch (e)
     {
-        console.log(e);
+        console.log("erreur", e);
     }
 }
 

@@ -44,7 +44,7 @@ var configCible = {
         
         "WGRIBTextFieldDataSource": "front/WGRIBTextFieldDataSource.js",
         
-        "Preprocessor": "processing/Preprocessor.js",
+        "DataProcessor": "processing/DataProcessor.js",
         "ProjectionComponent": "processing/ProjectionComponent.js",
         "ArithmeticComponent": "processing/ArithmeticComponent.js",
         "CoriolisFactorComponent": "processing/CoriolisFactorComponent.js",
@@ -162,12 +162,12 @@ var configCible = {
      */
     "scenario": {
         "preprocessor" : {
-            "class": "Preprocessor",
+            "class": "DataProcessor",
             
             "processList": [
-                { "name":"U", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"ugrd_500"}, {"name": "variable", "value":"U"}, {"name":"destination", "value": "U"} ]},
-                { "name":"V", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"vgrd_500"}, {"name":"variable", "value": "V"}, {"name":"destination", "value": "V"} ]},
-                { "name":"phi", "task" : "phi_interpolation", "parameters": [{"name":"source", "value":"hgt_500"}, {"name":"variable", "value": "phi"}, {"name":"destination", "value": "phi"} ]},
+                { "name":"U", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"ugrd_500"}, {"name": "variable", "value":"U"} ]},
+                { "name":"V", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"vgrd_500"}, {"name":"variable", "value": "V"} ]},
+                { "name":"phi", "task" : "phi_interpolation", "parameters": [{"name":"source", "value":"hgt_500"}, {"name":"variable", "value": "phi"}]},
                 { "name":"m", "task" : "m_generation", "parameters": [{"name":"destination", "value": "m"}] },
                 { "name":"f", "task" : "f_generation", "parameters": [{"name":"destination", "value": "f"}] }
             ],
@@ -178,8 +178,10 @@ var configCible = {
                     "class":"WorkflowTask",
                     "bindParameters": [
                         {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
-                        {"name":"variable", "bindComponent":"projection_component", "parameter":"modelVariable"},
-                        {"name":"destination", "bindComponent":"variable_destination", "parameter":"destination"}
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"gridPosVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"scaleVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"numberTypeVariable"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
                     ],
                     "components": [
                         {
@@ -210,8 +212,10 @@ var configCible = {
                     "class":"WorkflowTask",
                     "bindParameters": [
                         {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
-                        {"name":"variable", "bindComponent":"projection_component", "parameter":"modelVariable"},
-                        {"name":"destination", "bindComponent":"variable_destination", "parameter":"destination"}
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"gridPosVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"scaleVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"numberTypeVariable"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
                     ],
                     "components": [
                         {
@@ -381,7 +385,7 @@ test('Barotrope - tests fonctionnement basiques', () => {
         expect(model.nbLayers).toBe(0);
 
         // 7 Toutes les variables
-        model.init();
+        model.setup();
         var variables = model.getVariablesDescriptions();
         var names = getVariableNames(variables);
         var expected_vars = ["U", "U_tdcy", "U_t",
@@ -510,7 +514,7 @@ test('Barotrope - initialisation coriolis et scaling factor', () => {
     expect.assertions(14);
     return manager.getModel().then((model) => {
         // Initialise le modèle
-        model.init();
+        model.setup();
         
         // Calcule du facteur m
         var m = model.getVariable("m");
@@ -531,10 +535,10 @@ test('Barotrope - initialisation coriolis et scaling factor', () => {
         earth.getCoriolisFactors(lats, f);
 
         // 3 Facteur NO
-        expect(f[0]).toBeCloseTo(0.00014410487910274076, 8);
+        expect(f[0]).toBeCloseTo(0.00014398666634958814, 8);
         
         // 4 Facteur SE
-        expect(f[f.length-1]).toBeCloseTo(0.000029821858622487933, 8);
+        expect(f[f.length-1]).toBeCloseTo(0.00002516423152187653, 8);
                 
         // 5-9 Les calculs doivent fonctionner
         model.step();
@@ -566,7 +570,7 @@ test('Barotrope - condition aux limites', () => {
     expect.assertions(6);
     return manager.getModel().then((model) => {
         // Initialise le modèle
-        model.init();
+        model.setup();
 
         // 1 On a bien les variables...
         var variables = model.getVariablesDescriptions();
@@ -655,7 +659,7 @@ test('Barotrope - filtre de schumann', () => {
     expect.assertions(10);
     return manager.getModel().then((model) => {
         // Initialise le modèle
-        model.init();
+        model.setup();
         
         // 1-5 Les calculs doivent fonctionner
         model.step();

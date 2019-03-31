@@ -11,7 +11,7 @@
         
         "WGRIBTextFieldDataSource": "front/WGRIBTextFieldDataSource.js",
 
-        "Preprocessor": "processing/Preprocessor.js",
+        "DataProcessor": "processing/DataProcessor.js",
         "ProjectionComponent": "processing/ProjectionComponent.js",
         "ArithmeticComponent": "processing/ArithmeticComponent.js",
         "CoriolisFactorComponent": "processing/CoriolisFactorComponent.js",
@@ -125,12 +125,12 @@
     
     "scenario": {
         "preprocessor" : {
-            "class": "Preprocessor",
+            "class": "DataProcessor",
             
             "processList": [
-                { "name":"U", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"ugrd_500"}, {"name": "variable", "value":"U"}, {"name":"destination", "value": "U"} ]},
-                { "name":"V", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"vgrd_500"}, {"name":"variable", "value": "V"}, {"name":"destination", "value": "V"} ]},
-                { "name":"phi", "task" : "phi_interpolation", "parameters": [{"name":"source", "value":"hgt_500"}, {"name":"variable", "value": "phi"}, {"name":"destination", "value": "phi"} ]},
+                { "name":"U", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"ugrd_500"}, {"name": "variable", "value":"U"} ]},
+                { "name":"V", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"vgrd_500"}, {"name":"variable", "value": "V"} ]},
+                { "name":"phi", "task" : "phi_interpolation", "parameters": [{"name":"source", "value":"hgt_500"}, {"name":"variable", "value": "phi"}]},
                 { "name":"m", "task" : "m_generation", "parameters": [{"name":"destination", "value": "m"}] },
                 { "name":"f", "task" : "f_generation", "parameters": [{"name":"destination", "value": "f"}] }
             ],
@@ -141,8 +141,10 @@
                     "class":"WorkflowTask",
                     "bindParameters": [
                         {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
-                        {"name":"variable", "bindComponent":"projection_component", "parameter":"modelVariable"},
-                        {"name":"destination", "bindComponent":"variable_destination", "parameter":"destination"}
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"gridPosVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"scaleVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"numberTypeVariable"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
                     ],
                     "components": [
                         {
@@ -173,8 +175,10 @@
                     "class":"WorkflowTask",
                     "bindParameters": [
                         {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
-                        {"name":"variable", "bindComponent":"projection_component", "parameter":"modelVariable"},
-                        {"name":"destination", "bindComponent":"variable_destination", "parameter":"destination"}
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"gridPosVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"scaleVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"numberTypeVariable"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
                     ],
                     "components": [
                         {

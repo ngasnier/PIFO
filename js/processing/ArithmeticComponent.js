@@ -66,41 +66,43 @@ export class ArithmeticComponent extends Component {
                 case "log":
                     if (data_in.nbLevels>0)
                     {
-                        for (var k=0;k<data_in.nbLevels;k++)
+                        for (var k=0;k<input_var.nbLevels;k++)
                         {
-                            for (var i=0;i<data_in[k].length;i++)
+                            for (var i=0;i<input_var[k].length;i++)
                             {
-                                data[k][i] = Math.log(data[k][i]);
+                                data[k][i] = Math.log(input_var[k][i]);
                             }
                         }
                     }
                     else
                     {
-                        for (var i=0;i<data_in.length;i++)
+                        for (var i=0;i<input_var.length;i++)
                         {
-                            data[i] = Math.log(data[i]);
+                            data[i] = Math.log(input_var[i]);
                         }
                     }
                     break;
                 case "exp":
-                    if (data_in.nbLevels>0)
+                    if (input_var.nbLevels>0)
                     {
-                        for (var k=0;k<data_in.nbLevels;k++)
+                        for (var k=0;k<input_var.nbLevels;k++)
                         {
-                            for (var i=0;i<data_in[k].length;i++)
+                            for (var i=0;i<input_var[k].length;i++)
                             {
-                                data[k][i] = Math.exp(data[k][i]);
+                                data[k][i] = Math.exp(input_var[k][i]);
                             }
                         }
                     }
                     else
                     {
-                        for (var i=0;i<data_in.length;i++)
+                        for (var i=0;i<input_var.length;i++)
                         {
-                            data[i] = Math.exp(data[i]);
+                            data[i] = Math.exp(input_var[i]);
                         }
                     }
                     break;
+                default:
+                    throw `${this.name} : invalid operation '${this.operation}'`;
             }
             
             Variable.copyMetadata(input_var, data);

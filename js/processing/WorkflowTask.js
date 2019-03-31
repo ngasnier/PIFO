@@ -110,7 +110,8 @@ export class WorkflowTask extends Task {
                         var component = this.levels[i][j];
                         var inputs = this.inputsData[component.name];
                         var outputs = this.outputsData[component.name];
-                        
+
+                                               
                         var has_data_in = true;
                         if (Object.keys(inputs).length!=0)
                         {
@@ -122,6 +123,7 @@ export class WorkflowTask extends Task {
 
                         if (has_data_in)
                         {    
+                            this.sendMessage(`${this.name} : processing ${this.levels[i][j].name}`);
                             await this.levels[i][j].process(inputs, outputs);
 
                             var has_data_out = true;
@@ -157,7 +159,7 @@ export class WorkflowTask extends Task {
         {
             if (this.components[i].name==name) return this.components[i];
         }
-        return null;
+        throw `${this.name} : component ${name} not found.`;
     }
 
     getComponentIndex(name)
@@ -166,7 +168,7 @@ export class WorkflowTask extends Task {
         {
             if (this.components[i].name==name) return i;
         }
-        return -1;
+        throw `${this.name} : component ${name} not found.`;
     }
     
     createWorkflow()
@@ -184,6 +186,9 @@ export class WorkflowTask extends Task {
             var a = this.getComponent(this.links[i].outputComponent);
             var b = this.getComponent(this.links[i].inputComponent);
             this.workflowMatrix[this.getComponentIndex(this.links[i].inputComponent)][this.getComponentIndex(this.links[i].outputComponent)] = 1;
+            
+            if (!a.outputs.includes(this.links[i].output)) throw `${this.name}: output '${this.links[i].output}' not found in '${a.name}'.`;
+            if (!b.inputs.includes(this.links[i].input)) throw `${this.name}: input '${this.links[i].input}' not found in '${b.name}'.`;
             
             var link_data = new LinkData();
             link_data.name = this.links[i].outputComponent+"-"+this.links[i].output+"=>"+this.links[i].inputComponent+"-"+this.links[i].input;

@@ -305,53 +305,57 @@ export class ModelUI
 
     async step()
     {
-        this.beforeStepCallback();
-        if (this.scenario.status!=Scenario.STATE_RUN) return;
+        try {
+            this.beforeStepCallback();
+            if (this.scenario.status!=Scenario.STATE_RUN) return;
 
-        var firstTimestamp = new Date().getTime();
+            var firstTimestamp = new Date().getTime();
 
-        this.scenario.step().then(()=> {
-                var secondTimestamp = new Date().getTime();
-                this.lastExecTime = secondTimestamp - firstTimestamp;
-                this.totalStep++;
-                this.totalTime += this.lastExecTime;
+            await this.scenario.step();
 
-                this.updateDisplay();
+            var secondTimestamp = new Date().getTime();
+            this.lastExecTime = secondTimestamp - firstTimestamp;
+            this.totalStep++;
+            this.totalTime += this.lastExecTime;
 
-                this.afterStepCallback();
+            this.updateDisplay();
 
-                return this;
-            })
-            .catch((e)=>{
-                console.log(e);
-                this.setStatusString(e.toString());
-                this.playStatus = false;
-            });
+            this.afterStepCallback();
+
+            return this;
+        }
+        catch (e)
+        {
+            console.log("erreur", e);
+            this.setStatusString(e.toString());
+            this.playStatus = false;
+            throw e;
+        }
     }
 
     playStep(timestamp)
     {
         this.step().then(() =>
             {
-                this.updateDisplay();
                 if (this.playStatus)
                 {
                     if (this.scenario.status==Scenario.STATE_RUN)
                     {
                         var me = this;
-                        if (window.requestIdleCallback)
-                            this.requestFrame = window.requestIdleCallback(function() {
-                                me.playStep();
-                            });
-                        else
+                        if (window.requestAnimationFrame)
                             this.requestFrame = window.requestAnimationFrame(function() {
                                 me.playStep();
                             });
+                        else
+                            this.requestFrame = window.requestIdleCallback(function() {
+                                me.playStep();
+                            });
+                        
                     }
                 }
             })
             .catch((e)=>{
-                console.log(e);
+                console.log("erreur", e);
                 this.setStatusString(e.toString());
                 this.playStatus = false;
             });
@@ -363,14 +367,12 @@ export class ModelUI
         {
             this.playStatus = true;
             var me = this;
-            if (window.requestIdleCallback)
-            {
-                this.requestFrame = window.requestIdleCallback(function() {
+            if (window.requestAnimationFrame)
+                this.requestFrame = window.requestAnimationFrame(function() {
                     me.playStep();
                 });
-            }
             else
-                this.requestFrame = window.requestAnimationFrame(function() {
+                this.requestFrame = window.requestIdleCallback(function() {
                     me.playStep();
                 });
         }

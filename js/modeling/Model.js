@@ -188,7 +188,7 @@ export class Model {
     /**
      * Initialisation du modèle avant le démarrage du run.
      */
-    init()
+    setup()
     {       
         // *** Déclaration des variables
         this.setupVariablesDescriptions();

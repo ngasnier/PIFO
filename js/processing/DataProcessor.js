@@ -23,7 +23,7 @@ import { VariableDescription } from "../modeling/VariableDescription.js";
  * Traite des données en entrée pour les fournir au format du modèle.
  * @type type
  */
-export class Preprocessor extends Scenario
+export class DataProcessor extends Scenario
 {
     /**
      * 
@@ -51,7 +51,7 @@ export class Preprocessor extends Scenario
         try {
             await super.start();
             
-            this.model.init();
+            this.model.setup();
            
             this.currentProcess = 0;            
                        
@@ -136,6 +136,7 @@ export class Preprocessor extends Scenario
                 return this.tasks[i];
             }
         }
+        throw `preprocessor : task ${p_task} not found.`;
     }
     
     /**
