@@ -30,6 +30,7 @@ import { PressureHTMLRenderer } from "./ui/PressureHTMLRenderer.js";
 import { TemperatureHTMLRenderer } from "./ui/TemperatureHTMLRenderer.js";
 import { RainHTMLRenderer } from "./ui/RainHTMLRenderer.js";
 import { BarotropicVerificationHTMLRenderer } from "/js/ui/BarotropicVerificationHTMLRenderer.js";
+import { GeopotentialInterpolator } from "/js/ui/GeopotentialInterpolator.js";
 import { ModelUI } from "/js/ui/ModelUI.js";
 
 import { VerticalInterpolator } from "./ui/VerticalInterpolator.js";
@@ -51,6 +52,7 @@ var temperatureRenderer = new TemperatureHTMLRenderer();
 var verificationRenderer = new BarotropicVerificationHTMLRenderer();
 
 var verticalInterpolator = new VerticalInterpolator();
+var geopInterpolator = new GeopotentialInterpolator();
 
 
 var z500_display = [];
@@ -59,244 +61,6 @@ var latitudes = [];
 var longitudes = [];
 
 var manager = null;
-
-/*var barotropeConfig = {
-    "modules" : {
-        "Model": "modeling/Model.js",
-        "BarotropicCore": "modeling/BarotropicCore.js",
-        "BarotropicSemiImplicitCore": "modeling/BarotropicSemiImplicitCore.js",
-        "BaroclinicHydrostaticCore": "modeling/BaroclinicHydrostaticCore.js",
-        "MercatorProjection": "modeling/MercatorProjection.js",
-        "LeapFrogTimeIntegrator": "modeling/LeapFrogTimeIntegrator.js",
-        "RobertAsselinTimeFilter": "modeling/RobertAsselinTimeFilter.js",
-        "SchumannFilter": "modeling/SchumannFilter.js",
-        "CouplingLimitedAreaBoundaryCondition": "modeling/CouplingLimitedAreaBoundaryCondition.js",
-        
-        "WGRIBTextFieldDataSource": "front/WGRIBTextFieldDataSource.js",
-        
-        "Preprocessor": "processing/Preprocessor.js",
-        "ProjectionComponent": "processing/ProjectionComponent.js",
-        "ArithmeticComponent": "processing/ArithmeticComponent.js",
-        "CoriolisFactorComponent": "processing/CoriolisFactorComponent.js",
-        "ScalingFactorComponent": "processing/ScalingFactorComponent.js",
-        "WorkflowTask": "processing/WorkflowTask.js",
-        "WGRIBInputComponent": "processing/WGRIBInputComponent.js",
-        "WGRIBOutputComponent": "processing/WGRIBOutputComponent.js",
-        
-        "RunScenario": "front/RunScenario.js",
-        "CouplingStep": "front/CouplingStep.js",
-        "HistoryStep": "front/HistoryStep.js"
-    },
-    
-    "global": {
-        "layers": [0.0481350396465511,
-            0.184775644761717,
-            0.3110947031394134,
-            0.4365726975546128,
-            0.5617802104119394,
-            0.6868661597951571,
-            0.8118869790121533,
-            0.9368688226982536],
-        
-        "inputDomain":{
-            "minLat": -90,
-            "maxLat": 90,
-            "minLon": 0,
-            "maxLon": 359.5,
-            "dlat": 0.5,
-            "dlon": 0.5
-        },
-        
-        "modelDomain": {
-            "class": "MercatorProjection",
-            "width": 111,
-            "height": 72,
-            "horizontalStaggering": "C",
-            "minLat":9,
-            "maxLat":81,
-            "minLon":-60,
-            "maxLon":51
-        },
-        
-        "outputDomain": {
-            "minLat": 9,
-            "maxLat": 81,
-            "minLon": -60,
-            "maxLon": 51,
-            "dlat": 1,
-            "dlon": 1
-        },
-        
-        "gfsdata": {
-            "class": "WGRIBTextFieldDataSource",
-            "baseURL" : "res/run/2018120612",
-            "catalog" : [ 
-                {"name": "ugrd_500", "description":"", "units":""},
-                {"name": "vgrd_500", "description":"", "units":""},
-                {"name": "hgt_500", "description":"", "units":""}
-            ]
-        },
-        
-        "inputdata": {
-            "class": "WGRIBTextFieldDataSource", 
-            "baseURL" : "res/verif/barocline/2018120612" ,
-            "catalog" : [ 
-                {"name": "U", "description":"", "units":"", "levels": {"ref": "layers"}},
-                {"name": "V", "description":"", "units":"", "levels": {"ref": "layers"}},
-                {"name": "T", "description":"", "units":"", "levels": {"ref": "layers"}},
-                {"name": "Z", "description":"", "units":""},
-                {"name": "qv", "description":"", "units":"", "levels": {"ref": "layers"}},
-                {"name": "f", "description":"", "units":""},
-                {"name": "m", "description":"", "units":""},
-                {"name": "sfcgeop", "description":"", "units":""}
-            ]
-        },
-        
-        "outputdir" : {
-            "ref": "inputdata",
-            "class": "WGRIBTextFieldDataSource", 
-            "baseURL" : "output",
-            "catalog" : [ 
-                {"name": "U", "description":"", "units":""},
-                {"name": "V", "description":"", "units":""},
-                {"name": "T", "description":"", "units":""},
-                {"name": "Z", "description":"", "units":""},
-                {"name": "qv", "description":"", "units":""},
-                {"name": "f", "description":"", "units":""},
-                {"name": "m", "description":"", "units":""},
-                {"name": "tourbillon", "description":"", "units":""},
-                {"name": "sfcgeop", "description":"", "units":""}
-            ]            
-        },
-    },
-    
-    "model": {
-        "class": "Model",
-
-        "dynamicsCore": {
-            "class": "BaroclinicHydrostaticCore"
-        },
-
-        "name": "PIFO",
-
-        "projection": {
-            "ref": "modelDomain"
-        },
-
-        "timeIntegrator" : {
-            "class": "LeapFrogTimeIntegrator"
-        },                 
-
-        "width": 111,
-        "height": 72,
-        "horizontalStaggering": "C",
-        "global": false,
-        "filterInterval": 1,
-        "verticalStaggering":  "L",
-                
-        "verticalCoords": [
-            0.001,
-            0.0481350396465511,
-            0.125875,
-            0.184775644761717,
-            0.25075,
-            0.3110947031394134,
-            0.375625,
-            0.4365726975546128,
-            0.5005,
-            0.5617802104119394,
-            0.6253749999999999,
-            0.6868661597951571,
-            0.7502499999999999,
-            0.8118869790121533,
-            0.8751249999999998,
-            0.9368688226982536,
-            0.9999999999999998],
-        
-        "boundaryCondition": {
-            "class": "CouplingLimitedAreaBoundaryCondition",
-            "relaxation": 8
-        },
-
-        "dt": 15
-    },
-    
-    "scenario": {
-        "preprocessor" : {
-            "class": "Preprocessor",
-            "dataSource": { "ref": "gfsdata"},
-            "dataWriter": { "class": "WGRIBTextFieldDataSource", "baseURL" : "run" },
-            "transformations": [
-                { "name": "horizontal_interpolation", "class": "ProjectionComponent", "projection": { "ref" : "modelDomain"}, "sourceDomain": {"ref" : "inputDomain"} },
-                { "name": "vertical_interpolation", "class": "VerticalInterpolationComponent" },
-                { "name": "rh_to_qv", "class": "HumidityComponent" },
-                { "name": "hgt_to_phi", "class": "ArithmeticComponent", "operation":"*", "value":9.8066 },
-                { "name": "ln_ps", "class": "ArithmeticComponent", "operation":"log"},
-                { "name": "f_calc", "class": "CoriolisFactorComponent" },
-                { "name": "m_calc", "class": "ScalingFactorComponent" }
-            ],
-            "processus": [
-                { "name": "basic_projection", "transformations": [ "horizontal_interpolation", "vertical_interpolation"] },
-                { "name": "rh_preparation", "transformations": [ "horizontal_interpolation", "vertical_interpolation", "rh_to_qv"] },
-                { "name": "z_preparation", "transformations": [ "horizontal_interpolation", "ln_ps"] },
-                { "name": "sfchgt_preparation", "transformations": [ "horizontal_interpolation", "hgt_to_phi"] }, 
-                { "name": "f_generation", "transformations": [ "f_calc"] },
-                { "name": "m_generation", "transformations": [ "m_calc"] }
-                
-            ],
-            "output": [
-                { "variable":"U", "source":"ugrd", "processus" : "basic_projection" },
-                { "variable":"V", "source":"vgrd", "processus" : "basic_projection" },
-                { "variable":"T", "source":"tmp", "processus" : "basic_projection" },
-                { "variable":"qv", "source":"rh", "processus" : "rh_preparation" },
-                { "variable":"Z", "source":"sfcprs", "processus" : "z_preparation" },
-                { "variable":"sfcgeop", "source": "sfchgt", "processus" : "sfchgt_preparation" },
-                { "variable":"f", "processus" : "f_generation" },
-                { "variable":"m", "processus" : "m_generation" }
-            ],
-            "outputDir": "run",
-            "times": [0] 
-        },
-        
-        "run": {
-            "class": "RunScenario",
-            "dataSource": {"ref": "inputdata"},
-
-            "stopTime": 48,
-            
-            "steps": [
-                { 
-                    "class":"CouplingStep",
-                    "dataSource" : {"ref": "inputdata"},
-                    "variables": [
-                        {"name":"U_couplage", "source": "U"},
-                        {"name":"V_couplage", "source": "V"},
-                        {"name":"T_couplage", "source": "T"},
-                        {"name":"Z_couplage", "source": "Z"},
-                        {"name":"qv_couplage", "source": "qv"}
-                    ]
-                },
-                {
-                    "class":"HistoryStep",
-                    "dataSource" : {"ref": "outputdir"},
-                    "historyInterval" : 1,
-                    "variables": [
-                        {"name":"U"},
-                        {"name":"V"},
-                        {"name":"T"},
-                        {"name":"Z"},
-                        {"name":"qv"},
-                        {"name":"phi"},
-                        {"name":"m"},
-                        {"name":"f"},
-                        {"name": "latitudes"}, 
-                        {"name": "longitudes"}
-                    ]
-                }]
-        }
-    }
-};*/
-
 
 $(document).ready(function () {   
     ui.setStatusString("Initialisation");
@@ -319,8 +83,8 @@ async function initialize(config)
         /* -------- BAROCLINE ------------ */
         ui.beforeResetCallback = function()
         {
-            z500_display = Variable.createVariable(1, ui.model.width, ui.model.height);
-            t850_display = Variable.createVariable(1, ui.model.width, ui.model.height);        
+            z500_display = Variable.createVariable(0, ui.model.width, ui.model.height);
+            t850_display = Variable.createVariable(0, ui.model.width, ui.model.height);        
         };
         ui.afterResetCallback = function()
         {

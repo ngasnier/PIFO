@@ -251,7 +251,6 @@ export class MercatorProjection extends ConformalProjection {
     {
         var a = this.latLonToXY(this.minLat, this.minLon);
         var b = this.latLonToXY(this.maxLat, this.maxLon);
-//        console.log(this.minLat, this.maxLat, this.minLon, this.maxLon, a[0], a[1], b[0], b[1], this.width, this.height);
         return [(b[0]-a[0])/this.width, (b[1]-a[1])/this.height];
     }
     
@@ -270,7 +269,6 @@ export class MercatorProjection extends ConformalProjection {
         var xplan = a[0];
         var i = 0;
         var lat, lon;
-console.log(b, yplan, this.xyToLatLon(xplan, yplan), xoffset, yoffset);
         for (var y=0;y<this.height;y++)
         {
             xplan = a[0]+dx*xoffset*0.5;

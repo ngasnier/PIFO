@@ -697,7 +697,7 @@ test("fileinfo", () =>{
 test('Préprocesseur - barotrope', () => {
     var config = JSON.parse(JSON.stringify(configCible));
     var manager = new ConfigManager("../", config);
-    cleandir("run");
+    cleandir("res/test/run");
     expect.assertions(5);
     return manager.getScenario("preprocessor").then((preprocessor) => { 
         try {
@@ -786,7 +786,7 @@ test('Run - barotrope', () => {
     });
     
     var manager = new ConfigManager("../", config);
-    cleandir("res/test");
+    cleandir("res/test/run");
     expect.assertions(5);
     return manager.getScenario("run").then((run) => { 
         try {
