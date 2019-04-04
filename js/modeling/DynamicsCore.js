@@ -68,7 +68,7 @@ export class DynamicsCore
      * <p>allocations de variables...</p>
      * @returns {undefined}
      */
-    init()
+    setup()
     {
         
     }

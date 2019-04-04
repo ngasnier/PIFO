@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { Variable } from "../modeling/Variable.js";
+import { VariableDescription } from "../modeling/VariableDescription.js";
 import { Scenario } from "../front/Scenario.js";
 import { FieldHTMLRenderer } from "./FieldHTMLRenderer.js";
 import { FieldTextExporter } from "./FieldTextExporter.js";
@@ -171,6 +172,15 @@ export class ModelUI
         group = $("<optgroup>", { label:"Variables diagnostiques", id:"DiagnosticVariables"});
         $("#variableDump").append(group);
         $.each(this.model.getDiagnosticVariables(), function (i, item) {
+            me.variableDescriptions[item.name] = item;
+            group.append($('<option>', {
+                value: item.name,
+                text : item.name
+            }));
+        }); 
+
+        $("#variableDump").append(group);
+        $.each(this.model.getVariablesDescriptions(VariableDescription.CAT_POST_PHYSICS_DIAGNOSTICS), function (i, item) {
             me.variableDescriptions[item.name] = item;
             group.append($('<option>', {
                 value: item.name,

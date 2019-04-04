@@ -48,7 +48,7 @@ export class SchumannFilter extends SpatialFilter {
      * 
      * @returns {undefined}
      */
-    init()
+    setup()
     {
         
     }

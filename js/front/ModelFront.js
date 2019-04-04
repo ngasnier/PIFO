@@ -164,7 +164,7 @@ ModelFront.prototype.reset = function()
     if (this.status != "ready")
         return;
         
-    this.model.init();
+    this.model.setup();
     
     this.initVariableList();
 

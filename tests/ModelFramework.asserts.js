@@ -786,7 +786,7 @@ test('Run - barotrope', () => {
     });
     
     var manager = new ConfigManager("../", config);
-    cleandir("res/test/run");
+    cleandir("res/test/output");
     expect.assertions(5);
     return manager.getScenario("run").then((run) => { 
         try {

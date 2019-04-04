@@ -68,7 +68,7 @@ export class CouplingLimitedAreaBoundaryCondition extends BoundaryCondition
      * Initialise la zone de relaxation
      * @returns {undefined}
      */
-    init()
+    setup()
     {
         // *** Calcul de la zone de relaxation et autres termes de grilles nécessaires
         var i = 0;

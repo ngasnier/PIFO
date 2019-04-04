@@ -79,7 +79,7 @@ export class LeapFrogTimeIntegrator extends TimeIntegrator {
      * 
      * @returns {undefined}
      */
-    init()
+    setup()
     {
     }
     

@@ -69,7 +69,7 @@ export class RobertAsselinTimeFilter extends TimeFilter {
      * ex : enregistrement de variables auprès du modèle etc...
      * @returns {undefined}
      */
-    init()
+    setup()
     {
     }
 

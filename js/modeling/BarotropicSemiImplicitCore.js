@@ -54,9 +54,9 @@ export class BarotropicSemiImplicitCore extends BarotropicCore
         ]);
     }
     
-    init()
+    setup()
     {
-        super.init();
+        super.setup();
 
     }
     

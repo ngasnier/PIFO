@@ -61,9 +61,9 @@ export class BarotropicCore extends DynamicsCore
      * Initialisation des variables
      * @returns {undefined}
      */
-    init()
+    setup()
     {
-        super.init();
+        super.setup();
     }
     
     /**

@@ -53,7 +53,7 @@ export class SpatialFilter
      * 
      * @returns {undefined}
      */
-    init()
+    setup()
     {
         
     }

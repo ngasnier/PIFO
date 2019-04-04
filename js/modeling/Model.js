@@ -99,6 +99,8 @@ export class Model {
         
         // Condition limite
         this._boundaryCondition = null;
+        
+        this._physicsSchemes = [];
 
         // Méthodes privées du modèle
         if( typeof Model.initialized == "undefined" ) 
@@ -147,6 +149,13 @@ export class Model {
         if (this._boundaryCondition!=null)
         {
             this._boundaryCondition.getVariablesDescriptions().forEach((v)=> {
+                this.registerVariable(v);
+            }); 
+        }
+        
+        for (var i in this._physicsSchemes)
+        {
+            this._physicsSchemes[i].getVariablesDescriptions().forEach((v)=> {
                 this.registerVariable(v);
             }); 
         }
@@ -220,11 +229,16 @@ export class Model {
         });
         
         // *** Initialisation des algorithmes
-        this._dynamicsCore.init();
-        this._timeIntegrator.init();
-        if (this._timeFilter!=null) this._timeFilter.init();
-        if (this._spatialFilter!=null) this._spatialFilter.init();
-        if (this._boundaryCondition!=null) this._boundaryCondition.init();
+        this._dynamicsCore.setup();
+        this._timeIntegrator.setup();
+        if (this._timeFilter!=null) this._timeFilter.setup();
+        if (this._spatialFilter!=null) this._spatialFilter.setup();
+        if (this._boundaryCondition!=null) this._boundaryCondition.setup();
+        
+        for (var i in this._physicsSchemes)
+        {
+            this._physicsSchemes[i].setup();
+        }
 
         this.initGridFactors();
         
@@ -239,6 +253,7 @@ export class Model {
         // *** Calcule les champs nécessaires pour le coeur dynamique ***
         this.calcDiagnostics();
         this.calcPhysics();
+        this.calcPostPhysicsDiagnostics();
         
         // *** Le filtrage temporel peut être commencé ***
         if (this.timeFilter!=null) this.timeFilter.preStep();
@@ -295,7 +310,21 @@ export class Model {
      */
     calcPhysics()
     {
-        // TODO schémas physiques à gérer...
+        for (var i in this._physicsSchemes)
+        {
+            this._physicsSchemes[i].step();
+        }
+    }
+    
+    calcPostPhysicsDiagnostics()
+    {
+        for (var v in this.variables)
+        {
+            if (this.variables[v].category==VariableDescription.CAT_POST_PHYSICS_DIAGNOSTIC)
+            {
+                this._dynamicsCore.calcDiagnostic(this.variables[v].name);
+            }
+        }
     }
 
     /**
@@ -535,6 +564,21 @@ export class Model {
     {
         this._timeIntegrator = p_integrator;
         this._timeIntegrator.model = this;
+    }
+    
+    set physicsSchemes(p_schemes)
+    {
+        this._physicsSchemes = p_schemes;
+        
+        for (var i in this._physicsSchemes)
+        {
+            this._physicsSchemes[i].model = this;
+        }
+    }
+    
+    get physicsSchemes()
+    {
+        return this._physicsSchemes;
     }
     
     /**

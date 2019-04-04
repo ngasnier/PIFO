@@ -70,7 +70,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
     {
         super();
 
-        this.dampFactor = 1000000.0;
+        this.dampFactor = 0;//1000000.0;
         
         this.alpha = []; // alphak = ln sigmaktilde/sigmak
         this.beta = []; // betak = ln sigmak/sigmak-1tilde
@@ -114,8 +114,12 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_DIAGNOSTIC, name:"divergence", description:"wind divergence", units: "", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_LAYER}),
             
             // TODO : Devrait être calculé après la physique ?
-            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_DIAGNOSTIC, name:"Cph", description:"enthalpie totale du mélange", units: "", verticalPosition:VariableDescription.VERTICAL_POSITION_LAYER, number:VariableDescription.NUMBER_TYPE_SCALAR}),
-            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_DIAGNOSTIC, name:"Q", description:"variation d'enthalpie", units: "", verticalPosition:VariableDescription.VERTICAL_POSITION_LAYER, number:VariableDescription.NUMBER_TYPE_SCALAR}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_POST_PHYSICS_DIAGNOSTIC, name:"dQv", description:"qv tendency due to physics parameterisations", units:"", offsetx:0, offsety:0, scale:false, verticalPosition:VariableDescription.VERTICAL_POSITION_INTERLAYER, number:VariableDescription.NUMBER_TYPE_SCALAR}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_POST_PHYSICS_DIAGNOSTIC, name:"Cph", description:"enthalpie totale du mélange", units: "", verticalPosition:VariableDescription.VERTICAL_POSITION_LAYER, number:VariableDescription.NUMBER_TYPE_SCALAR}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_POST_PHYSICS_DIAGNOSTIC, name:"dPs", description:"pressure surface tendency due to physics parameterisations", units:"", offsetx:0, offsety:0, scale:false, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_SCALAR}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_POST_PHYSICS_DIAGNOSTIC, name:"Q", description:"variation d'enthalpie", units: "", verticalPosition:VariableDescription.VERTICAL_POSITION_LAYER, number:VariableDescription.NUMBER_TYPE_SCALAR}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_POST_PHYSICS_DIAGNOSTIC, name:"apcp", description:"accumulation totale de pluie", units: "kg.m^2", verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_SCALAR}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_POST_PHYSICS_DIAGNOSTIC, name:"acsnow", description:"accumulation totale de neige", units: "kg.m^2", verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_SCALAR}),
             
             // Paramètres géophysiques
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PARAMETER, name:"f", description:"coriolis factor", units:"", offsetx:1, offsety:1, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
@@ -123,9 +127,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PARAMETER, name:"sfcgeop", description:"surface geopotential", units: "m^2.s^-1", verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_SCALAR}),
 
             // Variables pour le contexte physiques non adiabatique
-            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"dPs", description:"pressure surface tendency due to physics parameterisations", units:"", offsetx:0, offsety:0, scale:false, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_SCALAR}),
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"dSigmaf", description:"vertical velocity tendency due to physics parameterisations", units:"", offsetx:0, offsety:0, scale:false, verticalPosition:VariableDescription.VERTICAL_POSITION_INTERLAYER, number:VariableDescription.NUMBER_TYPE_SCALAR}),
-            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"dQv", description:"qv tendency due to physics parameterisations", units:"", offsetx:0, offsety:0, scale:false, verticalPosition:VariableDescription.VERTICAL_POSITION_INTERLAYER, number:VariableDescription.NUMBER_TYPE_SCALAR}),
             
             // Variables pour les coeurs physique -- A déplacer vers les coeurs
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"Pl_1", description:"pseudo-flux vapeur->eau de nuage", units: "", verticalPosition:VariableDescription.VERTICAL_POSITION_INTERLAYER, number:VariableDescription.NUMBER_TYPE_SCALAR}),
@@ -136,15 +138,13 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"Pi_3", description:"pseudo-flux neige->vapeur", units: "", verticalPosition:VariableDescription.VERTICAL_POSITION_INTERLAYER, number:VariableDescription.NUMBER_TYPE_SCALAR}),
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"Pl", description:"flux de précipitations liquides", units: "", verticalPosition:VariableDescription.VERTICAL_POSITION_INTERLAYER, number:VariableDescription.NUMBER_TYPE_SCALAR}),
             Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"Pi", description:"flux de précipitations solides", units: "", verticalPosition:VariableDescription.VERTICAL_POSITION_INTERLAYER, number:VariableDescription.NUMBER_TYPE_SCALAR}),
-            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"E", description:"flux d'évaporation de surface", units: "", verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_SCALAR}),
-            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"apcp", description:"accumulation totale de pluie", units: "kg.m^2", verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_SCALAR}),
-            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"acsnow", description:"accumulation totale de neige", units: "kg.m^2", verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_SCALAR})
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"E", description:"flux d'évaporation de surface", units: "", verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_SCALAR})
         ];
     }
     
-    init()
+    setup()
     {
-        super.init();
+        super.setup();
         
         this.sigma = this._model.verticalCoords;
         this.dsigma = [];
@@ -393,18 +393,12 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
     calcCph()
     {
         var i = 0;
-        var x, y;
         var n = this.model.nbLayers;
         for (var k=0;k<n;k++)
         {
-            i = this._model.width+1;
-            for (y=1;y<this._model.height-1;y++)
+            for(i=0;i<this._model.Cph[k].length;i++)
             {
-                for(x=1;x<this._model.width-1;x++,i++)
-                {
-                    this._model.Cph[k][i] = Model.Cp+Model.Cp_v*this._model.qv[k][i];
-                }
-                i+=2;
+                this._model.Cph[k][i] = Model.Cp+Model.Cp_v*this._model.qv[k][i];
             }
         }
     }
@@ -453,7 +447,102 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
 
         }
     }
+    
+    calcdQv()
+    {
+        var i = 0;
+        var x, y;
+        var m2;
+        var n = this._model.nbLayers;
+        var k1, kn1;
+        for (var k=0;k<n;k++)
+        {
+            i = this._model.width+1;
+            if (k==0) kn1 = k; else kn1 = k-1;
+            if (k==n-1) k1 = k; else k1 = k+1;
+            for (y=1;y<this._model.height-1;y++)
+            {
+                for(x=1;x<this._model.width-1;x++,i++)
+                {
+                    // Différentiel sur la verticale ????
+                    this._model.dQv[k][i] = Model.g /(2*this._model.ps[i]*this.dsigma[k])
+                            *(
+                             (this._model.Pl_3[k+1][i]+this._model.Pi_3[k+1][i] - this._model.Pl_1[k+1][i] - this._model.Pi_1[k+1][i])
+                            - (this._model.Pl_3[k][i]+this._model.Pi_3[k][i] - this._model.Pl_1[k][i] - this._model.Pi_1[k][i])
 
+                            + 0.5*(this._model.qv[k][i]+this._model.qv[k1][i])*(this._model.Pl[k+1][i] + this._model.Pi[k+1][i])/(this._model.dt*2)
+                          -
+                            + 0.5*(this._model.qv[k][i]+this._model.qv[kn1][i])*(this._model.Pl[k][i] + this._model.Pi[k][i])/(this._model.dt*2)
+                            );
+                }
+                i+=2;
+            }
+        }
+    }
+    
+    calcdPs()
+    {
+        for (var i=0;i<this._model.width*this._model.height-1;i++)
+        {
+            this._model.dPs[i] = -Model.g * (this._model.Pl[this._model.nbLayers][i])/this._model.ps[i]; // +Pi-E
+        }
+    }
+            
+    calcQ()
+    {
+        var i = 0;
+        var x, y;
+        var n = this.nbLayers;
+        var k1, kn1;
+        for (var k=0;k<n;k++)
+        {
+            i = this._model.width+1;
+            if (k==0) kn1 = k; else kn1 = k-1;
+            if (k==n-1) k1 = k; else k1 = k+1;
+            for (y=1;y<this._model.height-1;y++)
+            {
+                for(x=1;x<this._model.width-1;x++,i++)
+                {                       
+                    this._model.Q[k][i] = -Model.g/(2*this._model.ps[i]*this.dsigma[k])
+                        *(
+                            // Terme de contribution du changement de pression dûe au changement de 
+                            // masse à cause du flux de précipitation
+                            // (si j'ai bien tout compris...)
+                            ((
+                                0.5*(Model.Cp_l-Model.Cp)*this._model.Pl[k+1][i]/(this._model.dt*2)*(this._model.T[k1][i]+this._model.T[k][i])
+
+                                +0.5*(Model.Cp_i-Model.Cp)*this._model.Pi[k+1][i]/(this._model.dt*2)*(this._model.T[k1][i]+this._model.T[k][i])
+                            )
+
+                            // Terme de contribution de la chaleur latente
+                            +(-Model.Ll*(this._model.Pl_1[k][i]-this._model.Pl_3[k][i]) - -Model.Li*(this._model.Pi_1[k][i]-this._model.Pi_3[k][i])))
+                        -
+                            ((
+                                0.5*(Model.Cp_l-Model.Cp)*this._model.Pl[k][i]/(this._model.dt*2)*(this._model.T[k][i]+this._model.T[kn1][i])
+
+                                +0.5*(Model.Cp_i-Model.Cp)*this._model.Pi[k][i]/(this._model.dt*2)*(this._model.T[k][i]+this._model.T[kn1][i])
+                            )
+
+                            // Terme de contribution de la chaleur latente
+                            +(-Model.Ll*(this._model.Pl_1[k][i]-this._model.Pl_3[k][i]) - -Model.Li*(this._model.Pi_1[k][i]-this._model.Pi_3[k][i])))
+                        );
+                }
+                i+=2;
+            }
+
+        }
+    }
+    
+    calcapcp()
+    {
+        Variable.a_bc2d(this._model.apcp, this._model.Pl[this._model.nbLayers], 1, this._model.apcp);
+    }
+    
+    calcacsnow()
+    {
+        Variable.a_bc2d(this._model.acsnow, this._model.Pi[this._model.nbLayers], 1, this._model.acsnow);
+    }
+            
     calcSuCouche(k)
     {
         var xi = 0;
@@ -693,7 +782,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                 this._model.T_tdcy[k][i] = - part1 - adv - part2 + part3  
 
                         // complage thermodynamique avec les paramétrisations
-                        + (this._model.Q[k][i] 
+                        + (this._model.Q[k][i]  
                         + Model.R * this._model.T[k][i] * this._model.Z_tdcy[i]/this._model.dt)/this._model.Cph[k][i]
             }
             i+=2;

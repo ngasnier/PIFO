@@ -9,6 +9,7 @@
         "RobertAsselinTimeFilter": "modeling/RobertAsselinTimeFilter.js",
         "SchumannFilter": "modeling/SchumannFilter.js",
         "CouplingLimitedAreaBoundaryCondition": "modeling/CouplingLimitedAreaBoundaryCondition.js",
+        "PrecipitationScheme": "modeling/PrecipitationScheme.js",
         
         "WGRIBTextFieldDataSource": "front/WGRIBTextFieldDataSource.js",
         "WGRIBTextFieldDataWriter": "front/WGRIBTextFieldDataWriter.js",
@@ -166,6 +167,12 @@
             "class": "CouplingLimitedAreaBoundaryCondition",
             "relaxation": 8
         },
+        
+        "COMMENTED_OUT___physicsSchemes": [
+            {
+                "class": "PrecipitationScheme"
+            }
+        ],
 
         "dt": 15
     },

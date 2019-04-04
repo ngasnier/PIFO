@@ -15,62 +15,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * Implémente une condition aux limites du modèle.
- */
-export class BoundaryCondition
-{
-    /**
-     * 
-     * @returns {undefined}
-     */
-    constructor() 
+
+export class PhysicsScheme {
+    constructor()
     {
         this._model = null;
     }
-       
-    /**
-     * 
-     * @param {type} p_model
-     * @returns {undefined}
-     */
+    
     set model(p_model)
     {
         this._model = p_model;
     }
     
-    /**
-     * 
-     * @returns {@param;DynamicsCore.set model:p_model}
-     */
     get model()
     {
         return this._model;
     }
     
-    /**
-     * 
-     * @returns {Array}
-     */
     getVariablesDescriptions()
     {
         return [];
     }
-     
-    /**
-     * 
-     * @returns {undefined}
-     */
+    
     setup()
     {
         
     }
     
-    /**
-     * 
-     * @returns {undefined}
-     */
-    doBoundaryCondition()
+    step()
     {
         
     }

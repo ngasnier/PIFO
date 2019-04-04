@@ -64,7 +64,7 @@ export class TimeIntegrator {
      * 
      * @returns {undefined}
      */
-    init()
+    setup()
     {
 
     }
