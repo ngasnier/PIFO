@@ -59,14 +59,17 @@ export class WGRIBFormat
      */
     write(p_variable)
     {
-        if (p_variable.nbLevels>0) throw "WGRIBFileWriter : cannot write 3D variable. Please provide 2D parts only.";
-        var str = p_variable.width.toString()+" "+p_variable.height.toString()+"\n";
+        if ("nbLevels" in p_variable && p_variable.nbLevels>0) throw "WGRIBFileWriter : cannot write 3D variable. Please provide 2D parts only.";
+        var str;
+        if ("width" in p_variable && "height" in p_variable)
+            str = p_variable.width.toString()+" "+p_variable.height.toString()+"\n";
+        else
+            str = p_variable.length.toString()+" 1\n";
         for (var i = 0; i < p_variable.length; i++)
         {
             str += p_variable[i].toString()+"\n";
         }
         return str;
     }
-
 }
 

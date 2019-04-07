@@ -51,7 +51,8 @@ export class HistoryStep extends Step
         {
             if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_WRITE);
             
-            this.nextHistory = 3600*this.historyInterval;
+            this.nextHistory = 0;
+            //this.nextHistory = 3600*this.historyInterval;
             
             return this;
         }
@@ -85,7 +86,19 @@ export class HistoryStep extends Step
      */
     async stepBegin(p_model)
     {
-        return this;
+        try
+        {
+            // Pour historiser T=0
+            if (p_model.time>=this.nextHistory)
+            {
+                await this.doHistory(p_model);
+            }
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
     }
     
     /**
@@ -116,25 +129,39 @@ export class HistoryStep extends Step
         {
             if (p_model.time>=this.nextHistory)
             {
-                this.sendMessage(`history time ${p_model.time}`);
-                var hours = Math.floor(p_model.time/3600);
-
-                if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_WRITE);
-
-                this.dataSource.name = p_model.name;
-                this.dataSource.initDate = p_model.startDate;
-                this.dataSource.addTime(hours);
-
-                for (var i in this.variables)
-                {
-                    var v = this.variables[i];
-                    this.sendMessage(`writing field ${v.name} ${hours}`);
-                    await this.dataSource.writeField(v.name, hours, p_model.getVariable(v.name));
-                }
-
-                this.nextHistory += this.historyInterval*3600;
+                await this.doHistory(p_model);
             }
             return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    async doHistory(p_model)
+    {
+        try
+        {
+            this.sendMessage(`history time ${p_model.time}`);
+            var hours = Math.floor(p_model.time/3600);
+
+            if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_WRITE);
+
+            this.dataSource.name = p_model.name;
+            this.dataSource.initDate = p_model.startDate;
+            this.dataSource.addTime(hours);
+
+            for (var i in this.variables)
+            {
+                var v = this.variables[i];
+                this.sendMessage(`writing field ${v.name} ${hours}`);
+                await this.dataSource.writeField(v.name, hours, p_model.getVariable(v.name));
+            }
+
+            await this.dataSource.writeField("levels", hours, p_model.verticalCoords);
+
+            this.nextHistory += this.historyInterval*3600;
         }
         catch (e)
         {
