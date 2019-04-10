@@ -182,7 +182,7 @@ export class MercatorProjection extends ConformalProjection {
         var v1, v2, v3, v4;
         var vv1, vv2;
         var i = 0;
-
+        
         for (lat=latLonParams.maxLat;lat>latLonParams.minLat;lat-=latLonParams.dlat)
         {
             y_in = this.latLonToXY(lat, lon)[1];
@@ -227,6 +227,7 @@ export class MercatorProjection extends ConformalProjection {
                 data_out[i] = alpha_x*vv2 + (1-alpha_x)*vv1 ;
 
                 // Ce code sert surtout à stopper d'urgence un calcul de modèle qui part en vrille
+                // TODO : c'est pas le meilleur endroit pour mettre un tel contrôle
                 if(isNaN(data_out[i]))
                 {
                     throw "instabilité détectée en "+i;

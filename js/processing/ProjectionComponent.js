@@ -33,6 +33,7 @@ export class ProjectionComponent extends Component {
         super();
         this.projection = null;
         this.sourceDomain = null;
+        this.destinationDomain = null;
         this.gridPosVariable = null;
         this.gridPos = [0, 0];
         this.scaleVariable = null;
@@ -48,7 +49,7 @@ export class ProjectionComponent extends Component {
     
     get outputs()
     {
-        return ["main"];
+        return ["main", "latitudes", "longitudes"];
     }
     
     get parameters()
@@ -62,6 +63,8 @@ export class ProjectionComponent extends Component {
         try {
             var variable_in = data_in["main"].getData();
             var variable_out;
+            var latitudes;
+            var longitudes;
             
             // Résolution paramètre gridPos
             var offsetx, offsety;
@@ -108,21 +111,51 @@ export class ProjectionComponent extends Component {
             }
             else
                 throw `${this.name} : invalid type for parameter 'numberType'. `;
-                       
+
+            // Projection de la variable
             if (variable_in.nbLevels>0)
             {
-                variable_out = Variable.createVariable(variable_in.nbLevels, this.projection.width, this.projection.height, true);
-                for (var k=0;k<variable_in.nbLevels;k++)
+                if (this.sourceDomain!=null)
                 {
-                    this.projection.interpLatLonGridToDomain(
-                        this.sourceDomain, variable_in[k], variable_out[k], offsetx, offsety, scale, numberType);
+                    variable_out = Variable.createVariable(variable_in.nbLevels, this.projection.width, this.projection.height, true);
+                    for (var k=0;k<variable_in.nbLevels;k++)
+                    {
+                        this.projection.interpLatLonGridToDomain(
+                            this.sourceDomain, variable_in[k], variable_out[k], offsetx, offsety, scale, numberType);
+                    }
+                }
+                else if (this.destinationDomain!=null)
+                {
+                    variable_out = Variable.createVariable(variable_in.nbLevels, this.destinationDomain.width, this.destinationDomain.height, true);
+                    for (var k=0;k<variable_in.nbLevels;k++)
+                    {
+                        this.projection.interpDomainToLatLon(
+                            this.destinationDomain, variable_in[k], variable_out[k], offsetx, offsety, scale, numberType);
+                    }
+                }
+                else
+                {
+                    throw `${this.name} : no source or destination domain set. `;
                 }
             }
             else
             {
-                variable_out = Variable.createVariable(0, this.projection.width, this.projection.height, false);
-                this.projection.interpLatLonGridToDomain(
-                    this.sourceDomain, variable_in, variable_out, offsetx, offsety, scale, numberType);            
+                if (this.sourceDomain!=null)
+                {
+                    variable_out = Variable.createVariable(0, this.projection.width, this.projection.height, false);
+                    this.projection.interpLatLonGridToDomain(
+                        this.sourceDomain, variable_in, variable_out, offsetx, offsety, scale, numberType);
+                }
+                else if (this.destinationDomain!=null)
+                {
+                    variable_out = Variable.createVariable(0, this.destinationDomain.width, this.destinationDomain.height, false);
+                    this.projection.interpDomainToLatLon(
+                        this.destinationDomain, variable_in, variable_out, offsetx, offsety, scale, numberType);                    
+                }
+                else
+                {
+                    throw `${this.name} : no source or destination domain set. `;
+                }
             }
 
             Variable.copyMetadata(variable_in, variable_out);
@@ -132,6 +165,48 @@ export class ProjectionComponent extends Component {
             variable_out.number = numberType;
 
             data_out["main"].setData(variable_out);
+            
+            // Création des latitudes et longitudes
+            if (this.sourceDomain!=null)
+            {
+                latitudes = Variable.createVariable(0, this.projection.width, this.projection.height, false);
+                longitudes = Variable.createVariable(0, this.projection.width, this.projection.height, false);
+                this.projection.calcLatitudesLongitudes(offsetx, offsety, latitudes, longitudes);
+                latitudes.offsetx = offsetx;
+                latitudes.offsety = offsety;
+                longitudes.offsetx = offsetx;
+                longitudes.offsety = offsety;
+            }
+            else if (this.destinationDomain!=null)
+            {
+                latitudes = Variable.createVariable(0, this.destinationDomain.width, this.destinationDomain.height, false);
+                longitudes = Variable.createVariable(0, this.destinationDomain.width, this.destinationDomain.height, false);
+                this.destinationDomain.calcLatitudesLongitudes(0, 0, latitudes, longitudes);
+                latitudes.offsetx = 0;
+                latitudes.offsety = 0;
+                longitudes.offsetx = 0;
+                longitudes.offsety = 0;
+            }
+            
+            if ("initDate" in variable_out) { latitudes.initDate = variable_out.initDate; longitudes.initDate = variable_out.initDate;}
+            if ("time" in variable_out) { latitudes.time = variable_out.time; longitudes.time = variable_out.time;}
+            
+            latitudes.description = "latitudes";
+            latitudes.units = "degrees north";
+            latitudes.category = VariableDescription.CAT_INTERNAL;
+            latitudes.verticalPosition = VariableDescription.VERTICAL_POSITION_SURFACE;
+            latitudes.number = VariableDescription.NUMBER_TYPE_SCALAR;
+            latitudes.scale = 0;
+            
+            longitudes.description = "longitudes";
+            longitudes.units = "degrees east";
+            longitudes.category = VariableDescription.CAT_INTERNAL;
+            longitudes.verticalPosition = VariableDescription.VERTICAL_POSITION_SURFACE;
+            longitudes.number = VariableDescription.NUMBER_TYPE_SCALAR;
+            longitudes.scale = 0;
+    
+            if (data_out["latitudes"]!=null) data_out["latitudes"].setData(latitudes);
+            if (data_out["longitudes"]!=null) data_out["longitudes"].setData(longitudes);
             
             return this;
         }

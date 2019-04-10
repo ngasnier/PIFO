@@ -100,7 +100,11 @@ export class WGRIBOutputComponent extends Component {
             if (data==null) throw `${this.name}: error : no data provided`;           
             if (!("time" in data)) throw `${this.name}: error : no time information provided in data flow`;
             this.sendMessage(`${this.name} : writing ${this.destination}[${data.time}]`);
+            
             this.dataSource.addTime(data.time);
+            
+            if ("initDate" in data) this.dataSource.initDate = data.initDate;
+                
             await this.dataSource.writeField(this.destination, data.time, data);
             
             return this;

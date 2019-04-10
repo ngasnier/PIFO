@@ -38,10 +38,10 @@ end
 
 function loadField(f)
 begin
-    data = asciiread(input_dir+"/"+f, -1, "string")
+    data = asciiread(input_dir+"/"+f+".txt", -1, "string")
     nblig = dimsizes(data)
-    width = stringtoint(str_get_field(data(0), 1, ","))
-    height = stringtoint(str_get_field(data(0), 2, ","))
+    width = stringtoint(str_get_field(data(0), 1, " "))
+    height = stringtoint(str_get_field(data(0), 2, " "))
     field = new((/height, width/), float)
     i = 0
     j = 0
@@ -102,8 +102,8 @@ end
 
 function loadSigma()
 begin
-    data = asciiread(input_dir+"/sigma.txt", -1, "string")
-    return (stringtodouble(data))
+    data = asciiread(input_dir+"/levels_000.txt", -1, "string")
+    return (stringtodouble(data(1:)))
 end
 
 begin
@@ -137,19 +137,19 @@ begin
 
     ; Parcours des previsions
     do filenum = idxstart, idxend
-        grfile  = str_get_field(infos(filenum), 1, ";")
-        model 	= str_get_field(infos(filenum), 2, ";")
-        run	= str_get_field(infos(filenum), 3, ";")
-        date	= str_get_field(infos(filenum), 4, ";")
-        valid	= sprinti("%0.3i", stringtointeger(str_get_field(infos(filenum), 5, ";")))
-        dateval	= str_get_field(infos(filenum), 6, ";")
-        hourval = str_get_field(infos(filenum), 7, ";")
+        ligne = infos(filenum)
+        model 	= str_get_field(ligne, 2, ";")
+        run	= str_get_field(ligne, 3, ";")
+        date	= str_get_field(ligne, 4, ";")
+        valid	= sprinti("%0.3i", stringtointeger(str_get_field(ligne, 5, ";")))
+        dateval	= str_get_field(ligne, 6, ";")
+        hourval = str_get_field(ligne, 7, ";")
+        grfile  = valid
 
         day   = str_get_field(dateval, 1, "/")
         month = str_get_field(dateval, 2, "/")
         year  = str_get_field(dateval, 3, "/")
         hour  = str_get_field(hourval, 1, ":")
-
 
         ; Chargement du fichier de sortie 
         globalRes = True
@@ -264,7 +264,7 @@ begin
         frame(wks)
 
 
-        print("Precipitations cumulées Europe");
+        print("Precipitations cumulï¿½es Europe");
         outfile = europe_dir+"/pifo_apcp_acc_"+valid
         wks = gsn_open_wks(device, outfile)
         mb_set_colormap(wks)
@@ -326,7 +326,7 @@ begin
 ;		theta = t850*1.04758 - 273.15
 ;		copy_VarCoords(t850, theta)
 
-        print("Température 850 hPa Europe");
+        print("Tempï¿½rature 850 hPa Europe");
         outfile = europe_dir+"/pifo_tmp850_"+valid
         wks = gsn_open_wks(device, outfile)
         mb_set_colormap(wks)

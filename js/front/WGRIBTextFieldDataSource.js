@@ -101,7 +101,7 @@ export class WGRIBTextFieldDataSource extends DataSource {
     {
         super.addTime(p_time);
         var idx = this.times.indexOf(p_time);
-        this.fileInfo.addRecord(this._dates[idx]);
+        if (idx<0) this.fileInfo.addRecord(this._dates[idx]);
     }
     
     /**
