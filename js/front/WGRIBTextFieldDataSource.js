@@ -220,6 +220,7 @@ export class WGRIBTextFieldDataSource extends DataSource {
                 variable.nbLevels = field.levels.length;
                 variable.time = p_time;
                 variable.initDate = this.initDate;
+                variable.productName = this.fileInfo.name;
                 
                 for (var i in indices)
                 {
@@ -243,6 +244,7 @@ export class WGRIBTextFieldDataSource extends DataSource {
                 var variable = reader.read(data);
                 variable.time = p_time;
                 variable.initDate = this.initDate;
+                variable.productName = this.fileInfo.name;
                 return variable;
             }
         }
@@ -277,6 +279,11 @@ export class WGRIBTextFieldDataSource extends DataSource {
             if (!this.times.includes(p_time)) throw `field ${p_name} not available at time ${p_time}`;
             
             this.addFieldInfo(p_name, p_data);
+            
+            if ("productName" in p_data) {
+                this.fileInfo.name = p_data.productName;
+                console.log(p_data.productName)
+            }
             
             if (p_data.nbLevels>0)
             {

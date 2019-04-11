@@ -225,6 +225,7 @@ export class Model {
             }
             var variable = Variable.createVariable(nblevs, this.width, this.height);
             variable = Object.assign(variable, v);
+            variable.productName = this.name;
             this.setVariable(v.name, variable);
         });
         

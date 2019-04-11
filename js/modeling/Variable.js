@@ -39,6 +39,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * <ul>
  *   <li>latitudes : latitude des points de la variable</li>
  *   <li>longitudes : longitude des points de la variable</li>
+ *   <li>productName : nom du modèle ou de la donnée source de la variable</li>
  * </ul>
  * </p>
  * 
@@ -156,20 +157,9 @@ Variable.clone = function(a)
     if ("nbLevels" in a) c.nbLevels = a.nbLevels;
     if ("width" in a) c.width = a.width;
     if ("height" in a) c.height = a.height;
-    if ("levels" in a) c.levels = a.levels;
-    if ("name" in a) c.name = a.name;
-    if ("description" in a) c.description = a.description;
-    if ("category" in a) c.category = a.category;
-    if ("units" in a) c.units = a.units;
-    if ("verticalPosition" in a) c.verticalPosition = a.verticalPosition;
-    if ("number" in a) c.number = a.number;
-    if ("offsetx" in a) c.offsetx = a.offsetx;
-    if ("offsety" in a) c.offsety = a.offsety;
-    if ("scale" in a) c.scale = a.scale;
     if ("latitudes" in a) c.latitudes = a.latitudes;
     if ("longitudes" in a) c.longitudes = a.longitudes;
-    if ("initDate" in a) c.initDate = a.initDate;
-    if ("time" in a) c.time = a.time;
+    Variable.copyMetadata(a, c);
     return c;
 }
 
@@ -193,6 +183,7 @@ Variable.copyMetadata = function(a, c)
     if ("initDate" in a) c.initDate = a.initDate;
     if ("time" in a) c.time = a.time;
     if ("levels" in a) c.levels = a.levels;
+    if ("productName" in a) c.productName = a.productName;
 }
 
 /**
