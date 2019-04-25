@@ -86,7 +86,7 @@ module.exports.createMaps = function(context)
     Helper.mkdirpSync(context.coupes_dir);
     Helper.createSymlink(context.coupes_dir, path.join(context.config.PRODUCT_DIR, "slices/france/pifo_test", "latest"));
     
-    execSync('/bin/cp '+ path.join(context.config.products[context.productName].pifo_root+"_test", "output", "fileinfo.txt")+" "+context.europe_dir)
+    execSync('/bin/cp '+ path.join(context.config.products[context.productName].pifo_root+"_test", "barocline/output", "fileinfo.txt")+" "+context.europe_dir)
     
     var cmdline = "ncl";
     var args = [
