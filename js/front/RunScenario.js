@@ -22,7 +22,21 @@ import { VariableDescription } from "../modeling/VariableDescription.js";
 /**
  * Scénario de run standard.
  * 
- * <p>Ce scénario utilise des données réelles.</p>
+ * <p>Ce scénario utilise des données réelles. Il recherche les variables 
+ * de modèle de type pronostiques et paramètres dans la source de données
+ * et les fournit en entrée du modèle. Le scénario fonctionne ensuite pour 
+ * la durée déterminée en paramètre.</p>
+ * 
+ * <p>Paramètres :
+ * <ul>
+ * <li>dataSource : une référence vers une DataSource pour charger les données.
+ * Le scénario charge des données pour les variables de type diagnostique et
+ * paramètre, celles-ci doivent exister dans la DataSource pour t=0. </li>
+ * <li>steps : tableau d'objets Step. Permet d'inclure les étapes d'historisation
+ * des données, de chargement de données pour la conditon aux limites, etc...</li>
+ * <li>stopTime : fin du scénario en nombre d'heures. </li>
+ * </ul>
+ * </p>
  */
 export class RunScenario extends Scenario {
     /**
@@ -42,8 +56,9 @@ export class RunScenario extends Scenario {
         this.totalStep = 0;
     
         this.stopTime = 0;
+        
+        /** Source de données pour les données d'entrée. */
         this.dataSource = null;
-        this._dataWriter = null;
     }
     
     /**
@@ -66,7 +81,6 @@ export class RunScenario extends Scenario {
             this.model.startDate = this.dataSource.initDate;
             this.model.setup();
             
-            //if (this.dataWriter!=null ) await this.dataWriter.open(DataSource.MODE_WRITE);
             // Obtient les données de départ
             var variables = this.model.getVariablesDescriptions();
             for (var v in variables)

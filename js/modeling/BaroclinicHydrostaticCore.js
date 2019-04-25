@@ -689,7 +689,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                 // Divergence damping
                 damp = this.dampFactor*(divergence[k][i+1]-divergence[k][i])/dx;
 
-                this._model.U_tdcy[k][i] = xi*psvk - adv - kphi - rtz + damp;
+                U_tdcy[k][i] = xi*psvk - adv - kphi - rtz + damp;
             }
             i+=2;
         }

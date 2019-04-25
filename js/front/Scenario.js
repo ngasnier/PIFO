@@ -18,8 +18,42 @@
 import { Model } from "../modeling/Model.js";
 
 /**
- * Définition de base d'un scenario de run.
+ * Définition de base d'un scenario.
  * 
+ * <p>Un scénario est un objet chargé et géré par le frontal enligne de commande
+ * ou le navigateur. Il est en charge de gérer le contenu et le déroulement 
+ * d'une simulation ou de traitements de données.</p>
+ * 
+ * <p>Le frontal appelle la méthode start() du scenario, puis tant que le 
+ * statut est STATE_RUN, la méthode step() sera appelée. Le scenario est 
+ * ensuite responsable de gérer son statut et de la passer à STATE_END quand
+ * nécessaire. La méthode step() appelle automatiquement finish(). </p>
+ * 
+ * <p>L'implémentateur de scénario ne devra pas directement implémenter la 
+ * méthode step(), il viendra plutôt greffer son code dans les méthodes
+ * stepBegin(), stepDo() et stepEnd(). Nb : toutes les méthodes sont
+ * asynchrones pour permettre une utilisation aisée d'opérations de type I/O.</p>
+ * 
+ * <p>Il est possible d'ajouter un certain nombre d'objets "suiveurs" qui 
+ * effectueront des opérations à chaque étape appelés "Steps". Il est également
+ * possible de greffer des méthode listener onStepXXX() pour suivre l'exécution.
+ * </p>
+ * 
+ * <p>Le déroulement complet d'une étape est le suivant :
+ * <ol>
+ * <li>Evènement onStepBegin</li>
+ * <li>Etape stepBegin des steps</li>
+ * <li>Etape stepBegin du scénario</li>
+ * <li>Evènement onStepDo</li>
+ * <li>Etap stepDo des steps</li>
+ * <li>Etape stepDo du scénario</li>
+ * <li>Evènement onStepDone</li>
+ * <li>Etape stepEnd des steps</li>
+ * <li>Etape stepEnd du scénario</li>
+ * <li>Evènement onStepEnd</li>
+ * <li>Si le statut est différent de STATE_RUN alors finish()</li>
+ * </ol>
+ * </p>
  * @returns {Scenario}
  */
 export class Scenario {
@@ -34,9 +68,9 @@ export class Scenario {
         
         /** Gestionnaire d'évènement message. 
          * 
-         * <p>Permet au scenario d'envoyer
-         * un log ou un message de statut qui peut être affiché à l'écran
-         * par l'UI ou tracé dans un fichier.</p> */
+         * <p>Le scénario peut ainsi émettre un log ou un message de statut 
+         * qui peut être affiché à l'écranpar l'UI ou tracé dans un fichier.</p> 
+         */
         this.onMessage = function(msg) {};
         
         /** Evènement appelé en début d'itération avant stepBegin. */

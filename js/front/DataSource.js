@@ -18,7 +18,14 @@
 import { VariableDescription } from "../modeling/VariableDescription.js";
 
 /**
- * Interface d'une source de données 2D ou 3D pour le modèle.
+ * Définition de l'interface d'une source de données de variables pour le modèle.
+ * 
+ * <p>Une source de données fournit un catalogue de variables. Les variables
+ * sont des tableaux 2D ou 3D de données, plus une dimension temporelle.
+ * (NDLA : il faudra probablement adapter certaines choses pour faciliter 
+ * une utilisation du format NetCDF dans le futur)</p>
+ * 
+ * <p>
  * @type type
  */
 export class DataSource {

@@ -17,6 +17,8 @@
 
 /**
  * Interface pour les objets faisant un traitements au sein d'un pas de scenario.
+ * 
+ * @see Scenario
  * @type type
  */
 export class Step

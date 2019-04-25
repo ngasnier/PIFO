@@ -21,6 +21,18 @@ import { Variable } from "../modeling/Variable.js";
 
 /**
  * Gère l'historisation des variables du modèle à intervalle régulier.
+ * 
+ * <p>Paramères : 
+ * <ul>
+ * <li>dataSource: référence vers la DataSource où devront être écrites les 
+ * données.</li>
+ * <li>historyInterval: intervalle d'écriture des données en heures. Les données
+ * sont écrites à partir de t=0.
+ * <li>variables : tableau de nom des variables à historiser sous forme
+ * <code>{name:"variable"}</code>
+ * </li>
+ * </ul>
+ * </p>
  * @type type
  */
 export class HistoryStep extends Step

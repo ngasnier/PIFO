@@ -24,7 +24,20 @@ import { TextFile  } from "../util/TextFile.js";
 /**
  * Source de données basée sur les fichiers textes issus de WGRIB.
  * 
- * La source utilise AJAX en navigateur, ou fs sous node.
+ * <p>C'est le format de données historique du projet PIFO. Il est composé de :
+ * <ul>
+ * <li>un fichier fileinfo.txt : format CSV, décrit les méta-données de base
+ * telles que l'heure d'init du modèle, le nom du modèle et la liste des
+ * enregistrements temporels sous forme de nombre d'heures depuis le début 
+ * de la simulation et la liste des fichiers le constituant.</li>
+ * <li>des fichiers textes au format WGRIB : un ou plusieurs fichiers par 
+ * enregistrement temporel (un par niveau), sous la forme NOM_hhh.txt ou 
+ * NOM_n_hhh.txt. n = numéro de niveau commençant à zero, hhh le nombre d'heures
+ * depuis le début de la simulation.</li>
+ * </ul>
+ * </p>
+ * <p>La source utilise AJAX en navigateur, ou fs sous node, pour le chargement
+ * des données.</p>
  * 
  * @type type
  */
@@ -282,7 +295,6 @@ export class WGRIBTextFieldDataSource extends DataSource {
             
             if ("productName" in p_data) {
                 this.fileInfo.name = p_data.productName;
-                console.log(p_data.productName)
             }
             
             if (p_data.nbLevels>0)

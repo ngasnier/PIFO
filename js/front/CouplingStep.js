@@ -21,6 +21,19 @@ import { Variable } from "../modeling/Variable.js";
 
 /**
  * Fournit au modèle des variables de couplage interpolées temporellement.
+ * 
+ * <p>L'objet utilise la dimension temporelle des variables pour déterminer
+ * les données à charger en fonction de la propriété time du modèle. Une
+ * interpolation linéaire des données est appliquée entre deux points 
+ * temporels.</p>
+ * 
+ * <p>Paramètres :
+ * <ul>
+ * <li>dataSource : une référence de DataSource.</li>
+ * <li>variables : un tableau de mappage de variables sous la forme : 
+ *   <code>{name:"variable", source:"nom_dans_DataSource"}</code></li>
+ * </ul>
+ * </p>
  * @type type
  */
 export class CouplingStep extends Step
@@ -214,7 +227,6 @@ export class CouplingStep extends Step
         try
         {
             var fields = [];
-            console.log(`coupling fields needed for time ${time} (${time/3600}h)`);
             this.sendMessage(`coupling fields needed for time ${time} (${time/3600}h)`);
             if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_READ);
             for (var i in this.variables)

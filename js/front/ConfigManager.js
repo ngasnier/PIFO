@@ -97,11 +97,6 @@ export class ConfigManager {
         }
     }
     
-    /**
-     * 
-     * @param {type} p_object
-     * @returns {ConfigManager.getObjectFromNode.obj}
-     */
     async getObjectFromNode(p_node)
     {
         try {
@@ -133,9 +128,6 @@ export class ConfigManager {
         }
     }
     
-    /**
-     * 
-     */
     async getValue(p_prop)
     {
         try {
@@ -162,6 +154,5 @@ export class ConfigManager {
         {
             throw e;
         }
-    }
-    
+    }   
 }
