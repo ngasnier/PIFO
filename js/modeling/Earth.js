@@ -15,6 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * Calculs d'ordre géographiques ou astronomiques sur la terre.
+ * 
+ * @type type
+ */
 export class Earth
 {
     constructor()

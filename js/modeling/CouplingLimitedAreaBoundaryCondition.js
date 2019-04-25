@@ -20,6 +20,17 @@ import { BoundaryCondition } from "./BoundaryCondition.js"
 
 /**
  * Condition aux limites où les bords sont imposés par un autre modèle couplé.
+ * 
+ * <p>Le couplage est réalisé via une zone de relaxation avec un coefficient
+ * de couplage décroissant vers l'intérieur.</p>
+ * 
+ * <p>Paramètres : 
+ * <ul>
+ * <li>relaxation : taille de la zone de relaxation en points de grille.
+ * Défaut : 6</li>
+ * </ul>
+ * </p>
+ * 
  */
 export class CouplingLimitedAreaBoundaryCondition extends BoundaryCondition
 {
@@ -131,9 +142,10 @@ export class CouplingLimitedAreaBoundaryCondition extends BoundaryCondition
      */
     couple2D(x, c)
     {
+        var alpha_couplage = this._model.alpha_couplage;
         for (var i=0;i<x.length;i++)
         {
-            x[i] = (1-this._model.alpha_couplage[i])*x[i] + this._model.alpha_couplage[i]*c[i];
+            x[i] = (1-alpha_couplage[i])*x[i] + alpha_couplage[i]*c[i];
         }
     }
 
@@ -148,11 +160,12 @@ export class CouplingLimitedAreaBoundaryCondition extends BoundaryCondition
         var i, k;
         if (x.length>0 && (x[0].constructor===Array || x[0].constructor===Float64Array))
         {    
+            var alpha_couplage = this._model.alpha_couplage;
             for (k=0;k<x.length;k++)
             {
                 for (i=0;i<x[k].length;i++)
                 {
-                    x[k][i] = (1-this._model.alpha_couplage[i])*x[k][i] + this._model.alpha_couplage[i]*c[k][i];
+                    x[k][i] = (1-alpha_couplage[i])*x[k][i] + alpha_couplage[i]*c[k][i];
                 }
             }
         }
@@ -160,6 +173,5 @@ export class CouplingLimitedAreaBoundaryCondition extends BoundaryCondition
         {
             this.couple2D(x, c);
         }
-    }
-    
+    }   
 }

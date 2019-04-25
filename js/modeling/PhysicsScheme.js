@@ -16,32 +16,58 @@
  */
 
 
+/**
+ * Interface d'un schéma de paramétrisation physique.
+ * 
+ * @type type
+ */
 export class PhysicsScheme {
     constructor()
     {
         this._model = null;
     }
-    
+   
+    /**
+     * 
+     * @param {type} p_model
+     * @returns {undefined}
+     */
     set model(p_model)
     {
         this._model = p_model;
     }
     
+    /**
+     * 
+     * @returns {@param;PhysicsScheme.set model:p_model}
+     */
     get model()
     {
         return this._model;
     }
     
+    /**
+     * 
+     * @returns {Array}
+     */
     getVariablesDescriptions()
     {
         return [];
     }
     
+    /**
+     * 
+     * @returns {undefined}
+     */
     setup()
     {
         
     }
     
+    /**
+     * 
+     * @returns {undefined}
+     */
     step()
     {
         

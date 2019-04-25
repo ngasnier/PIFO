@@ -16,7 +16,7 @@
  */
 
 /**
- * Implémente une condition aux limites du modèle.
+ * Interface d'une condition aux limites du modèle.
  */
 export class BoundaryCondition
 {
@@ -49,6 +49,7 @@ export class BoundaryCondition
     }
     
     /**
+     * Renvoie une liste de variables nécessaires.
      * 
      * @returns {Array}
      */
@@ -58,7 +59,7 @@ export class BoundaryCondition
     }
      
     /**
-     * 
+     * Initialise l'objet pour les calculs.
      * @returns {undefined}
      */
     setup()
@@ -67,7 +68,8 @@ export class BoundaryCondition
     }
     
     /**
-     * 
+     * Effectue les calculs nécessaires à chaque pas pour garantir la condition
+     * aux limites.
      * @returns {undefined}
      */
     doBoundaryCondition()

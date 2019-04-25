@@ -24,9 +24,10 @@ import { VariableDescription } from "./VariableDescription.js"
 /**
  * Coeur dynamique barocline, équations hydrostatiques, calcul explicite.
  * 
- * Modèle coordonnée vertical sigma pure en grille C
+ * <p>Modèle coordonnée vertical sigma pure en grille C</p>
  * 
- * Disposition de la grille : 
+ * <p>Disposition de la grille : </p>
+ * <pre>
  * x:   0     <-dx->      1                2
  * y:   U      m   phi    U     m   phi    U
  * 0    x--------*--------x-------*--------x--
@@ -44,11 +45,10 @@ import { VariableDescription } from "./VariableDescription.js"
  * 2    x--------*--------x-------*--------x--
  *           K,T | Ps,sigma*  K,T | Ps, sigma*
  *               |                | 
+ * </pre>
  *               
- *                       
- *                                          
- *          
- *  Disposition verticale pour N niveaux :
+ * <p>Disposition verticale pour N niveaux :</p>
+ * <pre>
  *      S     | 
  *  s[0]=0    | Surface : 0   ------------------------------sigma* p[0]=ptop
  *  s[1]      | Couche :  0         U, V, T, phi, K, ksi*   D~ds   p[1]
@@ -61,7 +61,29 @@ import { VariableDescription } from "./VariableDescription.js"
  *  s[2N-1]   | Surface : N-1 ------------------------------sigma* p[2N-1]
  *  s[2N]     | Couche :  N-1       U, V, T, phi, K, ksi*   D~ds   p[2N]
  *  s[2N+1]=1 | Surface : N   ------------------------------sigma* p[2N+1]=ps
- *          
+ * </pre>
+ * 
+ *
+ * <p>Indices pour le calcul des dérivées :</p>
+ * <pre>
+ *    i-1-w    i-1-w     i-w     i-w     i+1-w
+ * 0    x--------*--------x-------*--------x--
+ *               |                |c3      
+ * ^  i-1-w    i-1-w     i-w     i-w     i+1-w
+ * dy   o        +        o       +d2      o     
+ * v             |                |
+ *     i-1      i-1       i       i       i+1     |
+ * 1    x--------*--------x-------*--------x------* 
+ *               |a3      b2    ps|a2     b1    a1|
+ *     i-1      i-1       i       ic2     i+1    
+ *      o        +        o      V+d1      o     
+ *               |                |
+ *     i-1+w   i-1+w     i+w     i+w     i+1+w
+ * 2    x--------*--------x-------*--------x------ 
+ *               |                |c1          
+ *               |                | 
+ * </pre>            
+ *
  * @type type
  */
 export class BaroclinicHydrostaticCore extends DynamicsCore
@@ -355,28 +377,6 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
             }
        }
     }    
-
-/*
- *  Indices pour le calcul des dérivées
- *    i-1-w    i-1-w     i-w     i-w     i+1-w
- * 0    x--------*--------x-------*--------x--
- *               |                |c3      
- * ^  i-1-w    i-1-w     i-w     i-w     i+1-w
- * dy   o        +        o       +d2      o     
- * v             |                |
- *     i-1      i-1       i       i       i+1     |
- * 1    x--------*--------x-------*--------x------* 
- *               |a3      b2    ps|a2     b1    a1|
- *     i-1      i-1       i       ic2     i+1    
- *      o        +        o      V+d1      o     
- *               |                |
- *     i-1+w   i-1+w     i+w     i+w     i+1+w
- * 2    x--------*--------x-------*--------x------ 
- *               |                |c1          
- *               |                | 
- *                  
- */
-
 
     calcDtilde() 
     {
@@ -941,14 +941,6 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
         }
     }
     
-    /**
-     * Calcule le transport d'une variable sur une couche
-     * 
-     * @param q la variable d'humidité à transporter
-     * @param pc pseudo flux de conversion (évaporation, condentation...)
-     * @param sq variable de sortie contenant la dérivée
-     * @param k couche à calculer
-     */
     calcTransportCouche(q, dq, sq, k)
     {
         // Nécessité d'avoir ces variables en local pour optimiser le JIT node.js

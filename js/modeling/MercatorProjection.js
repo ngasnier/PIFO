@@ -19,8 +19,7 @@ import { ConformalProjection } from "./ConformalProjection.js"
 import { VariableDescription } from "./VariableDescription.js"
 
 /**
- * Utilitaire pour convertir les coordonnées du plan Mercator vers sphère 
- * en degré et inversement.
+ * Projection de grille de type Mercator.
  * 
  * On considère que l'orgine est centrée sur (lambda, phi) = (0, 0)
  * 

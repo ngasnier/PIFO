@@ -20,6 +20,10 @@ import { PhysicsScheme } from './PhysicsScheme.js';
 import { Variable } from './Variable.js';
 import { Utility } from './Utility.js';
 
+/**
+ * Schéma de paramétrisation des pluies non convectives, de type Kessler.
+ * @type type
+ */
 export class PrecipitationScheme extends PhysicsScheme
 {
     constructor()

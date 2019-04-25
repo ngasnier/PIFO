@@ -16,9 +16,8 @@
  */
 
 /**
- * Filtre temporel pour l'intégration d'un modèle.
+ * Interface représentant un filtre temporel pour l'intégration d'un modèle.
  * 
- * Cette classe de base ne fait rien, elle peut servir de filtre identité.
  * @type type
  */
 export class TimeFilter {

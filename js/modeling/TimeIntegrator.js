@@ -19,6 +19,7 @@ import { VariableDescription } from "./VariableDescription.js";
 import { Variable } from './Variable.js';
 
 /**
+ * Interface représentant un intégrateur temporel.
  * 
  * @type type
  */
@@ -78,6 +79,10 @@ export class TimeIntegrator {
 
     }
     
+    /**
+     * 
+     * @returns {undefined}
+     */
     finalizeStep()
     {
 

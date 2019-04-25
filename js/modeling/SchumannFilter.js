@@ -18,6 +18,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { SpatialFilter } from "./SpatialFilter.js";
 import { VariableDescription } from "./VariableDescription.js";
 
+/**
+ * Filtre spatial de Schumann.
+ * @type type
+ */
 export class SchumannFilter extends SpatialFilter {
     /**
      * 

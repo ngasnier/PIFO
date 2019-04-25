@@ -18,8 +18,7 @@
 import { Earth } from "./Earth.js"
 
 /**
- * Coeur dynamique en différences centrales pour modèle hydrostatique.
- * Grille C, niveaux sigma, arrangement de Lorentz.
+ * Interface d'coeur dynamique de modèle.
  *          
  * @returns {BaroclinicModel}
  */

@@ -19,6 +19,7 @@ import { Variable } from "./Variable.js";
 import { VariableDescription } from "./VariableDescription.js";
 
 /**
+ * Un modèle créé par composition.
  * 
  * @type type
  */

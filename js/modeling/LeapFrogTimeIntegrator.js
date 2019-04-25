@@ -20,7 +20,7 @@ import { Variable } from "./Variable.js";
 import { TimeIntegrator } from "./TimeIntegrator.js";
 
 /**
- * 
+ * Intégrateur temporel de type explicite centré (ou saute-mouton.
  * @type type
  */
 export class LeapFrogTimeIntegrator extends TimeIntegrator {

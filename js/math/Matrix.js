@@ -15,11 +15,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * Fonctions de calculs sur des matrices mathématiques.
+ * 
+ * @type type
+ */
 export class Matrix
 {
     
 }
 
+/**
+ * 
+ * @param {type} m
+ * @param {type} n
+ * @returns {Array}
+ */
 Matrix.createMatrix = function(m, n)
 {
     var mx = []
@@ -35,6 +46,11 @@ Matrix.createMatrix = function(m, n)
     return mx;
 }
 
+/**
+ * 
+ * @param {type} n
+ * @returns {Float64Array}
+ */
 Matrix.createVector = function(n)
 {
     var buffer = new ArrayBuffer(n * 8);
@@ -46,6 +62,13 @@ Matrix.createVector = function(n)
     return mx;
 }
 
+/**
+ * 
+ * @param {type} a
+ * @param {type} b
+ * @param {type} res
+ * @returns {undefined}
+ */
 Matrix.add = function(a, b, res)
 {
     if (a.length>0 && (a[0].constructor===Array || a[0].constructor===Float64Array) )
@@ -68,6 +91,13 @@ Matrix.add = function(a, b, res)
 
 }
 
+/**
+ * 
+ * @param {type} a
+ * @param {type} b
+ * @param {type} res
+ * @returns {undefined}
+ */
 Matrix.sub = function(a, b, res)
 {
     if (a.length>0 && (a[0].constructor===Array || a[0].constructor===Float64Array) )
@@ -90,6 +120,14 @@ Matrix.sub = function(a, b, res)
 
 }
 
+/**
+ * 
+ * @param {type} a
+ * @param {type} b
+ * @param {type} res
+ * @param {type} diagw
+ * @returns {undefined}
+ */
 Matrix.mul = function(a, b, res, diagw=0)
 {
     var i, j, k;
@@ -175,7 +213,11 @@ Matrix.mul = function(a, b, res, diagw=0)
     
 }*/
 
-
+/**
+ * 
+ * @param {type} x
+ * @returns {Number}
+ */
 Matrix.norm = function(x)
 {
     var i, r;
@@ -188,6 +230,23 @@ Matrix.norm = function(x)
     
 }
 
+/**
+ * Résolution d'un système ax=b par la méthode de surrelaxation.
+ * 
+ * @param {type} a matrice du système
+ * @param {type} b vecteur du système
+ * @param {type} w coefficient de surrelaxation entre 0 et 1
+ * @param {type} x matrice résultat. L'algorithme tient compte des valeurs 
+ * initiales pour améliorer la convergence.
+ * @param {type} r vecteur résidu, de même dimension que x.
+ * @param {type} epsilon seuil optionnel pour détermination de la convergence. 
+ * Défaut : 0.000001
+ * @param {type} maxiter nombre maximum d'itérations avant abandon de la 
+ * convergence. Défaut : 1000
+ * @param {type} diagw largeur de la diagonale, pour optimiser les 
+ * multiplicaions. Défaut : 0, pas d'optimisation.
+ * @returns {Number} le nombre d'itérations pour atteindre la convergence.
+ */
 Matrix.sor = function(a, b, w, x, r, epsilon=0.000001, maxiter=1000, diagw=0)
 {
     var i, j;
