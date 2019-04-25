@@ -18,7 +18,7 @@
 
 rm -f $2/*.txt
 
-cp $1/fileinfo.txt $2
+head -n 1 $1/fileinfo.txt > $2
 
 run=$(ls -l $1/gfs* | head -2 | tail -n 1 | awk '{print $9}' | cut -d. -f2)
 
