@@ -73,33 +73,13 @@ export class RunScenario extends Scenario {
         try
         {
             await super.start();
-
-            // Ouverture des données
-            await this.dataSource.open(DataSource.MODE_READ);
-            
+           
             // Initialisation du modèle
             this.model.startDate = this.dataSource.initDate;
             this.model.setup();
             
-            // Obtient les données de départ
-            var variables = this.model.getVariablesDescriptions();
-            for (var v in variables)
-            {
-                var variable = variables[v];
-                if (variable.category == VariableDescription.CAT_PRONOSTIC 
-                        || variable.category == VariableDescription.CAT_PARAMETER)
-                {
-                    this.sendMessage(`loading variable data ${variable.name} at t=0`);
-                    this.model.setVariable(variable.name, 
-                        await this.dataSource.getField(variable.name, 0));
-                }
-            }
-            this.model.totalTime = 0;
-            this.model.totalStep = 0;
-            this.firstExecTime = new Date();
-    
-            this.model.calcDiagnostics();
-    
+            await this.loadInitData();
+              
             this._status = Scenario.STATE_RUN;
             this.sendMessage("scenario "+this.status);           
             
@@ -151,7 +131,7 @@ export class RunScenario extends Scenario {
     {
         try
         {
-            if (this.model.time>=this.stopTime*3600) // TODO : paramétrage en secondes ?
+            if (Math.abs(this.model.time)>=Math.abs(this.stopTime*3600)) // TODO : paramétrage en secondes ?
             {
                 this._status = Scenario.STATE_END;
                 var now = new Date();
@@ -164,15 +144,51 @@ export class RunScenario extends Scenario {
         }
     }
     
+    async loadInitData()
+    {
+        try {
+            // Ouverture des données
+            await this.dataSource.open(DataSource.MODE_READ);
+
+            // Obtient les données de départ
+            var variables = this.model.getVariablesDescriptions();
+            for (var v in variables)
+            {
+                var variable = variables[v];
+                if (variable.category == VariableDescription.CAT_PRONOSTIC 
+                        || variable.category == VariableDescription.CAT_PARAMETER)
+                {
+                    this.sendMessage(`loading variable data ${variable.name} at t=0`);
+                    this.model.setVariable(variable.name, 
+                        await this.dataSource.getField(variable.name, 0));
+                }
+            }
+            this.model.totalTime = 0;
+            this.model.totalStep = 0;
+            this.firstExecTime = new Date();
+    
+            this.model.calcDiagnostics();
+            
+            await this.dataSource.close();
+            
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
     getMessage()
     {
-        var t = this.model.time;
+        var t = Math.abs(this.model.time);
+        var sign = this.model.time>=0?"":"-";
         var jours = Math.floor(t / 86400);
         t -= jours * 86400;
         var heures = Math.floor(t / 3600);
         t -= heures * 3600;
         var minutes = Math.floor(t / 60);
-        return "Time = " + this.model.time.toString() + " s ("
+        return "Time = " + this.model.time.toString() + " s ("+sign
                 + jours.toString() + " d " + heures.toString() + " h "
                 + minutes.toString() + " m) - dt=" + this.model.dt.toString() + "s, dx="
                 + this.model.dx.toString() + ", dy=" + this.model.dy.toString() + ", "

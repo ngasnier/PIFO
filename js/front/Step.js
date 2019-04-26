@@ -63,18 +63,20 @@ export class Step
     
     /**
      * 
-     * @returns {undefined}
+     * @param {type} p_model
+     * @returns {Step}
      */
-    async init()
+    async init(p_model)
     {
         return this;
     }
     
     /**
      * 
+     * @param {type} p_model
      * @returns {Step}
      */
-    async finish()
+    async stepFinish(p_model)
     {
         return this;
     }

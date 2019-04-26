@@ -289,7 +289,7 @@ export class Scenario {
         {
             for (var i in this.steps)
             {
-                await this.steps[i].init();
+                await this.steps[i].init(this.model);
             }
             return this;
         }
@@ -357,7 +357,7 @@ export class Scenario {
         {
             for (var i in this.steps)
             {
-                await this.steps[i].stepFinish();
+                await this.steps[i].stepFinish(this.model);
             }
             return this;
         }

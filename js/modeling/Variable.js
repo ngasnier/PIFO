@@ -149,9 +149,12 @@ Variable.clone = function(a)
     
     if (a.length>0 && (a[0].constructor===Array || a[0].constructor===Float64Array))
     {
-        c[k].nbLevels = 0;
-        c[k].width = a.width;
-        c[k].height = a.height;
+        for (var k=0;k<a.length;k++)
+        {
+            c[k].nbLevels = 0;
+            c[k].width = a.width;
+            c[k].height = a.height;
+        }
     }
     
     if ("nbLevels" in a) c.nbLevels = a.nbLevels;

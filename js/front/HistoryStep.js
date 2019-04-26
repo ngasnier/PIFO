@@ -53,11 +53,7 @@ export class HistoryStep extends Step
         this.historyInfo = "";
     }
     
-    /**
-     * 
-     * @returns {undefined}
-     */
-    async init()
+    async init(p_model)
     {
         try
         {
@@ -73,15 +69,16 @@ export class HistoryStep extends Step
             throw e;
         }
     }
-    
-    /**
-     * 
-     * @returns {undefined}
-     */
-    async stepFinish()
+
+    async stepFinish(p_model)
     {
         try
         {
+            // Pour historiser T=0 sur les scénario d'init
+            if (p_model.time==0)
+            {
+                await this.doHistory(p_model);
+            }
             if (this.dataSource.isOpen()) await this.dataSource.close();
             return this;
         }
@@ -91,11 +88,6 @@ export class HistoryStep extends Step
         }
     }
     
-    /**
-     * 
-     * @param {type} p_model
-     * @returns {undefined}
-     */
     async stepBegin(p_model)
     {
         try
@@ -113,11 +105,6 @@ export class HistoryStep extends Step
         }
     }
     
-    /**
-     * 
-     * @param {type} p_model
-     * @returns {undefined}
-     */
     async stepDo(p_model)
     {
         try
@@ -130,11 +117,6 @@ export class HistoryStep extends Step
         }
     }
     
-    /**
-     * 
-     * @param {type} p_model
-     * @returns {undefined}
-     */
     async stepEnd(p_model)
     {
         try

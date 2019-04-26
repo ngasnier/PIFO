@@ -28,6 +28,7 @@
         "MultiDiffusionComponent": "processing/MultiDiffusionComponent.js",
         
         "RunScenario": "front/RunScenario.js",
+        "InitScenario": "front/InitScenario.js",
         "CouplingStep": "front/CouplingStep.js",
         "HistoryStep": "front/HistoryStep.js"
     },
@@ -101,6 +102,21 @@
             ]
         },
         
+        "inputdata": {
+            "class": "WGRIBTextFieldDataSource", 
+            "baseURL" : "res/test/input" ,
+            "catalog" : [ 
+                {"name": "U", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "V", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "T", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "Z", "description":"", "units":""},
+                {"name": "qv", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "f", "description":"", "units":""},
+                {"name": "m", "description":"", "units":""},
+                {"name": "sfcgeop", "description":"", "units":""}
+            ]
+        },
+
         "rundata": {
             "class": "WGRIBTextFieldDataSource", 
             "baseURL" : "res/test/run" ,
@@ -261,7 +277,7 @@
                         {
                             "name": "variable_destination", 
                             "class":"WGRIBOutputComponent", 
-                            "dataSource": { "ref": "rundata" }
+                            "dataSource": { "ref": "inputdata" }
                         }
                     ],
                     "links": [
@@ -303,7 +319,7 @@
                         {
                             "name": "variable_destination", 
                             "class":"WGRIBOutputComponent", 
-                            "dataSource": { "ref": "rundata" }
+                            "dataSource": { "ref": "inputdata" }
                         }
                     ],
                     "links": [
@@ -349,7 +365,7 @@
                         {
                             "name": "variable_destination", 
                             "class":"WGRIBOutputComponent", 
-                            "dataSource": { "ref": "rundata" }
+                            "dataSource": { "ref": "inputdata" }
                         }
                     ],
                     "links": [
@@ -438,7 +454,7 @@
                         {
                             "name": "variable_destination", 
                             "class":"WGRIBOutputComponent", 
-                            "dataSource": { "ref": "rundata" }
+                            "dataSource": { "ref": "inputdata" }
                         }
                     ],
                     "links": [
@@ -473,7 +489,7 @@
                         {
                             "name": "m_destination", 
                             "class":"WGRIBOutputComponent", 
-                            "dataSource": { "ref": "rundata" }
+                            "dataSource": { "ref": "inputdata" }
                         }
                     ],
                     "links": [
@@ -495,7 +511,7 @@
                         {
                             "name": "f_destination", 
                             "class":"WGRIBOutputComponent", 
-                            "dataSource": { "ref": "rundata" }
+                            "dataSource": { "ref": "inputdata" }
                         }
                     ],
                     "links": [
@@ -506,6 +522,41 @@
             ],
             
             "times": [0] 
+        },
+        
+        "init": {
+            "class": "InitScenario",
+            "dataSource": {"ref": "inputdata"},
+
+            "stopTime": 3,
+            
+            "steps": [
+                { 
+                    "class":"CouplingStep",
+                    "dataSource" : {"ref": "inputdata"},
+                    "variables": [
+                        {"name":"U_couplage", "source": "U"},
+                        {"name":"V_couplage", "source": "V"},
+                        {"name":"T_couplage", "source": "T"},
+                        {"name":"Z_couplage", "source": "Z"},
+                        {"name":"qv_couplage", "source": "qv"}
+                    ]
+                },
+                {
+                    "class":"HistoryStep",
+                    "dataSource" : {"ref": "rundata"},
+                    "historyInterval" : 12,
+                    "variables": [
+                        {"name":"U"},
+                        {"name":"V"},
+                        {"name":"T"},
+                        {"name":"Z"},
+                        {"name":"qv"},                        
+                        {"name":"m"},
+                        {"name":"f"},
+                        {"name":"sfcgeop"}
+                    ]
+                }]
         },
         
         "run": {
@@ -549,7 +600,7 @@
                     ]
                 }]
         },
-        
+
         "postprocessor" : {
             "class": "DataProcessor",
             
