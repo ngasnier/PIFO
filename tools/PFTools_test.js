@@ -62,7 +62,7 @@ module.exports.postprocessPifo = function(context)
     var args = [
         "runpifo.js",
         "barocline.json",
-        "preprocessor"
+        "postprocessor"
         ];
     var options =  {cwd: path.join(context.config.products[context.productName].pifo_root+"_test")};
     return Helper.spawnPromise(cmdline, args, context, options);
