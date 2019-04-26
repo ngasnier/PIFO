@@ -72,15 +72,15 @@ module.exports.createMaps = function(context)
 {
     context.europe_dir = path.join(context.config.PRODUCT_DIR, "maps/europe/pifo_test", path.basename(context.productDir));
     Helper.mkdirpSync(context.europe_dir);
-    Helper.createSymlink(context.europe_dir, path.join(context.config.PRODUCT_DIR, "maps/europe/pifo", "latest"));
+    Helper.createSymlink(context.europe_dir, path.join(context.config.PRODUCT_DIR, "maps/europe/pifo_test", "latest"));
        
     context.france_dir = path.join(context.config.PRODUCT_DIR, "maps/france/pifo_test/"+path.basename(context.productDir));
     Helper.mkdirpSync(context.france_dir);
-    Helper.createSymlink(context.france_dir, path.join(context.config.PRODUCT_DIR, "maps/france/pifo", "latest"));
+    Helper.createSymlink(context.france_dir, path.join(context.config.PRODUCT_DIR, "maps/france/pifo_test", "latest"));
 
     context.meteogrammes_dir = path.join(context.config.PRODUCT_DIR, "charts/france/pifo_test/"+path.basename(context.productDir));
     Helper.mkdirpSync(context.meteogrammes_dir);
-    Helper.createSymlink(context.meteogrammes_dir, path.join(context.config.PRODUCT_DIR, "charts/france/pifo", "latest"));
+    Helper.createSymlink(context.meteogrammes_dir, path.join(context.config.PRODUCT_DIR, "charts/france/pifo_test", "latest"));
     
     context.coupes_dir = path.join(context.config.PRODUCT_DIR, "slices/france/pifo_test/"+path.basename(context.productDir));
     Helper.mkdirpSync(context.coupes_dir);
@@ -90,7 +90,7 @@ module.exports.createMaps = function(context)
     
     var cmdline = "ncl";
     var args = [
-        path.join(context.config.products[context.productName].custom_root, "pifo_all.ncl"),
+        path.join(context.config.products[context.productName].custom_root, "pifo_test_all.ncl"),
         "input_dir=\""+path.join(context.config.products[context.productName].pifo_root+"_test", "barocline/pub")+"\"",
         "europe_dir=\""+context.europe_dir+"\"",
         "france_dir=\""+context.france_dir+"\"",
