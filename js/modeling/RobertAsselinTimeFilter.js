@@ -22,6 +22,18 @@ import { TimeFilter } from './TimeFilter.js';
 /**
  * Filtre temporel utilisant l'algorithme de Robert-Asselin.
  * 
+ * <p>Le filtre fonctionne de manière incrémentale sur les champs 
+ * pronostiques du modèle selon la formule :</p>
+ * <pre><code>
+ * X_filtre(t) = X(t) + epsilon*[X_filtre(t-1) - 2X(t) + X(t+1)]
+ * </code></pre>
+ * <p>Paramètres :
+ * <ul>
+ * <li>epsilon : coefficient du filtre (epsilon = 0.5*nu) supposé entre 0 et 1. 
+ * Défaut : 0.005</li>
+ * </ul>
+ * </p>
+ * 
  * @type type
  */
 export class RobertAsselinTimeFilter extends TimeFilter {
@@ -79,16 +91,20 @@ export class RobertAsselinTimeFilter extends TimeFilter {
      */
     preStep()
     {
-        var variables = this.model.getVariablesDescriptions();
-        for (var v in variables)
+        if (this.model.time!=0)
         {
-            if (variables[v].category==VariableDescription.CAT_PRONOSTIC)
+            var variables = this.model.getVariablesDescriptions();
+            for (var v in variables)
             {
-                var vv = this.model.getVariable(variables[v].name);
-                var var_t = this.model.getVariable(variables[v].name+"_t");
-                var var_tmp = this.model.getVariable(variables[v].name+"_tmp");
-                Variable.a_bc(var_t, vv, -2, var_tmp);
-                Variable.a_bc(vv, var_tmp, this.epsilon, var_tmp);
+                if (variables[v].category==VariableDescription.CAT_PRONOSTIC)
+                {
+                    var X = this.model.getVariable(variables[v].name);
+                    var X_t = this.model.getVariable(variables[v].name+"_t");
+                    var X_tmp = this.model.getVariable(variables[v].name+"_tmp");
+                    Variable.a_bc(X_t, X, -2, X_tmp);              // X(t-1)-2X(t)
+                    Variable.a_bc(X, X_tmp, this.epsilon, X_tmp);  // X(t)+epsilon*(X(t-1)-2X(t))
+                    //if (variables[v].name=="U") console.log(this.model.time, "X(t-1)=", X_t[0][1337], "X(t)=",X[0][1337], "X_tmp=", X_tmp[0][1337]);
+                }
             }
         }
     }
@@ -99,15 +115,19 @@ export class RobertAsselinTimeFilter extends TimeFilter {
      */
     postStep()
     {
-        var variables = this.model.getVariablesDescriptions();
-        for (var v in variables)
+        if (this.model.time!=0)
         {
-            if (variables[v].category==VariableDescription.CAT_PRONOSTIC)
+            var variables = this.model.getVariablesDescriptions();
+            for (var v in variables)
             {
-                var vv = this.model.getVariable(variables[v].name);
-                var var_t = this.model.getVariable(variables[v].name+"_t");
-                var var_tmp = this.model.getVariable(variables[v].name+"_tmp");
-                Variable.a_bc(var_tmp, var_t, this.epsilon, vv);
+                if (variables[v].category==VariableDescription.CAT_PRONOSTIC)
+                {
+                    var X = this.model.getVariable(variables[v].name);
+                    var X_t = this.model.getVariable(variables[v].name+"_t");
+                    var X_tmp = this.model.getVariable(variables[v].name+"_tmp");                
+                    Variable.a_bc(X_tmp, X_t, this.epsilon, X);       // X(t) = X_tmp + epsilon*X(t+1)
+                    //if (variables[v].name=="U") console.log(this.model.time, "X(t+1)=", X_t[0][1337], "X(t)=",X[0][1337], "X_tmp=", X_tmp[0][1337]);
+                }
             }
         }
     }    

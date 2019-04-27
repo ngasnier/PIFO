@@ -30,7 +30,8 @@
         "RunScenario": "front/RunScenario.js",
         "InitScenario": "front/InitScenario.js",
         "CouplingStep": "front/CouplingStep.js",
-        "HistoryStep": "front/HistoryStep.js"
+        "HistoryStep": "front/HistoryStep.js",
+        "RecorderStep": "front/RecorderStep.js"
     },
     
     "global": {
@@ -175,7 +176,12 @@
 
         "timeIntegrator" : {
             "class": "LeapFrogTimeIntegrator"
-        },                 
+        },
+        
+        "timeFilter" : {
+            "class": "RobertAsselinTimeFilter",
+            "epsilon": 0.428
+        },
 
         "width": 111,
         "height": 72,
@@ -561,14 +567,14 @@
         
         "run": {
             "class": "RunScenario",
-            "dataSource": {"ref": "rundata"},
+            "dataSource": {"ref": "inputdata"},
 
-            "stopTime": 1,
+            "stopTime": 48,
             
             "steps": [
                 { 
                     "class":"CouplingStep",
-                    "dataSource" : {"ref": "rundata"},
+                    "dataSource" : {"ref": "inputdata"},
                     "variables": [
                         {"name":"U_couplage", "source": "U"},
                         {"name":"V_couplage", "source": "V"},
@@ -598,7 +604,21 @@
                         {"name": "latitudes"}, 
                         {"name": "longitudes"}
                     ]
-                }]
+                },
+                { 
+                    "class":"RecorderStep",
+                    "outputURL" : "run",
+                    "variables": [
+                        {
+                            "name":"phi", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
 
         "postprocessor" : {
