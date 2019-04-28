@@ -617,6 +617,62 @@ begin
         delete(ta_hpa)
 
         ; ************************************************************************
+        ; Divergence
+        ; ************************************************************************
+        dvg = uv2dv_cfd(U, V, lat2d, lon2d, 2)
+        dvg = dvg*10e4
+
+        dvg500 = vinth2p(dvg, hyba_surfaces, sigma_surfaces, (/ 500 /), ps, 1 , 1000 , 1 , True)
+        dvg300 = vinth2p(dvg, hyba_surfaces, sigma_surfaces, (/ 300 /), ps, 1 , 1000 , 1 , True)
+        dvg950 = vinth2p(dvg, hyba_surfaces, sigma_surfaces, (/ 950 /), ps, 1 , 1000 , 1 , True)
+    
+        outfile = europe_dir+"/pifo_div_"+valid
+        wks = gsn_open_wks(device, outfile)
+        mb_set_colormap(wks)		
+
+        div300_res = gen_res
+        div300_res@cnLineColor = "red"
+        div300_res@cnLineDashInvert = True
+        div300_res@lbLabelBarOn = False
+
+        plot_div = mb_divergence_contour(wks, dvg950(0,:,:), gen_res)
+        plot_div2 = mb_divergence_contour(wks, dvg300(0,:,:), div300_res) 
+
+        mapid = mb_map_europe(wks, "Divergence 950/300 hPa", globalRes@validDate, globalRes@runInfo, eur_res)
+        overlay(mapid, plot_div)
+        overlay(mapid, plot_div2)
+        draw(mapid)
+        frame(wks)
+
+        delete(plot_div)
+        delete(plot_div2)
+        delete(mapid)
+
+        outfile = europe_dir+"/pifo_div500_"+valid
+        wks = gsn_open_wks(device, outfile)
+        mb_set_colormap(wks)		
+
+        div500_res = gen_res
+        div500_res@cnLineColor = "black"
+        div500_res@cnLineDashInvert = True
+        div500_res@lbLabelBarOn = False
+
+        plot_div = mb_divergence_contour(wks, dvg500(0,:,:), div500_res) 
+
+        mapid = mb_map_europe(wks, "Divergence 500 hPa", globalRes@validDate, globalRes@runInfo, eur_res)
+        overlay(mapid, plot_div)
+        draw(mapid)
+        frame(wks)
+
+        delete(plot_div)
+        
+        delete(dvg)
+        delete(dvg300)
+        delete(dvg500)
+        delete(dvg950)
+
+
+        ; ************************************************************************
         ; Cleanup
         ; ************************************************************************
 

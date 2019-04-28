@@ -586,7 +586,7 @@
                 {
                     "class":"HistoryStep",
                     "dataSource" : {"ref": "outputdir"},
-                    "historyInterval" : 1,
+                    "historyInterval" : 3,
                     "variables": [
                         {"name":"U"},
                         {"name":"V"},

@@ -24,19 +24,14 @@ echo $METEO_DIR
 
 export NCL_ROOT="/home/nicolas/NetBeansProjects/MbTools/ncl"
 
-fileinfo=$1
-echo $1
-#while read fileinfo 
-#do
-runvalid=$(echo $fileinfo | cut -d ";" -f 5)
-
-cmdline="input_dir=\"/home/nicolas/Meteo/scripts/pifo\" europe_dir=\"/home/nicolas/Meteo/scripts/pifo/images\""
+cmdline="input_dir=\"$1\" europe_dir=\"$2\" coupes_dir=\"$3\""
 echo $cmdline
 # *** Cartes PIFO
 ncl pifo_all.ncl $cmdline
-for f in $(ls pifo/images/*.ps)
+for f in $(ls $2/*.ps)
 do
-	outfile="pifo/images/$(basename $f .ps).png"
+	outfile="$2/$(basename $f .ps).png"
+        #outfile="res/test/maps/europe/$(basename $f .ps).png"
 	# png256
 	# Conversion PS en PNG
 	gs -sDEVICE=png16m -dNOPAUSE -dEPSCrop -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r72 -sOutputFile=$outfile -c "<</Orientation 1>> setpagedevice" --f $f quit 
