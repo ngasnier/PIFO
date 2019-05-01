@@ -144,7 +144,7 @@ export class CouplingStep extends Step
             for (var i in this.variables)
             {
                 var v = this.variables[i];
-                this.interp(this.vt1[v.name], this.vt2[v.name], this.t1, this.t2, t, p_model.getVariable(v.name));
+                this.interp(this.vt1[v.name], this.vt2[v.name], this.times[this.t1], this.times[this.t2], t, p_model.getVariable(v.name));
             }
             
             return this;
