@@ -92,7 +92,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
     {
         super();
 
-        this.dampFactor = 0;//1000000.0;
+        this.diffusionFactor = 1000000.0;
         
         this.alpha = []; // alphak = ln sigmaktilde/sigmak
         this.beta = []; // betak = ln sigmak/sigmak-1tilde
@@ -419,18 +419,19 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
         var DtildeDs = this._model.DtildeDs;
         var Dtilde = this._model.Dtilde;
         var nbLayers = this._model.nbLayers;
+        var dsigma = this.dsigma;
         // Verif Ok 15/06/2018
         // Integre l'expression Dtilde*dsigma sur la verticale
         var nb = width*height;
         for (var i=0;i<nb;i++)
         {
-            DtildeDs[0][i] = Dtilde[0][i]*this.dsigma[0];
+            DtildeDs[0][i] = Dtilde[0][i]*dsigma[0];
         }
         for (var k=1;k<nbLayers;k++)
         {
             for (i=0;i<nb;i++)
             {
-                DtildeDs[k][i] = DtildeDs[k-1][i]+Dtilde[k][i]*this.dsigma[k];
+                DtildeDs[k][i] = DtildeDs[k-1][i]+Dtilde[k][i]*dsigma[k];
             }
         }
     }
@@ -490,6 +491,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
         var dQv = this._model.dQv;
         var ps = this._model.ps;
         var dt = this._model.dt;
+        var dsigma = this.dsigma;
 
         var i = 0;
         var x, y;
@@ -506,7 +508,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                 for(x=1;x<width-1;x++,i++)
                 {
                     // Différentiel sur la verticale ????
-                    dQv[k][i] = Model.g /(2*ps[i]*this.dsigma[k])
+                    dQv[k][i] = Model.g /(2*ps[i]*dsigma[k])
                             *(
                              (Pl_3[k+1][i]+Pi_3[k+1][i] - Pl_1[k+1][i] - Pi_1[k+1][i])
                             - (Pl_3[k][i]+Pi_3[k][i] - Pl_1[k][i] - Pi_1[k][i])
@@ -551,6 +553,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
         var Pl_3 = this._model.Pl_3;
         var ps = this._model.ps;
         var dt = this._model.dt;
+        var dsigma = this.dsigma;
         
         var i = 0;
         var x, y;
@@ -565,7 +568,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
             {
                 for(x=1;x<width-1;x++,i++)
                 {                       
-                    Q[k][i] = -Model.g/(2*ps[i]*this.dsigma[k])
+                    Q[k][i] = -Model.g/(2*ps[i]*dsigma[k])
                         *(
                             // Terme de contribution du changement de pression dûe au changement de 
                             // masse à cause du flux de précipitation
@@ -611,6 +614,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
         var width = this._model.width;
         var height = this._model.height;
         var sigmaf = this._model.sigmaf;
+        var dsigma = this.dsigma;
         var U = this._model.U;
         var V = this._model.V;
         var K = this._model.K;
@@ -649,8 +653,8 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                     u_k_plus_1 = 0;
                 }
 
-                d_ktilde_moins_1_1 = this._model.sigmaf[k][i];
-                d_ktilde_moins_1_2 = this._model.sigmaf[k][i+1];
+                d_ktilde_moins_1_1 = sigmaf[k][i];
+                d_ktilde_moins_1_2 = sigmaf[k][i+1];
 
                 u_k = U[k][i];
 
@@ -675,7 +679,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                     )/8; 
 
                 // Verif Ok 14/06/2018
-                adv = (1/((ps[i+1]+ps[i])*this.dsigma[k]))
+                adv = (1/((ps[i+1]+ps[i])*dsigma[k]))
                     *(
                        0.5*(d_ktilde_1+d_ktilde_2)*(u_k_plus_1-u_k)+0.5*(d_ktilde_moins_1_1+d_ktilde_moins_1_2)*(u_k-u_k_moins_1)
                      );
@@ -687,7 +691,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                 rtz = Model.R*0.5*(T[k][i]+T[k][i+1])*(Z[i+1]-Z[i])/dx;
 
                 // Divergence damping
-                damp = this.dampFactor*(divergence[k][i+1]-divergence[k][i])/dx;
+                damp = this.diffusionFactor*(divergence[k][i+1]-divergence[k][i])/dx;
 
                 U_tdcy[k][i] = xi*psvk - adv - kphi - rtz + damp;
             }
@@ -710,6 +714,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
         var width = this._model.width;
         var height = this._model.height;
         var sigmaf = this._model.sigmaf;
+        var dsigma = this.dsigma;
         var U = this._model.U;
         var V = this._model.V;
         var K = this._model.K;
@@ -774,7 +779,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                     )/8;
 
                 // Verif Ok 14/06/2018
-                adv = (1/((ps[i]+ps[i+width])*this.dsigma[k]))*(
+                adv = (1/((ps[i]+ps[i+width])*dsigma[k]))*(
                        0.5*(d_ktilde_1+d_ktilde_2)*(v_k_plus_1-v_k)+0.5*(d_ktilde_moins_1_1+d_ktilde_moins_1_2)*(v_k-v_k_moins_1));
 
                 // Verif Ok 14/06/2018
@@ -783,7 +788,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                 // Verif Ok 14/06/2018
                 rtz = Model.R*0.5*(T[k][i]+T[k][i+width])*(Z[i]-Z[i+width])/dy;
 
-                damp = this.dampFactor*(divergence[k][i+width]-divergence[k][i+width])/dy;
+                damp = this.diffusionFactor*(divergence[k][i+width]-divergence[k][i+width])/dy;
 
                 V_tdcy[k][i] = -xi*psuk - adv - kphi - rtz + damp;
             }
@@ -806,6 +811,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
         var width = this._model.width;
         var height = this._model.height;
         var sigmaf = this._model.sigmaf;
+        var dsigma = this.dsigma;
         var U = this._model.U;
         var V = this._model.V;
         var K = this._model.K;
@@ -875,12 +881,12 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                     )/ps[i];
 
                 // Verif Ok 14/06/2018
-                adv = (d_ktilde*(t_k_plus_1-t_k)+d_ktilde_moins_1*(t_k-t_k_moins_1)) / (ps[i]*2*this.dsigma[k]);
+                adv = (d_ktilde*(t_k_plus_1-t_k)+d_ktilde_moins_1*(t_k-t_k_moins_1)) / (ps[i]*2*dsigma[k]);
 
                 // Verif Ok 15/06/2018
                 part2 = Model.R*T[k][i]*m2
-                            *(this.gamma[k]*integ_dtlds+this.alpha[k]*Dtilde[k][i]*this.dsigma[k])
-                        /(Cph[k][i]*ps[i]*this.dsigma[k]); // Model.Cp
+                            *(this.gamma[k]*integ_dtlds+this.alpha[k]*Dtilde[k][i]*dsigma[k])
+                        /(Cph[k][i]*ps[i]*dsigma[k]); // Model.Cp
 
                 // Verif Ok 15/06/2018
                 part3 = Model.R*m2 *(
@@ -947,6 +953,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
         var width = this._model.width;
         var height = this._model.height;
         var sigmaf = this._model.sigmaf;
+        var dsigma = this.dsigma;
         var U = this._model.U;
         var V = this._model.V;
         var m = this._model.m;
@@ -1001,7 +1008,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                     )/ps[i];
 
                 // Terme d'advection verticale
-                adv = (d_ktilde*(q_k_plus_1-q_k)+d_ktilde_moins_1*(q_k-q_k_moins_1)) / (ps[i]*2*this.dsigma[k]);
+                adv = (d_ktilde*(q_k_plus_1-q_k)+d_ktilde_moins_1*(q_k-q_k_moins_1)) / (ps[i]*2*dsigma[k]);
 
                 sq[k][i] = - part1 - adv + dq[k][i];
             }

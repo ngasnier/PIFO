@@ -165,7 +165,8 @@
         "class": "Model",
 
         "dynamicsCore": {
-            "class": "BaroclinicHydrostaticCore"
+            "class": "BaroclinicHydrostaticCore",
+            "diffusionFactor": 1000000
         },
 
         "name": "PIFO",
@@ -611,6 +612,13 @@
                     "variables": [
                         {
                             "name":"phi", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"divergence", 
                             "points": [
                                 {"x":52, "y":43, "z": 4}, 
                                 {"x":62, "y":14, "z": 4}
