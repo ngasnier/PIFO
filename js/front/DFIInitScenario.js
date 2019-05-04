@@ -37,7 +37,7 @@ import { VariableDescription } from "../modeling/VariableDescription.js";
  * </ul>
  * </p>
  */
-export class InitScenario extends RunScenario {
+export class DFIInitScenario extends RunScenario {
     /**
      * 
      * @returns {undefined}
@@ -54,6 +54,7 @@ export class InitScenario extends RunScenario {
         this.hindcastForwardSum = [];
         this.hindcastBackwardSum = [];
         this.hindcastSeries = [];
+        this.filterCoeffs = [];
     }
     
     /**
@@ -75,17 +76,33 @@ export class InitScenario extends RunScenario {
             
             this.hindcastNb = this.stopTime*3600 / this.model.dt;
             this.hindcastStep = 0;
-            var lc = 0.5*1/(this.hindcastNb*Math.PI*Math.PI/(this.hindcastNb+1));
-/*            var lc = 0.5*Math.sin(Math.PI/(me.hindcastNb+1))/(Math.PI/(me.hindcastNb+1))
-                     *Math.sin(Math.PI/me.hindcastNb)/(Math.PI);*/
+            
+            this.filterCoeffs = [ 0.5*1/(this.hindcastNb*Math.PI*Math.PI/(this.hindcastNb+1)) ];
+            
+            var sum = this.filterCoeffs[0];
+            for (var n=1;n<=this.hindcastNb;n++)
+            {               
+                this.filterCoeffs[n] = 
+                        Math.sin(n*Math.PI/(this.hindcastNb+1))/(n*Math.PI/(this.hindcastNb+1))
+                        *Math.sin(n*Math.PI/this.hindcastNb)/(n*Math.PI);
+                sum += this.filterCoeffs[n];
+            }
+            
+            var norm = 1/(sum*2);
+            for (var n=0;n<=this.hindcastNb;n++)
+            {
+                this.filterCoeffs[n] *= norm;
+            }
+           
+            var h = this.filterCoeffs[0];
 
-            this.hindcastLcSum = 2*lc;
+            this.hindcastLcSum = 2*h;
 
             this.model.getHistoricVariables().forEach(function (item) {
                 me.hindcastBackwardSum[item.name] = Variable.clone(me.model.getVariable(item.name));
                 me.hindcastForwardSum[item.name] = Variable.clone(me.model.getVariable(item.name));
-                Variable.mulConst(me.hindcastBackwardSum[item.name], lc, me.hindcastBackwardSum[item.name]);
-                Variable.mulConst(me.hindcastForwardSum[item.name], lc, me.hindcastForwardSum[item.name]);
+                Variable.mulConst(me.hindcastBackwardSum[item.name], h, me.hindcastBackwardSum[item.name]);
+                Variable.mulConst(me.hindcastForwardSum[item.name], h, me.hindcastForwardSum[item.name]);
             });
             
             this.hindcastSeries = this.hindcastForwardSum;
@@ -127,14 +144,13 @@ export class InitScenario extends RunScenario {
             
             this.hindcastStep++;
             
-            var lc = Math.sin(me.hindcastStep*Math.PI/(me.hindcastNb+1))/(me.hindcastStep*Math.PI/(me.hindcastNb+1))
-                     *Math.sin(me.hindcastStep*Math.PI/me.hindcastNb)/(me.hindcastStep*Math.PI);
+            var h = this.filterCoeffs[this.hindcastStep];
 
             this.model.getHistoricVariables().forEach(function (item) {
-                Variable.a_bc(me.hindcastSeries[item.name], me.model.getVariable(item.name), lc, me.hindcastSeries[item.name]);
+                Variable.a_bc(me.hindcastSeries[item.name], me.model.getVariable(item.name), h, me.hindcastSeries[item.name]);
             });
 
-            this.hindcastLcSum += lc;
+            this.hindcastLcSum += h;
 
             if (this.hindcastStep>=this.hindcastNb)
             {
@@ -147,7 +163,6 @@ export class InitScenario extends RunScenario {
                     this.model.time = 0;
                     this.model.dt = -this.model.dt;
                     this.hindcastSeries = this.hindcastBackwardSum;
-                    //this.hindcastLcSum = 0.5*Math.PI*Math.PI/(this.hindcastNb);
                     this.hindcastStatus = "backward";
                     this._status = Scenario.STATE_RUN;
                     this.sendMessage("starting backward hindcast");

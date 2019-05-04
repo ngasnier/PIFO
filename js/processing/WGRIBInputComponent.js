@@ -24,6 +24,7 @@ export class WGRIBInputComponent extends Component {
         super();
         this.dataSource = null;
         this.source = null;
+        this.excludedTimes = [];
     }
     
     /**
@@ -54,6 +55,8 @@ export class WGRIBInputComponent extends Component {
             this.sendMessage(`${this.name} : opening ${this.dataSource.name}`);
             if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_READ);
             this.currentTime = 0;
+            if (this.excludedTimes.indexOf(this.dataSource.times[this.currentTime])>=0)
+                this.nextTime();
             return this;
         }
         catch (e)
@@ -97,7 +100,7 @@ export class WGRIBInputComponent extends Component {
                 
                 data_out["main"].setData(data);
                 
-                this.currentTime++;
+                this.nextTime();
             }
             
             return this;
@@ -106,6 +109,15 @@ export class WGRIBInputComponent extends Component {
         {
             throw e;
         }
+    }
+    
+    nextTime()
+    {
+        do {
+            this.currentTime++;
+        }
+        while (this.excludedTimes.indexOf(this.dataSource.times[this.currentTime])>=0
+            && this.currentTime<this.dataSource.times.length);            
     }
     
 }

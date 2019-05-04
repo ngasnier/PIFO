@@ -52,6 +52,7 @@ export class CouplingStep extends Step
         this.t2 = -1;
         this.vt1 = null;
         this.vt2 = null;
+        this.restrictTimes = [];
     }
     
     /**
@@ -65,6 +66,25 @@ export class CouplingStep extends Step
             if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_READ);
 
             this.times = this.dataSource.times.slice();
+            
+            // supprime les temps non désirés
+            if (this.restrictTimes.length>0)
+            {
+                var i=0;
+                while (i<this.times.length)
+                {
+                    var idx = this.restrictTimes.indexOf(this.times[i]);
+                    if (idx<0)
+                    {
+                        this.times.splice(i, 1);
+                    }
+                    else
+                    {
+                       i++;
+                    }
+                }
+            }
+            
             for (var i in this.times) this.times[i] *= 3600;
             
             return this;

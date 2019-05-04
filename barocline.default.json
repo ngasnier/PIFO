@@ -28,7 +28,7 @@
         "MultiDiffusionComponent": "processing/MultiDiffusionComponent.js",
         
         "RunScenario": "front/RunScenario.js",
-        "InitScenario": "front/InitScenario.js",
+        "DFIInitScenario": "front/DFIInitScenario.js",
         "CouplingStep": "front/CouplingStep.js",
         "HistoryStep": "front/HistoryStep.js",
         "RecorderStep": "front/RecorderStep.js"
@@ -532,7 +532,7 @@
         },
         
         "init": {
-            "class": "InitScenario",
+            "class": "DFIInitScenario",
             "dataSource": {"ref": "inputdata"},
 
             "stopTime": 3,
@@ -547,7 +547,8 @@
                         {"name":"T_couplage", "source": "T"},
                         {"name":"Z_couplage", "source": "Z"},
                         {"name":"qv_couplage", "source": "qv"}
-                    ]
+                    ],
+                    "restrictTimes": [0]
                 },
                 {
                     "class":"HistoryStep",
@@ -565,17 +566,56 @@
                     ]
                 }]
         },
-        
+
+        "postinit": {
+            "class": "DataProcessor",
+            
+            "processList": [
+                { "name":"U", "task" : "copy", "parameters": [{"name":"source", "value":"U"}, {"name": "variable", "value":"U"}]},
+                { "name":"V", "task" : "copy", "parameters": [{"name":"source", "value":"V"}, {"name":"variable", "value": "V"}]},
+                { "name":"T", "task" : "copy", "parameters": [{"name":"source", "value":"T"}, {"name":"variable", "value": "T"} ]},
+                { "name":"Z", "task" : "copy", "parameters": [{"name":"source", "value":"Z"}, {"name":"variable", "value": "Z"}]},
+                { "name":"qv", "task" : "copy", "parameters": [{"name":"source", "value":"qv"}, {"name":"variable", "value": "qv"}]}                
+            ],
+           
+            "tasks": [
+                {
+                    "name":"copy",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "variable_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "inputdata" },
+                            "excludedTimes": [0]
+                        },
+                        {
+                            "name": "variable_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "rundata" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"variable_source", "output":"main", "inputComponent":"variable_destination", "input":"main"}                        
+                    ]
+                }                
+            ]
+        },
+
         "run": {
             "class": "RunScenario",
-            "dataSource": {"ref": "inputdata"},
+            "dataSource": {"ref": "rundata"},
 
             "stopTime": 48,
             
             "steps": [
                 { 
                     "class":"CouplingStep",
-                    "dataSource" : {"ref": "inputdata"},
+                    "dataSource" : {"ref": "rundata"},
                     "variables": [
                         {"name":"U_couplage", "source": "U"},
                         {"name":"V_couplage", "source": "V"},
