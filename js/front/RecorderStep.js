@@ -138,32 +138,40 @@ export class RecorderStep extends Step
      */
     async stepEnd(p_model)
     {
-        var name;
-        var X, pt, value;
-        var line, sep;
-        var i, j, k;
-        this.textFile = new TextFile(this.outputURL);
-        for (var v in this.variables)
+        try
         {
-            name = this.variables[v].name;
-            X = p_model.getVariable(name);
-            line = "";
-            sep = "";
-            for (var p in this.variables[v].points)
+            var name;
+            var X, pt, value;
+            var line, sep;
+            var i, j, k;
+            this.textFile = new TextFile(this.outputURL);
+            for (var v in this.variables)
             {
-                pt = this.variables[v].points[p];
-                if ("x" in pt) i = pt.x; else i = 0;
-                if ("y" in pt) j = pt.y; else j = 0;
-                if ("z" in pt) k = pt.z; else k = 0;
-                if (X.nbLevels>0)
-                    value = X[k][i+j*X.width];
-                else
-                    value = X[i+j*X.width];               
-                line += sep+value.toString();                
-                sep = ";";
+                name = this.variables[v].name;
+                X = p_model.getVariable(name);
+                if (X==null) throw `RecorderStep : variable ${name} not found.`;
+                line = "";
+                sep = "";
+                for (var p in this.variables[v].points)
+                {
+                    pt = this.variables[v].points[p];
+                    if ("x" in pt) i = pt.x; else i = 0;
+                    if ("y" in pt) j = pt.y; else j = 0;
+                    if ("z" in pt) k = pt.z; else k = 0;
+                    if (X.nbLevels>0)
+                        value = X[k][i+j*X.width];
+                    else
+                        value = X[i+j*X.width];               
+                    line += sep+value.toString();                
+                    sep = ";";
+                }
+                this.data[name] += line+"\n";
             }
-            this.data[name] += line+"\n";
+            return this;
         }
-        return this;
+        catch (e)
+        {
+            throw e;
+        }
     }
 }
