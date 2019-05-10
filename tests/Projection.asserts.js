@@ -16,10 +16,11 @@
  */
 
 import { MercatorProjection } from "../js/modeling/MercatorProjection.js";
+import { LatLonDomain } from "../js/modeling/LatLonDomain.js";
 import { Model } from "../js/modeling/Model.js";
 import { Variable } from "../js/modeling/Variable.js";
 
-var latLonDomain1 =
+var latLonDomain = 
 {
     "minLat": -90,
     "maxLat": 90,
@@ -80,7 +81,9 @@ test('projection mercator facteur echelle', () => {
 test('projection mercator interpolations', () => {
     var projection = new MercatorProjection();
     Object.assign(projection, mercatorProjectionDomain);
-    
+       
+    var latLonDomain1 = new LatLonDomain();
+    Object.assign(latLonDomain1, latLonDomain);
     var in_width = (latLonDomain1.maxLon-latLonDomain1.minLon)/latLonDomain1.dlon+1;
     var in_height = (latLonDomain1.maxLat-latLonDomain1.minLat)/latLonDomain1.dlat+1;
     

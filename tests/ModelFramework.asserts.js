@@ -38,6 +38,7 @@ var configCible = {
         "BarotropicCore": "modeling/BarotropicCore.js",
         "MercatorProjection": "modeling/MercatorProjection.js",
         "LeapFrogTimeIntegrator": "modeling/LeapFrogTimeIntegrator.js",
+        "LatLonDomain": "modeling/LatLonDomain.js",
         "RobertAsselinTimeFilter": "modeling/RobertAsselinTimeFilter.js",
         "SchumannFilter": "modeling/SchumannFilter.js",
         "CouplingLimitedAreaBoundaryCondition": "modeling/CouplingLimitedAreaBoundaryCondition.js",
@@ -63,6 +64,7 @@ var configCible = {
      */
     "global": {
         "inputDomain":{
+            "class" : "LatLonDomain",
             "minLat": -90,
             "maxLat": 90,
             "minLon": 0,
@@ -83,6 +85,7 @@ var configCible = {
         },
         
         "outputDomain": {
+            "class" : "LatLonDomain",
             "minLat": 9,
             "maxLat": 81,
             "minLon": -60,
@@ -354,6 +357,12 @@ function cleandir(directory)
         if (!file.isDirectory())
             fs.unlinkSync(path.join(directory, file.name));
     }
+}
+
+function prepareDataSet()
+{
+    fs.symlinkSync(path.join(process.cwd(), "res/run/2018120612/fileinfo.minimal.txt"), "res/run/2018120612/fileinfo.tmp.txt");
+    fs.renameSync("res/run/2018120612/fileinfo.tmp.txt", "res/run/2018120612/fileinfo.txt");
 }
 
 test('Barotrope - tests fonctionnement basiques', () => {
@@ -697,6 +706,7 @@ test("fileinfo", () =>{
 test('Préprocesseur - barotrope', () => {
     var config = JSON.parse(JSON.stringify(configCible));
     var manager = new ConfigManager("../", config);
+    prepareDataSet();
     cleandir("res/test/run");
     expect.assertions(5);
     return manager.getScenario("preprocessor").then((preprocessor) => { 
@@ -786,6 +796,7 @@ test('Run - barotrope', () => {
     });
     
     var manager = new ConfigManager("../", config);
+    prepareDataSet();
     cleandir("res/test/output");
     expect.assertions(5);
     return manager.getScenario("run").then((run) => { 
