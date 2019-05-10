@@ -28,6 +28,7 @@ export class LatLonDomain {
         this.maxLon=0;
         this.dlat=0;
         this.dlon=0;
+        this.cyclic=false;
     }
     
     get width()
@@ -59,4 +60,36 @@ export class LatLonDomain {
             lat -= this.dlat;
         }
     }
+    
+    getLatitudes(xoffset, yoffset)
+    {
+        //var lat = this.maxLat-yoffset*0.5*this.dlat;
+        var lat = this.minLat+yoffset*0.5*this.dlat;
+        var lon;
+        var i = 0;
+        var w = this.width;
+        var h = this.height;
+        var latitudes = [];
+        for (var y=0;y<=h;y++)
+        {
+            latitudes[y] = lat;
+            lat += this.dlat;
+        }
+        return latitudes;
+    }
+    
+    getLongitudes(xoffset, yoffset)
+    {
+        var lon = this.minLon+xoffset*0.5*this.dlon;;
+        var i = 0;
+        var w = this.width;
+        var h = this.height;
+        var longitudes = [];
+        for (var x=0;x<=w;x++,i++)
+        {
+            longitudes[x] = lon;
+            lon+=this.dlon;
+        }
+        return longitudes;
+    }    
 }
