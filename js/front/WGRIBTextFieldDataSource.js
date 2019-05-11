@@ -247,9 +247,8 @@ export class WGRIBTextFieldDataSource extends DataSource {
                     variable.width = var_data.width;
                     variable.height = var_data.height;
                 }
-                
                 variable.levels = field.levels.slice();
-                
+                                
                 return variable;
             }
             else

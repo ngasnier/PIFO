@@ -112,7 +112,13 @@ export class ConfigManager {
                 return obj;
             } 
             else if ("class" in p_node) obj = await this.loader.loadModule(p_node.class);
-            else if ("ref" in p_node) obj = await this.getObject(p_node.ref);
+            else if ("ref" in p_node) {
+                obj = await this.getObject(p_node.ref);
+                if ("property" in p_node)
+                {
+                    obj = obj[p_node.property];
+                }
+            }
             else obj = {};
 
             for (var prop in p_node)

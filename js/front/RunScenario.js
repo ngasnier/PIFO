@@ -81,7 +81,10 @@ export class RunScenario extends Scenario {
             await this.loadInitData();
               
             this._status = Scenario.STATE_RUN;
-            this.sendMessage("scenario "+this.status);           
+            this.sendMessage("scenario "+this.status);
+            this.sendMessage("model "+this.model.name);
+            this.sendMessage("levels "+this.model.verticalCoords);
+            
             
             return this;
         }

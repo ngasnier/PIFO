@@ -63,6 +63,7 @@ export class SigmaLevelInterpolationComponent extends Component {
                 this.sigmaToPressureLevel(variable_in, pressure, variable_out);
             
             Variable.copyMetadata(variable_in, variable_out);
+            variable_out.levels = this.sigmaLevels.slice();
             
             data_out["main"].setData(variable_out);
             
