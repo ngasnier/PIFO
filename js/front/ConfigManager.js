@@ -118,6 +118,7 @@ export class ConfigManager {
                 {
                     obj = obj[p_node.property];
                 }
+                return obj;
             }
             else obj = {};
 
