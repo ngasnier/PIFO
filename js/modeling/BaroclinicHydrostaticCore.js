@@ -320,10 +320,10 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
 
         for (var k=0;k<U.length;k++)
         {
-            i = width+1;
-            for (y=1;y<height-1;y++)
+            i=0;
+            for (y=0;y<height-1;y++,i+=1)
             {
-                for (x=1;x<width-1;x++,i++)
+                for (x=0;x<width-1;x++,i++)
                 {
                     m1 = m[i+width];
                     m2 = m[i+1+width];
@@ -342,7 +342,6 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                         /(0.25*(ps[i]+ps[i+1]
                             +ps[i+width]+ps[i+width+1]));
                 }
-                i+=2;
             }
         }
     }
@@ -833,12 +832,21 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
         var dt = this._model.dt;
 
         var part1=0, part2=0, part3=0, adv=0;
+        var adjt=0, adjb=0;
+/*        var sigma = this._model.layersCoords;
+        var sadjt = k==0 ? sigma[k]/(sigma[k+1]+sigma[k]) : 0;
+        var sadjb = k==T.length-1 ? sigma[k]/(sigma[k-1]+sigma[k]) : 0;
+        var theta1, theta2, kk;
+        //console.log(sadjt, sadjb, sigma[k-1], sigma[k], sigma[k]);*/
+        
+        var k_adj = 1e-6;
+        
         var d_ktilde, d_ktilde_moins_1;
         var t_k_plus_1, t_k, t_k_moins_1;
         var integ_dtlds=0;
 
         var m2 = 0;
-        var i= width+1;
+        var i = width+1;
         var x, y;
         for (y=1;y<height-1;y++)
         {
@@ -855,6 +863,14 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                 {
                     d_ktilde = 0;
                     t_k_plus_1 = 0;
+                    
+/*                    kk = Math.pow(100000/(ps[i]*sigma[k]), Model.R/Model.Cp);
+                    theta1 = T[k][i]*kk;
+                    theta2 = T[k-1][i]*Math.pow(100000/(ps[i]*sigma[k-1]), Model.R/Model.Cp);
+                //if (i==112) console.log("A", T[k][i], T[k-1][i], theta1, theta2);
+                    theta1 -= k_adj*(theta1-sadjb*theta2);
+                //if (i==112) console.log("B", theta1, theta1/kk);
+                    adjt = T[k][i]-theta1/kk;*/
                 }
 
                 d_ktilde_moins_1 = sigmaf[k][i];
@@ -870,6 +886,12 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                 {
                     t_k_moins_1 = 0;
                     integ_dtlds = 0;
+                    
+/*                    kk = Math.pow(100000/(ps[i]*sigma[k]), Model.R/Model.Cp);
+                    theta1 = T[k][i]*kk;
+                    theta2 = T[k+1][i]*Math.pow(100000/(ps[i]*sigma[k+1]), Model.R/Model.Cp);
+                    theta1 -= k_adj*(theta1-sadjt*theta2);
+                    adjt = T[k][i]-theta1/kk;*/
                 }
 
                 part1 = m2*(
@@ -901,9 +923,12 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                         )/(8*dy)
 
                     ) / (Cph[k][i]*ps[i]);
-
+            
                 T_tdcy[k][i] = - part1 - adv - part2 + part3
-
+                        
+/*                        // Ajustement pour stabilité
+                        + adjt + adjb*/
+                        
                         // complage thermodynamique avec les paramétrisations
                         + (Q[k][i]  
                         + Model.R * T[k][i] * Z_tdcy[i]/dt)/Cph[k][i]
