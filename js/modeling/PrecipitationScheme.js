@@ -94,11 +94,70 @@ export class PrecipitationScheme extends PhysicsScheme
                     // Calcul de la proportion provisionnelle
                     if (this._model.T[k][i]<Model.T00)
                     {
+<<<<<<< HEAD
                         ri_tmp = (ri*P_tot_save+P_tot-P_tot_save)/P_tot;
                         rf_tmp = (rf*P_tot_save+this.h(this._model.T[k][i])*(P_tot-P_tot_save))/P_tot;
+=======
+                        // Ajout de flux de précipitations
+                        flux = (dq)*(this.model.p[k_tilde1][i]-this.model.p[k_tilde][i])/(this.model.dt*Model.g)
+                        P_tot = P_tot_save + flux;
+                        
+                        // Calcul de la proportion provisionnelle
+                        if (this.model.T[k][i]<Model.T00)
+                        {
+                            ri_tmp = (ri*P_tot_save+P_tot-P_tot_save)/P_tot;
+                            rf_tmp = (rf*P_tot_save+this.h(this.model.T[k][i])*(P_tot-P_tot_save))/P_tot;
+                        }
+                        else
+                        {
+                            ri_tmp = (ri*P_tot_save)/P_tot;
+                            rf_tmp = (rf*P_tot_save)/P_tot;
+                        }
+
+                        // Effet de la fonte sur ri
+                        if (prems)
+                        {
+                            if (this.model.T[k][i]<Model.T00)
+                            {
+                                ri = 1;
+                                rf = this.h(this.model.T[k][i]);
+                            }
+                            else
+                            {
+                                ri = 0;
+                                rf = 0;
+                            }
+                            prems = false;
+                        }
+                        else
+                        {
+                            // Le processus de fonte/gelage modifie ri
+                            C_star = 2.4e4 * (1-rf_tmp)+2.4e4*80*rf_tmp;
+                            mevap = C_star*((this.model.T[k][i]-Model.T00)/(0.5*(Math.sqrt(P_tot_save)+Math.sqrt(P_tot))))
+                                *(1/this.model.p[k_tilde][i]-1/this.model.p[k_tilde1][i]);
+                            ri = ri_tmp - mevap*(P_tot-P_tot_save);
+                            ri *= ri;
+                            rf = rf_tmp - mevap*(P_tot-P_tot_save);
+                            rf *= rf;
+                            
+                            // On ne peut pas fondre ou geler plus que 100% 
+                            if (ri>1) ri = 1;
+                            if (ri<0) ri = 0;
+                            if (rf>1) rf = 1;
+                            if (rf<0) rf = 0;
+                        }
+
+                        // Flux de vapeur vers liquide/solide dépend de ce qui 
+                        // est produit dans la couche
+                        flux = flux / (this.model.dt*2);
+                        this.model.Pl_1[k+1][i] = flux*(1-ri_tmp);
+                        this.model.Pi_1[k+1][i] = flux*ri_tmp;
+                        //this.model.Pl_1[k][i] = (this.model.qv[k][i]-qsat);
+>>>>>>> stash
                     }
                     else
                     {
+<<<<<<< HEAD
                         ri_tmp = (ri*P_tot_save)/P_tot;
                         rf_tmp = (rf*P_tot_save)/P_tot;
                     }
@@ -121,6 +180,23 @@ export class PrecipitationScheme extends PhysicsScheme
                     else
                     {
                         // Le processus de fonte/gelage modifie ri
+=======
+                        // Evaporation du mélange pluie/neige
+                        C_star = 4.8e6*(1-rf_tmp)+4.8e6*80*rf_tmp;
+                        mevap = C_star*(this.model.qv[k][i]-qsat)*(1/this.model.p[k_tilde][i]-1/this.model.p[k_tilde1][i]);
+                        P_temp = Math.sqrt(P_tot_save) + mevap;
+                        P_tot = P_temp*P_temp;
+                        // Nb : ri et rf inchangés pendant l'évaporation
+                        ri_tmp = ri;
+                        rf_tmp = rf;
+                        
+                        // Flux de liquide/solide vers vapeur
+                        flux = (P_tot-P_tot_save) / (this.model.dt*2);
+                        this.model.Pl_3[k+1][i] = flux*(1-rf_tmp);
+                        this.model.Pi_3[k+1][i] = flux*ri_tmp;
+                        
+                        // Reste a modifier proportion neige/eau comme ci-dessus
+>>>>>>> stash
                         C_star = 2.4e4 * (1-rf_tmp)+2.4e4*80*rf_tmp;
                         mevap = C_star*((this._model.T[k][i]-Model.T00)/(0.5*(Math.sqrt(P_tot_save)+Math.sqrt(P_tot))))
                             *(1/this._model.p[k_tilde][i]-1/this._model.p[k_tilde1][i]);
