@@ -20,111 +20,87 @@ import { Matrix } from "../math/Matrix.js";
 
 export class Grid {
     
+    // [ 0 1 2 ]      x
+    // -------->
+    // [ 2 1 0 ]
     optimizeGridIndices(x_in, x_out, cyclic, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2)
     {
-        var di_in = x_in[0]>x_in[x_in.length-1] ? -1 : 1;
-        var i_in1 = (di_in>=0 ? 0 : x_in.length-1);
-        var i_in2 = (di_in>=0 ? 1 : x_in.length-2);
-        var nb_in = x_in.length;
-        var nb = x_out.length;
-        var x = 0;
-        var dx = 0;
-              
-        for (var k=0;k<nb;k++)
-        {
-            x = x_out[k];
-            console.log("search ", x, i_in1, i_in2, di_in);
-            while ((x<x_in[i_in1] || x>x_in[i_in2]) 
-                    && (i_in1>=0 && i_in1<nb_in && i_in2>=0 && i_in2<nb_in)) 
-            {
-                i_in1+=di_in;
-                i_in2+=di_in;
-            }
-            if (di_in>=0 && i_in1<0 && cyclic) 
-            {
-                tab_i_in1[k] = nb_in-1;
-                tab_i_in2[k] = i_in2;
-                dx = x_in[i_in2]-x_in[i_in2-1];
-                tab_x_adj1[k] = x_in[i_in2]-dx;
-                tab_x_adj2[k] = x_in[i_in2];
-            }
-            else if (di_in>=0 && i_in2>=nb_in && cyclic)
-            {
-                tab_i_in1[k] = i_in1;
-                tab_i_in2[k] = 0;
-                dx = x_in[i_in1]-x_in[i_in1-1];
-                tab_x_adj1[k] = x_in[i_in1];
-                tab_x_adj2[k] = x_in[i_in1]+dx;
-            }
-            else if (di_in<0 && i_in1>=nb_in && cyclic) 
-            {
-                console.log("prout", i_in1, i_in2, di_in, x);
-                tab_i_in1[k] = 0;
-                tab_i_in2[k] = i_in2;
-                dx = x_in[i_in2-1]-x_in[i_in2];
-                tab_x_adj1[k] = x_in[i_in2]-dx;
-                tab_x_adj2[k] = x_in[i_in2];
-            }
-            else if (di_in<0 && i_in2<0 && cyclic)
-            {
-                tab_i_in1[k] = i_in1;
-                tab_i_in2[k] = nb_in-1;
-                dx = x_in[i_in1]-x_in[i_in1+1];
-                // TODO : il faut calculer de combien on dépasse !!!
-                tab_x_adj1[k] = x_in[i_in1];
-                tab_x_adj2[k] = x_in[i_in1]+dx;
-                if (x<tab_x_adj1[k])
-                {
-                    tab_x_adj1[k] = x_in[nb_in-1]-dx;
-                    tab_x_adj2[k] = x_in[nb_in-1];
-                }
-               
-                console.log("pouet", i_in1, i_in2, di_in, x, dx, tab_x_adj1[k], tab_x_adj2[k]);
-            }
-            else if (x>=x_in[i_in1] && x<=x_in[i_in2])
-            {
-                console.log("TROUVE", k, i_in1, i_in2, nb_in, x, x_in[i_in1], x_in[i_in2]);
-                tab_i_in1[k] = i_in1;
-                tab_i_in2[k] = i_in2;
-                tab_x_adj1[k] = x_in[i_in1];
-                tab_x_adj2[k] = x_in[i_in2];
-            }
-            else
-            {
-            console.log("*********", i_in1, i_in2, nb_in, x, i_out);
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-            console.log("#########");
-                throw `coordinate is outside of array. x=${x}`;
-            }
+        if (x_in.length>1)
+        {                
+            var di_in = x_in[0]>x_in[x_in.length-1] ? -1 : 1;
+            var nb_in = x_in.length;
+            var i_in1 = 0;
+            var i_in2 = 0;
+            var dx_start = (di_in>=0 ? x_in[1] - x_in[0] : x_in[nb_in-2]-x_in[nb_in-1]);
+            var dx_end = (di_in>=0 ? x_in[nb_in-1] - x_in[nb_in-2] : x_in[0]-x_in[1]);
+            var x_min = (di_in>=0 ? x_in[0] : x_in[nb_in-1]);
+            var x_max = (di_in>=0 ? x_in[nb_in-1] : x_in[0]);
+            var x_start_cycle = (di_in>=0 ? x_in[0]-dx_start : x_in[nb_in-1]-dx_start);
+            var x_end_cycle = (di_in>=0 ? x_in[nb_in-1]+dx_end : x_in[0]+dx_end);
+            var cycle_length = x_end_cycle - x_min;
+            var renorm = 0;
             
-            i_in1 = (di_in>=0 ? 0 : x_in.length-1);
-            i_in2 = (di_in>=0 ? 1 : x_in.length-2);
+            var nb = x_out.length;
+            var x = 0;
+            var dx = 0;
+
+            console.log("init ", di_in, nb_in, cycle_length, '[', x_start_cycle, x_min, x_max, x_end_cycle, ']', dx_start, dx_end );
+            for (var k=0;k<nb;k++)
+            {
+                i_in1 = (di_in>=0 ? 0 : x_in.length-1);
+                i_in2 = (di_in>=0 ? 1 : x_in.length-2);
+
+                x = x_out[k];
+                renorm = 0;
+                if (!cyclic && (x<x_min || x>x_max)) throw `coordinate is outside of array. x=${x}`;
+                if ((x<x_min) || (x>x_end_cycle))
+                {
+                    renorm = Math.floor((x-x_min)/cycle_length);
+                    console.log("renorm", x, x_min, (x-x_min), (x-x_min)/cycle_length, Math.floor((x-x_min)/cycle_length), renorm);
+                }
+                x = x - renorm*cycle_length;
+                
+                if (x>x_max && x<=x_end_cycle)
+                {
+                    console.log("cycling", x_out[k], x, renorm);
+                    if (di_in>=0)
+                    {
+                        i_in1 = nb_in-1;
+                        i_in2 = 0;
+                    }
+                    else
+                    {
+                        i_in1 = 0;
+                        i_in2 = nb_in-1;
+                    }
+                    tab_x_adj1[k] = x_in[i_in1]+renorm*cycle_length;
+                    tab_x_adj2[k] = x_end_cycle+renorm*cycle_length;
+                }
+                else
+                {
+                    console.log("search", x_out[k], x, renorm);
+                    while ((x<x_in[i_in1] || x>x_in[i_in2]) 
+                            && (i_in1>=0 && i_in1<nb_in && i_in2>=0 && i_in2<nb_in)) 
+                    {
+                        i_in1+=di_in;
+                        i_in2+=di_in;
+                    }
+                    if (i_in1<0) i_in1 = nb_in-1;
+                    if (i_in2<0) i_in2 = nb_in-1;
+                    if (i_in1>nb_in) i_in1 = 0;
+                    if (i_in2>nb_in) i_in2 = 0;
+                    tab_x_adj1[k] = x_in[i_in1]+renorm*cycle_length;
+                    tab_x_adj2[k] = x_in[i_in2]+renorm*cycle_length;
+                }
+
+                tab_i_in1[k] = i_in1;
+                tab_i_in2[k] = i_in2;
+
+            }
+        }
+        else
+        {
+            throw `not enough coordinates to regrid.`;
         }
     }
     
