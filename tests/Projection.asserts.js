@@ -19,6 +19,7 @@ import { MercatorProjection } from "../js/modeling/MercatorProjection.js";
 import { LatLonDomain } from "../js/modeling/LatLonDomain.js";
 import { Model } from "../js/modeling/Model.js";
 import { Variable } from "../js/modeling/Variable.js";
+import { Grid } from "../js/modeling/Grid.js";
 
 var latLonDomain = 
 {
@@ -193,22 +194,50 @@ test('projection mercator interpolations', () => {
 });
 
 test('projection mercator calcLatitutesLongitudes', () => {
-   var projection = new MercatorProjection();   
-   Object.assign(projection, mercatorProjectionDomain);
-   var latitudes = Variable.createVariable(1, mercatorProjectionDomain.width, mercatorProjectionDomain.height, false);
-   var longitudes = Variable.createVariable(1, mercatorProjectionDomain.width, mercatorProjectionDomain.height, false);
-   var [dx, dy] = projection.getMeshSize();
+    var projection = new MercatorProjection();   
+    Object.assign(projection, mercatorProjectionDomain);
+    var latitudes = Variable.createVariable(1, mercatorProjectionDomain.width, mercatorProjectionDomain.height, false);
+    var longitudes = Variable.createVariable(1, mercatorProjectionDomain.width, mercatorProjectionDomain.height, false);
+    var [dx, dy] = projection.getMeshSize();
    
-   projection.calcLatitudesLongitudes(0, 0, latitudes, longitudes);
-   // Coin haut gauche
-   expect(latitudes[0]).toBeCloseTo(mercatorProjectionDomain.maxLat);
-   expect(longitudes[0]).toBeCloseTo(mercatorProjectionDomain.minLon);
-   // Coin haut droit
-   expect(latitudes[mercatorProjectionDomain.width-1]).toBeCloseTo(mercatorProjectionDomain.maxLat);
-   expect(longitudes[mercatorProjectionDomain.width-1]).toBeCloseTo(mercatorProjectionDomain.maxLon-1);
-   // Coin bas droit
-   var [x, y] = projection.latLonToXY(mercatorProjectionDomain.minLat, mercatorProjectionDomain.maxLon);
-   var [lat, lon] = projection.xyToLatLon(x-dx, y+dy);
-   expect(latitudes[mercatorProjectionDomain.width*mercatorProjectionDomain.height-1]).toBeCloseTo(lat);
-   expect(longitudes[mercatorProjectionDomain.width*mercatorProjectionDomain.height-1]).toBeCloseTo(lon);
+    projection.calcLatitudesLongitudes(0, 0, latitudes, longitudes);
+    // Coin haut gauche
+    expect(latitudes[0]).toBeCloseTo(mercatorProjectionDomain.maxLat);
+    expect(longitudes[0]).toBeCloseTo(mercatorProjectionDomain.minLon);
+    // Coin haut droit
+    expect(latitudes[mercatorProjectionDomain.width-1]).toBeCloseTo(mercatorProjectionDomain.maxLat);
+    expect(longitudes[mercatorProjectionDomain.width-1]).toBeCloseTo(mercatorProjectionDomain.maxLon-1);
+    // Coin bas droit
+    var [x, y] = projection.latLonToXY(mercatorProjectionDomain.minLat, mercatorProjectionDomain.maxLon);
+    var [lat, lon] = projection.xyToLatLon(x-dx, y+dy);
+    expect(latitudes[mercatorProjectionDomain.width*mercatorProjectionDomain.height-1]).toBeCloseTo(lat);
+    expect(longitudes[mercatorProjectionDomain.width*mercatorProjectionDomain.height-1]).toBeCloseTo(lon);
+});
+
+test('regridding', ()=> {
+    var grid = new Grid();    
+    var x_in = [0, 0.5, 1, 1.5];
+    var x_out = [-0.25, 0.25, 0.75, 1.25, 1.75];
+    var tab_i_in1 = [];
+    var tab_i_in2 = [];
+    var tab_x_adj1 = [];
+    var tab_x_adj2 = [];
+    
+    /*grid.optimizeGridIndices(x_in, x_out, true, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);
+    
+    console.log(x_in, x_out, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);*/
+    
+    x_in = [1.5, 1, 0.5, 0];
+    x_out = [1.75, 1.25, 0.75, 0.25, -0.25];
+    grid.optimizeGridIndices(x_in, x_out, true, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);
+    
+    console.log(x_in, x_out, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);
+    console.log("");
+    console.log("");
+    console.log("");
+    console.log("");
+    console.log("");
+    console.log("");
+    console.log("");
+    console.log("");
 });
