@@ -42,7 +42,7 @@
         "gfslevels": [100, 15000, 35000, 50000, 65000, 85000, 92500, 100000],
         "gfsindices": [1, 150, 350, 500, 650, 850, 925, 1000],
         
-        "sigmaLayers" : {"class": "SigmaHelper", "nbSurfaces" : "9"},
+        "sigmaLayers" : {"class": "SigmaHelper", "nbSurfaces" : 9},
                
         "inputDomain":{
             "class": "LatLonDomain",
@@ -170,8 +170,8 @@
             "epsilon": 0.428
         },
 
-        "width": 111,
-        "height": 72,
+        "width": {"ref": "modelDomain", "property" : "width"},
+        "height": {"ref": "modelDomain", "property" : "height"},
         "horizontalStaggering": "C",
         "global": false,
         "filterInterval": 1,
