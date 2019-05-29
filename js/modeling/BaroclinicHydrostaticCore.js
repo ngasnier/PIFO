@@ -633,6 +633,8 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
         var adv=0, rtz=0;
         var kphi=0;
         var damp=0;
+        var basic_adv=0;
+        var energy_adv=0;
         var i = width+1;
         var x, y;
         for (y=1;y<height-1;y++)
@@ -677,12 +679,26 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                         +(ps[i]+ps[i+width])*V[k][i]
                     )/8; 
 
+                basic_adv = (tourbillon[k][i]*(ps[i]+ps[i+width]+ps[i+1]+ps[i+1+width])
+                    +tourbillon[k][i-width]*(ps[i]+ps[i-width]+ps[i+1]+ps[i+1-width]))/8
+                    * (V[k][i]+V[k][i+1]+V[k][i-width]+V[k][i+1-width])/4;
+                        
+                energy_adv = (
+                    tourbillon[k][i]*(
+                        (ps[i]+ps[i+width])*V[k][i]
+                        +(ps[i+1]+ps[i+1+width])*V[k][i+1])
+                    
+                    +tourbillon[k][i-width]*(
+                        (ps[i]+ps[i-width])*V[k][i-width]
+                         +(ps[i+1]+ps[i+1-width])*V[k][i+1-width])
+                )/8;
+
                 // Verif Ok 14/06/2018
                 adv = (1/((ps[i+1]+ps[i])*dsigma[k]))
                     *(
                        0.5*(d_ktilde_1+d_ktilde_2)*(u_k_plus_1-u_k)+0.5*(d_ktilde_moins_1_1+d_ktilde_moins_1_2)*(u_k-u_k_moins_1)
                      );
-
+             
                 // Verif Ok 14/06/2018
                 kphi = (K[k][i+1]+phi[k][i+1]-K[k][i]-phi[k][i])/dx;
 
@@ -692,7 +708,8 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                 // Divergence damping
                 damp = this.diffusionFactor*(divergence[k][i+1]-divergence[k][i])/dx;
 
-                U_tdcy[k][i] = xi*psvk - adv - kphi - rtz + damp;
+                // Discretisation avec le Jacobien d'Arakawa
+                U_tdcy[k][i] = (xi*psvk + basic_adv + energy_adv)/3 - adv - kphi - rtz + damp;
             }
             i+=2;
         }
@@ -733,6 +750,8 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
         var adv=0, rtz=0;
         var kphi=0;
         var damp=0;
+        var energy_adv=0;
+        var basic_adv=0;
         var i = width+1;
         var x, y;
         for (y=1;y<height-1;y++)
@@ -776,6 +795,20 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                         +(ps[i+width]+ps[i+width+1])*U[k][i+width]
                         +(ps[i-1+width]+ps[i+width])*U[k][i-1+width]
                     )/8;
+            
+                basic_adv = (tourbillon[k][i]*(ps[i]+ps[i+width]+ps[i+1]+ps[i+1+width])
+                    +tourbillon[k][i-1]*(ps[i]+ps[i+width]+ps[i-1]+ps[i-1+width]))/8
+                    * (U[k][i]+U[k][i-1]+U[k][i+width]+U[k][i-1+width])/4;
+
+                energy_adv = (
+                    tourbillon[k][i]*(
+                        (ps[i]+ps[i+1])*U[k][i]
+                        +(ps[i+width]+ps[i+width+1])*U[k][i+width])
+                    
+                    +tourbillon[k][i-1]*(
+                        (ps[i-1]+ps[i])*U[k][i-1]
+                         +(ps[i+width-1]+ps[i+width])*U[k][i-1+width])
+                )/8;
 
                 // Verif Ok 14/06/2018
                 adv = (1/((ps[i]+ps[i+width])*dsigma[k]))*(
@@ -789,7 +822,8 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
 
                 damp = this.diffusionFactor*(divergence[k][i+width]-divergence[k][i+width])/dy;
 
-                V_tdcy[k][i] = -xi*psuk - adv - kphi - rtz + damp;
+                // Discretisation avec le Jacobien d'Arakawa
+                V_tdcy[k][i] = -(xi*psuk + basic_adv + energy_adv)/3 - adv - kphi - rtz + damp;
             }
             i+=2;
         }
