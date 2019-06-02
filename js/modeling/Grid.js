@@ -44,7 +44,6 @@ export class Grid {
             var x = 0;
             var dx = 0;
 
-            console.log("init ", di_in, nb_in, cycle_length, '[', x_start_cycle, x_min, x_max, x_end_cycle, ']', dx_start, dx_end );
             for (var k=0;k<nb;k++)
             {
                 i_in1 = (di_in>=0 ? 0 : x_in.length-1);
@@ -52,50 +51,81 @@ export class Grid {
 
                 x = x_out[k];
                 renorm = 0;
-                if (!cyclic && (x<x_min || x>x_max)) throw `coordinate is outside of array. x=${x}`;
-                if ((x<x_min) || (x>x_end_cycle))
+                if (!cyclic && (x<x_min || x>x_max)) 
                 {
-                    renorm = Math.floor((x-x_min)/cycle_length);
-                    console.log("renorm", x, x_min, (x-x_min), (x-x_min)/cycle_length, Math.floor((x-x_min)/cycle_length), renorm);
-                }
-                x = x - renorm*cycle_length;
-                
-                if (x>x_max && x<=x_end_cycle)
-                {
-                    console.log("cycling", x_out[k], x, renorm);
-                    if (di_in>=0)
+                    if (x<x_min)
                     {
-                        i_in1 = nb_in-1;
-                        i_in2 = 0;
+                        if (di_in>=0)
+                        {
+                            i_in1 = 0;
+                            i_in2 = 1;
+                        }
+                        else
+                        {
+                            i_in1 = nb-1;
+                            i_in2 = i_in1-1;
+                        }
                     }
                     else
                     {
-                        i_in1 = 0;
-                        i_in2 = nb_in-1;
+                        if (di_in>=0)
+                        {
+                            i_in1 = nb-2;
+                            i_in2 = i_in1+1;
+                        }
+                        else
+                        {
+                            i_in1 = 1;
+                            i_in2 = i_in1-1;
+                        }
                     }
-                    tab_x_adj1[k] = x_in[i_in1]+renorm*cycle_length;
-                    tab_x_adj2[k] = x_end_cycle+renorm*cycle_length;
+                    tab_i_in1[k] = i_in1;
+                    tab_i_in2[k] = i_in2;
+                    tab_x_adj1[k] = x_in[i_in1];
+                    tab_x_adj2[k] = x_in[i_in2];
+                    //throw `coordinate is outside of array. x=${x}`;
                 }
                 else
                 {
-                    console.log("search", x_out[k], x, renorm);
-                    while ((x<x_in[i_in1] || x>x_in[i_in2]) 
-                            && (i_in1>=0 && i_in1<nb_in && i_in2>=0 && i_in2<nb_in)) 
+                    if ((x<x_min) || (x>x_end_cycle))
                     {
-                        i_in1+=di_in;
-                        i_in2+=di_in;
+                        renorm = Math.floor((x-x_min)/cycle_length);
                     }
-                    if (i_in1<0) i_in1 = nb_in-1;
-                    if (i_in2<0) i_in2 = nb_in-1;
-                    if (i_in1>nb_in) i_in1 = 0;
-                    if (i_in2>nb_in) i_in2 = 0;
-                    tab_x_adj1[k] = x_in[i_in1]+renorm*cycle_length;
-                    tab_x_adj2[k] = x_in[i_in2]+renorm*cycle_length;
+                    x = x - renorm*cycle_length;
+
+                    if (x>x_max && x<=x_end_cycle)
+                    {
+                        if (di_in>=0)
+                        {
+                            i_in1 = nb_in-1;
+                            i_in2 = 0;
+                        }
+                        else
+                        {
+                            i_in1 = 0;
+                            i_in2 = nb_in-1;
+                        }
+                        tab_x_adj1[k] = x_in[i_in1]+renorm*cycle_length;
+                        tab_x_adj2[k] = x_end_cycle+renorm*cycle_length;
+                    }
+                    else
+                    {
+                        while ((x<x_in[i_in1] || x>x_in[i_in2]) 
+                                && (i_in1>=0 && i_in1<nb_in && i_in2>=0 && i_in2<nb_in)) 
+                        {
+                            i_in1+=di_in;
+                            i_in2+=di_in;
+                        }
+                        if (i_in1<0) i_in1 = nb_in-1;
+                        if (i_in2<0) i_in2 = nb_in-1;
+                        if (i_in1>nb_in) i_in1 = 0;
+                        if (i_in2>nb_in) i_in2 = 0;
+                        tab_x_adj1[k] = x_in[i_in1]+renorm*cycle_length;
+                        tab_x_adj2[k] = x_in[i_in2]+renorm*cycle_length;
+                    }
+                    tab_i_in1[k] = i_in1;
+                    tab_i_in2[k] = i_in2;
                 }
-
-                tab_i_in1[k] = i_in1;
-                tab_i_in2[k] = i_in2;
-
             }
         }
         else
@@ -104,7 +134,72 @@ export class Grid {
         }
     }
     
-    bilinearRegrid(x_in, y_in, data_in, x_out, y_out, data_out)
+    bilinearRegrid(x_in, y_in, data_in, cyclic, x_out, y_out, data_out)
+    {
+        var tab_i_in1 = [];
+        var tab_i_in2 = [];
+        var tab_x_adj1 = [];
+        var tab_x_adj2 = [];
+        var tab_j_in1 = [];
+        var tab_j_in2 = [];
+        var tab_y_adj1 = [];
+        var tab_y_adj2 = [];
+        
+        var in_width = x_in.length;
+        var in_height = y_in.length;
+
+        var x, y;
+
+        var i_in1, j_in1;
+        var i_in2, j_in2;
+
+        var x_in1, y_in1;
+        var x_in2, y_in2;
+
+        var v1, v2, v3, v4;
+        var vv1, vv2;
+        var alpha_x, alpha_y;
+        var k = 0;
+
+
+        this.optimizeGridIndices(x_in, x_out, cyclic, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);
+        this.optimizeGridIndices(y_in, y_out, false, tab_j_in1, tab_j_in2, tab_y_adj1, tab_y_adj2);
+        
+        console.log("X : ", tab_i_in1[0], tab_i_in2[0], tab_x_adj1[0], tab_x_adj2[0]);
+        console.log("Y : ", tab_j_in1[0], tab_j_in2[0], tab_y_adj1[0], tab_y_adj2[0]);
+                        
+        for (var i=0;i<x_out.length;i++,k++)
+        {
+            x = x_out[i];
+            i_in1 = tab_i_in1[i];
+            i_in2 = tab_i_in2[i];
+            x_in1 = tab_x_adj1[i];
+            x_in2 = tab_x_adj2[i];
+            alpha_x = (x-x_in1)/(x_in2-x_in1);
+
+            y = y_out[i];
+            j_in1 = tab_j_in1[i];
+            j_in2 = tab_j_in2[i];
+            y_in1 = tab_y_adj1[i];
+            y_in2 = tab_y_adj2[i];
+            alpha_y = (y-y_in1)/(y_in2-y_in1);
+
+            v1 = data_in[i_in1+in_width*j_in1];
+            v2 = data_in[i_in1+in_width*j_in2];
+            v3 = data_in[i_in2+in_width*j_in1];
+            v4 = data_in[i_in2+in_width*j_in2];
+
+            vv1 = alpha_y*v2 + (1-alpha_y)*v1;
+            vv2 = alpha_y*v4 + (1-alpha_y)*v3;
+            //console.log(i, x, y, x_in1, x_in2, y_in1, y_in2, alpha_x, alpha_y, vv1, vv2);
+
+            data_out[i] = alpha_x*vv2 + (1-alpha_x)*vv1 ;
+
+if (i==0) console.log(i_in1, i_in2, j_in1, j_in2, x_in1, x_in2, y_in1, y_in2, alpha_x, alpha_y, v1, v2, v3, v4, vv1, vv2, data_in[0], data_out[i]);
+        }
+    }
+    
+    /*bilinearRegrid(x_in, y_in, data_in, x_out, y_out, data_out)
     {
         var width = x_out.length;
         var height = y_out.length;
@@ -203,7 +298,7 @@ export class Grid {
                 data_out[i] = alpha_x*vv2 + (1-alpha_x)*vv1 ;
             }
         }
-    }
+    }*/
     
     bicubicRegrid(x_in, y_in, data_in, x_out, y_out, data_out)
     {

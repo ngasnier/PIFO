@@ -51,7 +51,8 @@
             "minLon": 0,
             "maxLon": 359.5,
             "dlat": 0.5,
-            "dlon": 0.5
+            "dlon": 0.5,
+            "cyclic": true
         },
         
         "modelDomain": {
@@ -199,8 +200,8 @@
             
             "processList": [
                 { "name":"Z", "task" : "z_interpolation", "parameters": [{"name":"source", "value":"prmsl"}, {"name":"variable", "value": "Z"} ]},
-                { "name":"U", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"ugrd"}, {"name": "variable", "value":"U"}]},
-                { "name":"V", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"vgrd"}, {"name":"variable", "value": "V"} ]},
+                { "name":"U", "task" : "wind_interpolation", "parameters": [{"name":"source", "value":"ugrd"}, {"name":"component_source", "value":"vgrd"}, {"name": "variable", "value":"U"}]},
+                { "name":"V", "task" : "wind_interpolation", "parameters": [{"name":"source", "value":"vgrd"}, {"name":"component_source", "value":"ugrd"}, {"name":"variable", "value": "V"} ]},
                 { "name":"T", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"tmp"}, {"name":"variable", "value": "T"} ]},
                 { "name":"qv", "task" : "rh_interpolation", "parameters": [{"name":"source", "value":"rh"}, {"name":"variable", "value": "qv"}]},
                 { "name":"sfcgeop", "task" : "phi_interpolation", "parameters": [{"name":"source", "value":"sfchgt"}, {"name":"variable", "value": "sfcgeop"}]},
@@ -209,6 +210,69 @@
             ],
            
             "tasks": [
+                {
+                    "name":"wind_interpolation",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
+                        {"name":"component_source", "bindComponent":"vect_component_source", "parameter":"source"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"gridPosVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"scaleVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"numberTypeVariable"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "variable_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "gfsdata" }
+                        },
+                        {
+                            "name": "vect_component_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "gfsdata" }
+                        },
+                        {
+                            "name": "pressure_source", 
+                            "class":"WGRIBInputComponent", 
+                            "source" : "prmsl",
+                            "dataSource": { "ref": "gfsdata" }
+                        },
+                        {
+                            "name": "projection_component", 
+                            "class":"ProjectionComponent",
+                            "sourceDomain": { "ref": "inputDomain" },
+                            "projection": { "ref": "modelDomain" }
+                        },
+                        {
+                            "name": "projection_component2", 
+                            "class":"ProjectionComponent",
+                            "sourceDomain": { "ref": "inputDomain" },
+                            "projection": { "ref": "modelDomain" }
+                        },
+                        {
+                            "name": "vertical_component", 
+                            "class":"SigmaLevelInterpolationComponent",
+                            "mode": 0,
+                            "sigmaLevels": {"ref" : "sigmaLayers", "property" : "layersLevels"},
+                            "pressureLevels": { "ref": "gfslevels" }
+                        },
+                        {
+                            "name": "variable_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "inputdata" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"variable_source", "output":"main", "inputComponent":"projection_component", "input":"main"},
+                        {"outputComponent":"vect_component_source", "output":"main", "inputComponent":"projection_component", "input":"secondary"},
+                        {"outputComponent":"pressure_source", "output":"main", "inputComponent":"projection_component2", "input":"main"},
+                        {"outputComponent":"projection_component", "output":"main", "inputComponent":"vertical_component", "input":"main"},
+                        {"outputComponent":"projection_component2", "output":"main", "inputComponent":"vertical_component", "input":"surface_pressure"},
+                        {"outputComponent":"vertical_component", "output":"main", "inputComponent":"variable_destination", "input":"main"}
+                        
+                    ]
+                },
                 {
                     "name":"basic_interpolation",
                     "class":"WorkflowTask",

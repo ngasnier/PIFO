@@ -87,13 +87,13 @@ export class MercatorProjection extends ConformalProjection {
      * @param {type} fieldType indique le type de variable : s scalaire, u composante u vectorielle, v composante v vectorielle
      * @returns {undefined}
      */
-    interpLatLonGridToDomain(latLonParams, data_in, data_out, offsetx, offsety, scale=false, fieldType=VariableDescription.NUMBER_TYPE_SCALAR, mode="linear")
+    /*interpLatLonGridToDomain(latLonParams, data_in, data_out, offsetx, offsety, scale=false, fieldType=VariableDescription.NUMBER_TYPE_SCALAR, mode="linear")
     {       
         if (mode=="cubic")
             this.interpLatLonGridToDomain_bicubic(latLonParams, data_in, data_out, offsetx, offsety, scale, fieldType);
         else
             this.interpLatLonGridToDomain_linear(latLonParams, data_in, data_out, offsetx, offsety, scale, fieldType);
-    }
+    }*/
     
     interpLatLonGridToDomain_linear(latLonParams, data_in, data_out, offsetx, offsety, scale=false, fieldType=VariableDescription.NUMBER_TYPE_SCALAR)
     {       
@@ -240,18 +240,6 @@ export class MercatorProjection extends ConformalProjection {
                 
                 data_out[i] = int_mat[0][0];
 
-/*                v1 = data_in[x_in1+widthInput*y_in1];
-                v2 = data_in[x_in1+widthInput*y_in2];
-                v3 = data_in[x_in2+widthInput*y_in1];
-                v4 = data_in[x_in2+widthInput*y_in2];
-
-                vv1 = alpha_y*v2 + (1-alpha_y)*v1;
-                vv2 = alpha_y*v4 + (1-alpha_y)*v3;
-
-                test = alpha_x*vv2 + (1-alpha_x)*vv1 ;
-                if (Math.abs(data_out[i]-test)>0.000001) console.log("diff", i, x_in1, y_in1, lon_in, lat_in, data_out[i], test, v1, v2, v3, v4, alpha_x, alpha_y, x_surf, y_surf);*/
-
-
                 if (scale)
                 {
                     [latscale, lonscale] = this.xyToLatLon(xscale, yscale);
@@ -275,7 +263,7 @@ export class MercatorProjection extends ConformalProjection {
      * @param {type} fieldType indique le type de variable : s scalaire, u composante u vectorielle, v composante v vectorielle
      * @returns {undefined}
      */
-    interpDomainToLatLon(latLonParams, data_in, data_out, offsetx, offsety, scale=false, fieldType=VariableDescription.NUMBER_TYPE_SCALAR)
+    /*interpDomainToLatLon(latLonParams, data_in, data_out, offsetx, offsety, scale=false, fieldType=VariableDescription.NUMBER_TYPE_SCALAR)
     {     
         var lon = latLonParams.minLon;
         var lat = latLonParams.maxLat;        
@@ -312,8 +300,8 @@ export class MercatorProjection extends ConformalProjection {
             for (lon=latLonParams.minLon;lon<latLonParams.maxLon;lon+=latLonParams.dlon)
             {
                 x_in = this.latLonToXY(lat, lon)[0];
-                /*if (lon_in<0) lon_in += 360;
-                if (lon_in>=360) lon_in -= 360;*/
+                //if (lon_in<0) lon_in += 360;
+                //if (lon_in>=360) lon_in -= 360;
 
                 x_in1 = Math.floor((x_in-xmin)/dx);
                 x_in2 = x_in1+1;
@@ -352,7 +340,7 @@ export class MercatorProjection extends ConformalProjection {
                 i++;
             }
         }
-    }
+    }*/
 
     /**
      * Donne la taille de grille du domaine projeté

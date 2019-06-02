@@ -44,7 +44,7 @@ export class ProjectionComponent extends Component {
 
     get inputs()
     {
-        return ["main"];
+        return ["main", "secondary"];
     }
     
     get outputs()
@@ -62,6 +62,7 @@ export class ProjectionComponent extends Component {
     {
         try {
             var variable_in = data_in["main"].getData();
+            var variable_sec = data_in["secondary"]!=null ? data_in["secondary"].getData():null;
             var variable_out;
             var latitudes;
             var longitudes;
@@ -121,7 +122,7 @@ export class ProjectionComponent extends Component {
                     for (var k=0;k<variable_in.nbLevels;k++)
                     {
                         this.projection.interpLatLonGridToDomain(
-                            this.sourceDomain, variable_in[k], variable_out[k], offsetx, offsety, scale, numberType);
+                            this.sourceDomain, variable_in[k], variable_out[k], offsetx, offsety, scale, numberType, variable_sec!=null ? variable_sec[k] : null);
                     }
                 }
                 else if (this.destinationDomain!=null)
@@ -130,7 +131,7 @@ export class ProjectionComponent extends Component {
                     for (var k=0;k<variable_in.nbLevels;k++)
                     {
                         this.projection.interpDomainToLatLon(
-                            this.destinationDomain, variable_in[k], variable_out[k], offsetx, offsety, scale, numberType);
+                            this.destinationDomain, variable_in[k], variable_out[k], offsetx, offsety, scale, numberType, variable_sec);
                     }
                 }
                 else
@@ -144,13 +145,13 @@ export class ProjectionComponent extends Component {
                 {
                     variable_out = Variable.createVariable(0, this.projection.width, this.projection.height, false);
                     this.projection.interpLatLonGridToDomain(
-                        this.sourceDomain, variable_in, variable_out, offsetx, offsety, scale, numberType);
+                        this.sourceDomain, variable_in, variable_out, offsetx, offsety, scale, numberType, variable_sec);
                 }
                 else if (this.destinationDomain!=null)
                 {
                     variable_out = Variable.createVariable(0, this.destinationDomain.width, this.destinationDomain.height, false);
                     this.projection.interpDomainToLatLon(
-                        this.destinationDomain, variable_in, variable_out, offsetx, offsety, scale, numberType);                    
+                        this.destinationDomain, variable_in, variable_out, offsetx, offsety, scale, numberType, variable_sec);
                 }
                 else
                 {

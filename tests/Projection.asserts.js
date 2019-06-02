@@ -29,6 +29,7 @@ var latLonDomain =
     "maxLon": 359.5,
     "dlat": 0.5,
     "dlon": 0.5,
+    "cyclic":true,
     "levels": [100, 15000, 35000, 50000, 65000, 85000, 92500, 100000],
     "preprocessDir" : "input"
 };
@@ -223,21 +224,43 @@ test('regridding', ()=> {
     var tab_x_adj1 = [];
     var tab_x_adj2 = [];
     
-    /*grid.optimizeGridIndices(x_in, x_out, true, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);
+    grid.optimizeGridIndices(x_in, x_out, true, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);
+
+    //console.log(x_in, x_out, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);
+   
+    expect(tab_i_in1).arrayBeCloseTo([ 3, 0, 1, 2, 3 ]);
+    expect(tab_i_in2).arrayBeCloseTo([ 0, 1, 2, 3, 0 ]);
+    expect(tab_x_adj1).arrayBeCloseTo([ -0.5, 0, 0.5, 1, 1.5 ]);
+    expect(tab_x_adj2).arrayBeCloseTo([ 0, 0.5, 1, 1.5, 2 ]);
     
-    console.log(x_in, x_out, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);*/
     
     x_in = [1.5, 1, 0.5, 0];
     x_out = [1.75, 1.25, 0.75, 0.25, -0.25];
     grid.optimizeGridIndices(x_in, x_out, true, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);
+
+    //console.log(x_in, x_out, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);
     
-    console.log(x_in, x_out, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);
-    console.log("");
-    console.log("");
-    console.log("");
-    console.log("");
-    console.log("");
-    console.log("");
-    console.log("");
-    console.log("");
+    expect(tab_i_in1).arrayBeCloseTo([ 0, 1, 2, 3, 0 ]);
+    expect(tab_i_in2).arrayBeCloseTo([ 3, 0, 1, 2, 3 ]);
+    expect(tab_x_adj1).arrayBeCloseTo([ 1.5, 1, 0.5, 0, -0.5 ]);
+    expect(tab_x_adj2).arrayBeCloseTo([ 2, 1.5, 1, 0.5, 0 ]);
+    
+
+    var data_in = [0, 1, 2, 
+                   3, 4, 5, 
+                   6, 7, 8];
+
+    x_in = [0, 0.5, 1];
+    x_out = [-0.25, 0.25, 0.75];
+    
+    var y_in = [1, 0.5, 0];
+    var y_out = [0.25, 0.5, 0.75];
+    
+    var data_out = [];
+    
+    grid.bilinearRegrid(x_in, y_in, data_in, true, x_out, y_out, data_out);
+    expect(data_out).arrayBeCloseTo([ 5.5, 3.5, 3 ]);
+    
+    //expect : [ 5.5, 5, 6, 2.5, 2, 3]
+    //console.log(data_out);
 });
