@@ -59,28 +59,34 @@ export class Grid {
                         {
                             i_in1 = 0;
                             i_in2 = 1;
+                            tab_i_in1[k] = i_in1;
+                            tab_i_in2[k] = i_in1;
                         }
                         else
                         {
-                            i_in1 = nb-1;
+                            i_in1 = nb_in-1;
                             i_in2 = i_in1-1;
+                            tab_i_in1[k] = i_in1;
+                            tab_i_in2[k] = i_in1;
                         }
                     }
                     else
                     {
                         if (di_in>=0)
                         {
-                            i_in1 = nb-2;
+                            i_in1 = nb_in-2;
                             i_in2 = i_in1+1;
+                            tab_i_in1[k] = i_in2;
+                            tab_i_in2[k] = i_in2;
                         }
                         else
                         {
                             i_in1 = 1;
                             i_in2 = i_in1-1;
+                            tab_i_in1[k] = i_in2;
+                            tab_i_in2[k] = i_in2;
                         }
                     }
-                    tab_i_in1[k] = i_in1;
-                    tab_i_in2[k] = i_in2;
                     tab_x_adj1[k] = x_in[i_in1];
                     tab_x_adj2[k] = x_in[i_in2];
                     //throw `coordinate is outside of array. x=${x}`;
@@ -165,9 +171,6 @@ export class Grid {
         this.optimizeGridIndices(x_in, x_out, cyclic, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);
         this.optimizeGridIndices(y_in, y_out, false, tab_j_in1, tab_j_in2, tab_y_adj1, tab_y_adj2);
         
-        console.log("X : ", tab_i_in1[0], tab_i_in2[0], tab_x_adj1[0], tab_x_adj2[0]);
-        console.log("Y : ", tab_j_in1[0], tab_j_in2[0], tab_y_adj1[0], tab_y_adj2[0]);
-                        
         for (var i=0;i<x_out.length;i++,k++)
         {
             x = x_out[i];
@@ -191,11 +194,8 @@ export class Grid {
 
             vv1 = alpha_y*v2 + (1-alpha_y)*v1;
             vv2 = alpha_y*v4 + (1-alpha_y)*v3;
-            //console.log(i, x, y, x_in1, x_in2, y_in1, y_in2, alpha_x, alpha_y, vv1, vv2);
 
             data_out[i] = alpha_x*vv2 + (1-alpha_x)*vv1 ;
-
-if (i==0) console.log(i_in1, i_in2, j_in1, j_in2, x_in1, x_in2, y_in1, y_in2, alpha_x, alpha_y, v1, v2, v3, v4, vv1, vv2, data_in[0], data_out[i]);
         }
     }
     

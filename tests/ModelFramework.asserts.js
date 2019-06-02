@@ -92,7 +92,8 @@ var configCible = {
             "minLon": -60,
             "maxLon": 51,
             "dlat": 1,
-            "dlon": 1
+            "dlon": 1,
+            "cyclic":false
         },
         
         "gfsdata": {

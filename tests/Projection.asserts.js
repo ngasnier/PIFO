@@ -92,9 +92,9 @@ test('projection mercator interpolations', () => {
     var out_width = (outputDomain.maxLon-outputDomain.minLon)/outputDomain.dlon;
     var out_height = (outputDomain.maxLat-outputDomain.minLat)/outputDomain.dlat;
     
-    var data_in = Variable.createVariable(1, in_width, in_height, false);
-    var data_proj = Variable.createVariable(1, mercatorProjectionDomain.width, mercatorProjectionDomain.height, false);
-    var data_out = Variable.createVariable(1, out_width, out_height, false);
+    var data_in = Variable.createVariable(0, in_width, in_height, false);
+    var data_proj = Variable.createVariable(0, mercatorProjectionDomain.width, mercatorProjectionDomain.height, false);
+    var data_out = Variable.createVariable(0, out_width, out_height, false);
     var i = 0;
     
     for (var lat=latLonDomain1.minLat;lat<=latLonDomain1.maxLat;lat+=latLonDomain1.dlat)
@@ -179,14 +179,16 @@ test('projection mercator interpolations', () => {
     projection.interpLatLonGridToDomain(latLonDomain1, data_in, data_proj, 0, 0, false, Variable.NUMBER_TYPE_SCALAR);
     
     // *** Projection sans 
-    projection.interpDomainToLatLon(outputDomain, data_proj, data_out, 0, 0, false, Variable.NUMBER_TYPE_SCALAR);
+    var outputDomain1 = new LatLonDomain();
+    Object.assign(outputDomain1, outputDomain);
+    projection.interpDomainToLatLon(outputDomain1, data_proj, data_out, 0, 0, false, Variable.NUMBER_TYPE_SCALAR);
     // Validité du coin haut gauche
-    lat = outputDomain.maxLat;
-    lon = outputDomain.minLon;
-    expect(data_out[0]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 5);    
+    lat = outputDomain1.maxLat;
+    lon = outputDomain1.minLon;
+    expect(data_out[0]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 5);
     // Validité du coin haut droit
-    lat = outputDomain.maxLat;
-    lon = outputDomain.maxLon-outputDomain.dlon; // faudrait faire par rapport à x, y mais sur cette proj ok
+    lat = outputDomain1.maxLat;
+    lon = outputDomain1.maxLon-outputDomain1.dlon; // faudrait faire par rapport à x, y mais sur cette proj ok
     expect(data_out[out_width-1]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 3);
     // Validité du coin bas droit - les tableaux doivent correspondre
     expect(data_out[out_width*out_height-1]).toBeCloseTo(data_proj[mercatorProjectionDomain.width*mercatorProjectionDomain.height-1], 3);

@@ -166,15 +166,8 @@ export class ConformalProjection  {
      */
     interpDomainToLatLon(latLonParams, data_in, data_out, offsetx, offsety, scale=false, fieldType=VariableDescription.NUMBER_TYPE_SCALAR, data2=null)
     {
-        var lons = this.getXY
-        var lats = latLonParams.getLatitudes(0, 0);
-        var x_coords = [];
-        var y_coords = [];
-        this.calcLatitudesLongitudes(offsetx, offsety, lats, lons);
-        for (var i=0;i<lats.length;i++)
-        {
-            [x_coords[i], y_coords[i]] = this.latLonToXY(lats[i], lons[i]);
-        }
+        var x_coords = this.getXCoords(offsetx, offsety);
+        var y_coords = this.getYCoords(offsetx, offsety);
     
         var lats_out = [];
         var lons_out = [];
