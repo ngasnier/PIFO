@@ -40,6 +40,50 @@ export class MercatorProjection extends ConformalProjection {
         this.R = 6371000;
     }
     
+    get minLon()
+    {
+        return this._minLon;
+    }
+    
+    set minLon(min)
+    {
+        this._minLon = min;
+        [this.xmin, this.ymin] = this.latLonToXY(this._minLat, this._minLon);
+    }
+    
+    get maxLon()
+    {
+        return this._maxLon;
+    }
+    
+    set maxLon(max)
+    {
+        this._maxLon = max;
+        [this.xmax, this.ymax] = this.latLonToXY(this._maxLat, this._maxLon);
+    }
+        
+    get minLat()
+    {
+        return this._minLat;
+    }
+    
+    set minLat(min)
+    {
+        this._minLat = min;
+        [this.xmin, this.ymin] = this.latLonToXY(this._minLat, this._minLon);
+    }
+    
+    get maxLat()
+    {
+        return this._maxLat;
+    }
+    
+    set maxLat(max)
+    {
+        this._maxLat = max;
+        [this.xmax, this.ymax] = this.latLonToXY(this._maxLat, this._maxLon);
+    }
+    
     /**
      * Sphere vers plan
      * @param {type} lat en degré
@@ -103,10 +147,8 @@ export class MercatorProjection extends ConformalProjection {
         var lon = this.minLon;
         var dlon = (this.maxLon-this.minLon)/this.width;
 
-        var [xmin, ymin] = this.latLonToXY(this.minLat, this.minLon);
-        var [xmax, ymax] = this.latLonToXY(this.maxLat, this.maxLon);
-        var dx = (xmax-xmin)/(this.width);
-        var dy = (ymax-ymin)/(this.height);
+        var dx = (this.xmax-this.xmin)/(this.width);
+        var dy = (this.ymax-this.ymin)/(this.height);
 
         var lat_in, lon_in;
         var x_in1, y_in1;
@@ -120,7 +162,7 @@ export class MercatorProjection extends ConformalProjection {
         var y = 0;
         if (this.global) i++;
 
-        for (y=ymax-0.5*offsety*dy, yscale=ymax ; y>ymin ; y-=dy, yscale-=dy)
+        for (y=this.ymax-0.5*offsety*dy, yscale=this.ymax ; y>this.ymin ; y-=dy, yscale-=dy)
         {
             lat_in = this.xyToLatLon(0, y)[0];
             if (lat_in<-90 || lat_in>90) throw "latitude overflow "+lat_in;
@@ -131,7 +173,7 @@ export class MercatorProjection extends ConformalProjection {
             if (y_in2>=heightInput) throw "latitude overflow "+lat_in+" resulte en index interp "+y_in2;
             alpha_y = ((lat_in+90)/latLonParams.dlat - y_in1)/(y_in2-y_in1);
 
-            for (lon=this.minLon, xscale=xmin;lon<this.maxLon;lon+=dlon, xscale+=dx)
+            for (lon=this.minLon, xscale=this.xmin;lon<this.maxLon;lon+=dlon, xscale+=dx)
             {
                 lon_in = lon+dlon*0.5*offsetx;
                 if (lon_in<0) lon_in += 360;
@@ -175,10 +217,8 @@ export class MercatorProjection extends ConformalProjection {
         var lon = this.minLon;
         var dlon = (this.maxLon-this.minLon)/this.width;
 
-        var [xmin, ymin] = this.latLonToXY(this.minLat, this.minLon);
-        var [xmax, ymax] = this.latLonToXY(this.maxLat, this.maxLon);
-        var dx = (xmax-xmin)/(this.width);
-        var dy = (ymax-ymin)/(this.height);
+        var dx = (this.xmax-this.xmin)/(this.width);
+        var dy = (this.ymax-this.ymin)/(this.height);
 
         var lat_in, lon_in;
         var x_in1, y_in1;
@@ -201,7 +241,7 @@ export class MercatorProjection extends ConformalProjection {
         
         var test;
 
-        for (y=ymax-0.5*offsety*dy, yscale=ymax ; y>ymin ; y-=dy, yscale-=dy)
+        for (y=this.ymax-0.5*offsety*dy, yscale=this.ymax ; y>this.ymin ; y-=dy, yscale-=dy)
         {
             lat_in = this.xyToLatLon(0, y)[0];
             if (lat_in<-90 || lat_in>90) throw "latitude overflow "+lat_in;
@@ -212,7 +252,7 @@ export class MercatorProjection extends ConformalProjection {
             if (y_in2>=heightInput) throw "latitude overflow "+lat_in+" resulte en index interp "+y_in2;
             alpha_y = ((lat_in+90)/latLonParams.dlat - y_in1)/(y_in2-y_in1);
 
-            for (lon=this.minLon, xscale=xmin;lon<this.maxLon;lon+=dlon, xscale+=dx)
+            for (lon=this.minLon, xscale=this.xmin;lon<this.maxLon;lon+=dlon, xscale+=dx)
             {
                 lon_in = lon+dlon*0.5*offsetx;
                 if (lon_in<0) lon_in += 360;

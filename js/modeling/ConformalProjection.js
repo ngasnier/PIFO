@@ -30,6 +30,10 @@ export class ConformalProjection  {
      */
     constructor()
     {
+        this.xmin = 0;
+        this.xmax = 0;
+        this.ymin = 0;
+        this.ymax = 0;
         this.cyclic = false;
     }
    
@@ -171,7 +175,7 @@ export class ConformalProjection  {
         {
             [x_coords[i], y_coords[i]] = this.latLonToXY(lats[i], lons[i]);
         }
-         
+    
         var lats_out = [];
         var lons_out = [];
         latLonParams.calcLatitudesLongitudes(0, 0, lats_out, lons_out);
@@ -253,11 +257,9 @@ export class ConformalProjection  {
     
     getXCoords(offsetx, offsety)
     {
-        var [xmin, ymin] = this.latLonToXY(this.minLat, this.minLon);
-        var [xmax, ymax] = this.latLonToXY(this.maxLat, this.maxLon);
         var [dx, dy] = this.getMeshSize();
         var xcoords = [];
-        var x = xmin+0.5*offsetx*dx;
+        var x = this.xmin+0.5*offsetx*dx;
         for (var i=0;i<this.width;i++)
         {
             xcoords[i] = x;
@@ -268,11 +270,9 @@ export class ConformalProjection  {
     
     getYCoords(offsetx, offsety)
     {
-        var [xmin, ymin] = this.latLonToXY(this.minLat, this.minLon);
-        var [xmax, ymax] = this.latLonToXY(this.maxLat, this.maxLon);
         var [dx, dy] = this.getMeshSize();
         var ycoords = [];
-        var y = ymax-0.5*offsety*dy;
+        var y = this.ymax-0.5*offsety*dy;
         for (var i=0;i<this.height;i++)
         {
             ycoords[i] = y;
