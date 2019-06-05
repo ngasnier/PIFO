@@ -1,5 +1,7 @@
 #!/bin/sh
 
+#set -o errexit
+
 rm res/run/2018120612/fileinfo.txt
 ln -s fileinfo.all.txt res/run/2018120612/fileinfo.txt
 rm res/test/input/*

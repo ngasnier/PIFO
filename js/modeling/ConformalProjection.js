@@ -164,8 +164,10 @@ export class ConformalProjection  {
      * calcul de la déclinaison. Supposée positionnée au même point.
      * @returns {undefined}
      */
-    interpDomainToLatLon(latLonParams, data_in, data_out, offsetx, offsety, scale=false, fieldType=VariableDescription.NUMBER_TYPE_SCALAR, data2=null)
+    interpDomainToLatLon(latLonParams, data_in, data_out, offsetx, offsety, scale=false, fieldType=VariableDescription.NUMBER_TYPE_SCALAR, data2=null, offsetx2=0, offsety2=0)
     {
+        var grid = new Grid();
+
         var x_coords = this.getXCoords(offsetx, offsety);
         var y_coords = this.getYCoords(offsetx, offsety);
     
@@ -201,10 +203,30 @@ export class ConformalProjection  {
             }
         }
 
+        // Les points ne sont pas les mêmes : regridding nécessaire
+        
+
         // Annule la déclinaison dans la grille d'origine
         if (data2!=null)
         {
-            // NB : la seconde composante est supposée située sur le même point           
+            if (offsetx2!=offsetx && offsety2!=offsety)
+            {
+                var lats2 = [], lons2 = [];
+                this.calcLatitudesLongitudes(offsetx2, offsety2, lats2, lons2);
+                var x_coords2 = this.getXCoords(offsetx2, offsety2);
+                var y_coords2 = this.getYCoords(offsetx2, offsety2);
+                for (var i=0;i<lats_out.length;i++)
+                {
+                    [x_coords2[i], y_coords2[i]] = this.latLonToXY(lats2[i], lons2[i]);
+                }
+                var data2_out = [];
+                grid.bilinearRegrid(x_coords2, y_coords2, data2_in, this.cyclic, x_coords2, y_coords2, data2_out);
+                data2_in = data2_out;
+            }
+
+            var lats = [], lons = [];
+            this.calcLatitudesLongitudes(offsetx, offsety, lats, lons);
+            
             var declinations = this.getDeclinations(lats, lons);
             switch (fieldType)
             {
@@ -224,7 +246,6 @@ export class ConformalProjection  {
         }
     
         // On peut maintenant regrid le champ
-        var grid = new Grid();
         grid.bilinearRegrid(x_coords, y_coords, input, this.cyclic, x_out, y_out, data_out);
     }
 

@@ -706,8 +706,8 @@
             "class": "DataProcessor",
             
             "processList": [
-                { "name":"U", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"U"}, {"name": "variable", "value":"U"}]},
-                { "name":"V", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"V"}, {"name":"variable", "value": "V"}]},
+                { "name":"U", "task" : "wind_interpolation", "parameters": [{"name":"source", "value":"U"}, {"name":"component_source", "value":"V"}, {"name": "variable", "value":"U"}]},
+                { "name":"V", "task" : "wind_interpolation", "parameters": [{"name":"source", "value":"V"}, {"name":"component_source", "value":"U"}, {"name":"variable", "value": "V"}]},
                 { "name":"T", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"T"}, {"name":"variable", "value": "T"} ]},
                 { "name":"ps", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"ps"}, {"name":"variable", "value": "ps"}]},
                 { "name":"qv", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"qv"}, {"name":"variable", "value": "qv"}]},
@@ -763,6 +763,60 @@
                     ],
                     "links": [
                         {"outputComponent":"variable_source", "output":"main", "inputComponent":"projection_component", "input":"main"},
+                        {"outputComponent":"projection_component", "output":"main", "inputComponent":"variable_destination", "input":"main"},
+                        {"outputComponent":"projection_component", "output":"latitudes", "inputComponent":"latitude_destination", "input":"main"},
+                        {"outputComponent":"projection_component", "output":"longitudes", "inputComponent":"longitude_destination", "input":"main"}
+                    ]
+                },
+                {
+                    "name":"wind_interpolation",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
+                        {"name":"component_source", "bindComponent":"vect_component_source", "parameter":"source"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"gridPosVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"scaleVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"numberTypeVariable"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "variable_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "outputdir" }
+                        },
+                        {
+                            "name": "vect_component_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "outputdir" }
+                        },
+                        {
+                            "name": "projection_component", 
+                            "class":"ProjectionComponent",
+                            "destinationDomain": { "ref": "outputDomain" },
+                            "projection": { "ref": "modelDomain" }
+                        },
+                        {
+                            "name": "variable_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "pubdir" }
+                        },
+                        {
+                            "name": "latitude_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "pubdir" },
+                            "destination": "latitudes"
+                        },
+                        {
+                            "name": "longitude_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "pubdir" },
+                            "destination": "longitudes"
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"variable_source", "output":"main", "inputComponent":"projection_component", "input":"main"},
+                        {"outputComponent":"vect_component_source", "output":"main", "inputComponent":"projection_component", "input":"secondary"},
                         {"outputComponent":"projection_component", "output":"main", "inputComponent":"variable_destination", "input":"main"},
                         {"outputComponent":"projection_component", "output":"latitudes", "inputComponent":"latitude_destination", "input":"main"},
                         {"outputComponent":"projection_component", "output":"longitudes", "inputComponent":"longitude_destination", "input":"main"}
