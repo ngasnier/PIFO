@@ -35,6 +35,7 @@ export class ConformalProjection  {
         this.ymin = 0;
         this.ymax = 0;
         this.cyclic = false;
+        this.regrid = "bilinear";
     }
    
     /**
@@ -107,13 +108,20 @@ export class ConformalProjection  {
         this.calcLatitudesLongitudes(offsetx, offsety, lats_out, lons_out);
         
         var grid = new Grid();
-        grid.bilinearRegrid(lons, lats, data, latLonParams.cyclic, lons_out, lats_out, output);
+        if (this.regrid=="bicubic")
+            grid.bicubicRegrid(lons, lats, data, latLonParams.cyclic, lons_out, lats_out, output);
+        else
+            grid.bilinearRegrid(lons, lats, data, latLonParams.cyclic, lons_out, lats_out, output);
+        
         
         var data2_regrid = [];
         var scale_factor = 1;
         if (data2!=null)
         {
-            grid.bilinearRegrid(lons, lats, data2, latLonParams.cyclic, lons_out, lats_out, data2_regrid);
+            if (this.regrid=="bicubic")
+                grid.bicubicRegrid(lons, lats, data2, latLonParams.cyclic, lons_out, lats_out, data2_regrid);
+            else
+                grid.bilinearRegrid(lons, lats, data2, latLonParams.cyclic, lons_out, lats_out, data2_regrid);            
         }
         if (scale)
         {
@@ -201,10 +209,7 @@ export class ConformalProjection  {
                     data2_in[i] = data2_in[i]*scale_factor;
                 }
             }
-        }
-
-        // Les points ne sont pas les mêmes : regridding nécessaire
-        
+        }       
 
         // Annule la déclinaison dans la grille d'origine
         if (data2!=null)
@@ -220,7 +225,10 @@ export class ConformalProjection  {
                     [x_coords2[i], y_coords2[i]] = this.latLonToXY(lats2[i], lons2[i]);
                 }
                 var data2_out = [];
-                grid.bilinearRegrid(x_coords2, y_coords2, data2_in, this.cyclic, x_coords2, y_coords2, data2_out);
+                if (this.regrid=="bicubic")
+                    grid.bicubicRegrid(x_coords2, y_coords2, data2_in, this.cyclic, x_coords2, y_coords2, data2_out);
+                else
+                    grid.bilinearRegrid(x_coords2, y_coords2, data2_in, this.cyclic, x_coords2, y_coords2, data2_out);
                 data2_in = data2_out;
             }
 
@@ -245,8 +253,11 @@ export class ConformalProjection  {
             }
         }
     
-        // On peut maintenant regrid le champ
-        grid.bilinearRegrid(x_coords, y_coords, input, this.cyclic, x_out, y_out, data_out);
+        // On peut maintenant regrid le champ        
+        if (this.regrid=="bicubic")
+            grid.bicubicRegrid(x_coords, y_coords, input, this.cyclic, x_out, y_out, data_out);
+        else
+            grid.bilinearRegrid(x_coords, y_coords, input, this.cyclic, x_out, y_out, data_out);
     }
 
     /**

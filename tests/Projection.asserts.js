@@ -263,6 +263,6 @@ test('regridding', ()=> {
     grid.bilinearRegrid(x_in, y_in, data_in, true, x_out, y_out, data_out);
     expect(data_out).arrayBeCloseTo([ 5.5, 3.5, 3 ]);
     
-    //expect : [ 5.5, 5, 6, 2.5, 2, 3]
-    //console.log(data_out);
+    grid.bicubicRegrid(x_in, y_in, data_in, true, x_out, y_out, data_out);
+    expect(data_out).arrayBeCloseTo([ 6.25, 3.125, 2.625 ]);
 });

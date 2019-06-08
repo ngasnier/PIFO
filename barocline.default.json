@@ -63,7 +63,8 @@
             "minLat":9,
             "maxLat":81,
             "minLon":-60,
-            "maxLon":51
+            "maxLon":51,
+            "regrid":"bicubic"
         },
         
         "outputDomain": {
@@ -73,7 +74,8 @@
             "minLon": -60,
             "maxLon": 51,
             "dlat": 1,
-            "dlon": 1
+            "dlon": 1,
+            "cyclic": false
         },
         
         "gfsdata": {
