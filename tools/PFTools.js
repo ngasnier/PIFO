@@ -51,7 +51,7 @@ module.exports.initPifo = function(context)
         "barocline.json",
         "init"
         ];
-    var options =  {cwd: path.join(context.config.products[context.productName].pifo_root+"_test")};
+    var options =  {cwd: path.join(context.config.products[context.productName].pifo_root)};
     return Helper.spawnPromise(cmdline, args, context, options);
 }
 
@@ -63,7 +63,7 @@ module.exports.postinitPifo = function(context)
         "barocline.json",
         "postinit"
         ];
-    var options =  {cwd: path.join(context.config.products[context.productName].pifo_root+"_test")};
+    var options =  {cwd: path.join(context.config.products[context.productName].pifo_root)};
     return Helper.spawnPromise(cmdline, args, context, options);
 }
 
@@ -86,7 +86,7 @@ module.exports.postprocessPifo = function(context)
         "barocline.json",
         "postprocessor"
         ];
-    var options =  {cwd: path.join(context.config.products[context.productName].pifo_root+"_test")};
+    var options =  {cwd: path.join(context.config.products[context.productName].pifo_root)};
     return Helper.spawnPromise(cmdline, args, context, options);
 }
 
