@@ -43,6 +43,30 @@ module.exports.preprocessPifo = function(context)
     return Helper.spawnPromise(cmdline, args, context, options);
 }
 
+module.exports.initPifo = function(context)
+{
+    var cmdline = "node"
+    var args = [
+        "runpifo.js",
+        "barocline.json",
+        "init"
+        ];
+    var options =  {cwd: path.join(context.config.products[context.productName].pifo_root+"_test")};
+    return Helper.spawnPromise(cmdline, args, context, options);
+}
+
+module.exports.postinitPifo = function(context)
+{
+    var cmdline = "node"
+    var args = [
+        "runpifo.js",
+        "barocline.json",
+        "postinit"
+        ];
+    var options =  {cwd: path.join(context.config.products[context.productName].pifo_root+"_test")};
+    return Helper.spawnPromise(cmdline, args, context, options);
+}
+
 module.exports.runPifo = function(context)
 {
     var cmdline = "node"
@@ -51,6 +75,18 @@ module.exports.runPifo = function(context)
         "run"
         ];
     var options =  {cwd: path.join(context.config.products[context.productName].pifo_root)};
+    return Helper.spawnPromise(cmdline, args, context, options);
+}
+
+module.exports.postprocessPifo = function(context)
+{
+    var cmdline = "node"
+    var args = [
+        "runpifo.js",
+        "barocline.json",
+        "postprocessor"
+        ];
+    var options =  {cwd: path.join(context.config.products[context.productName].pifo_root+"_test")};
     return Helper.spawnPromise(cmdline, args, context, options);
 }
 
