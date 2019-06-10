@@ -6,6 +6,7 @@
         "BaroclinicHydrostaticCore": "modeling/BaroclinicHydrostaticCore.js",
         "LatLonDomain": "modeling/LatLonDomain.js",
         "MercatorProjection": "modeling/MercatorProjection.js",
+        "PolarStereographicProjection": "modeling/PolarStereographicProjection.js",
         "LeapFrogTimeIntegrator": "modeling/LeapFrogTimeIntegrator.js",
         "RobertAsselinTimeFilter": "modeling/RobertAsselinTimeFilter.js",
         "SchumannFilter": "modeling/SchumannFilter.js",
@@ -55,6 +56,18 @@
             "cyclic": true
         },
         
+        "modelDomain_Polar": {
+            "class": "PolarStereographicProjection",
+            "width": 72,
+            "height": 111,
+            "horizontalStaggering": "C",
+            "xmin":0,
+            "ymin":-10000000,
+            "xmax":11000000,
+            "ymax":10000000,
+            "regrid":"bilinear"
+        },
+        
         "modelDomain": {
             "class": "MercatorProjection",
             "width": 111,
@@ -64,7 +77,7 @@
             "maxLat":81,
             "minLon":-60,
             "maxLon":51,
-            "regrid":"bicubic"
+            "regrid":"bilinear"
         },
         
         "outputDomain": {

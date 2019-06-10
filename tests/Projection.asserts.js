@@ -16,6 +16,7 @@
  */
 
 import { MercatorProjection } from "../js/modeling/MercatorProjection.js";
+import { PolarStereographicProjection } from "../js/modeling/PolarStereographicProjection.js";
 import { LatLonDomain } from "../js/modeling/LatLonDomain.js";
 import { Model } from "../js/modeling/Model.js";
 import { Variable } from "../js/modeling/Variable.js";
@@ -215,6 +216,17 @@ test('projection mercator calcLatitutesLongitudes', () => {
     var [lat, lon] = projection.xyToLatLon(x-dx, y+dy);
     expect(latitudes[mercatorProjectionDomain.width*mercatorProjectionDomain.height-1]).toBeCloseTo(lat);
     expect(longitudes[mercatorProjectionDomain.width*mercatorProjectionDomain.height-1]).toBeCloseTo(lon);
+});
+
+test('projection polaire', () => {
+    var projection = new PolarStereographicProjection();
+    var m = projection.scaleFactor(0, 0);
+    expect(m).toBeCloseTo(2);
+    
+    var xy = projection.latLonToXY(9, 0);
+    var latlon = projection.xyToLatLon(xy[0], xy[1]);
+    expect(latlon).arrayBeCloseTo([9, 0]);
+    
 });
 
 test('regridding', ()=> {

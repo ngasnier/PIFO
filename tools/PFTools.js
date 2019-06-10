@@ -37,7 +37,7 @@ module.exports.preprocessPifo = function(context)
     var cmdline = "node"
     var args = [
         "runpifo.js",
-        "preprocess"
+        "preprocessor"
         ];
     var options =  {cwd: path.join(context.config.products[context.productName].pifo_root)};
     return Helper.spawnPromise(cmdline, args, context, options);

@@ -15,23 +15,57 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-export var PolarStereographicProjection = function(r, phi0)
-{   
-    this.R = r;
-    this.phi0 = phi0*Math.PI/180;
-    this.L = this.R*(1+Math.sin(this.phi0));
+import { ConformalProjection } from "./ConformalProjection.js";
+import { VariableDescription } from "./VariableDescription.js";
+
+/**
+ * Projection conforme stéréographique polaire
+ * @type type
+ */
+export class PolarStereographicProjection extends ConformalProjection
+{
+    /**
+     * 
+     * @returns {undefined}
+     */
+    constructor()
+    {
+        super();
+        this.R = 6371000;
+        this.planeLatitude = 90;
+    }
+    
+    /**
+     * Latitude du plan de projection.
+     * @param {type} lat0
+     * @returns {undefined}
+     */
+    set planeLatitude(lat0)
+    {
+        this.phi0 = lat0*Math.PI/180;
+        this.L = this.R*(1+Math.sin(this.phi0));
+    }
+    
+    /**
+     * Latitude du plan de projection.
+     * @returns {Number}
+     */
+    get planeLatitude()
+    {
+        return this.phi0*180/Math.PI;
+    }
     
     /**
      * Sphere vers plan
      * @param {type} lat
      * @returns {Number}
      */
-    this.latLonToXY = function(lat, lon)
+    latLonToXY(lat, lon)
     {
         var lambda = (lon*Math.PI/180);
         var phi = (lat*Math.PI/180);
         var theta = Math.PI/2-phi;
-        var rho = this.L*Math.tan(theta);
+        var rho = this.L*Math.tan(theta/2);
         return [ rho*Math.cos(lambda), rho*Math.sin(lambda)];
     }
     
@@ -40,13 +74,11 @@ export var PolarStereographicProjection = function(r, phi0)
      * @param {type} y
      * @returns {Number}
      */
-    this.xyToLatLon = function(x, y)
+    xyToLatLon(x, y)
     {
-        var rho = Math.sqrt(x*x, y*y);
+        var rho = Math.sqrt(x*x + y*y);        
         var lambda = y>=0 ? Math.acos(x/rho) : 2*Math.PI-Math.acos(x/rho);
-        var theta = 2*Math.atan(rho/this.L);
-        var phi = Math.PI/2-theta;
-        
+        var phi = Math.asin((this.L*this.L-rho*rho)/(this.L*this.L+rho*rho));
         return [phi*180/Math.PI, lambda*180/Math.PI];
     }
 
@@ -56,29 +88,19 @@ export var PolarStereographicProjection = function(r, phi0)
      * @param {type} lon
      * @returns {Number}
      */
-    this.scaleFactor = function(lat, lon)
+    scaleFactor(lat, lon)
     {
         return (1+Math.sin(this.phi0))/(1+Math.sin(lat*Math.PI/180));
     }
     
     /**
-     * Interpole un domaine global lat lon vers le domaine limité du plan 
-     * de projection
-     * @param {type} params
-     * @returns {undefined}
+     * Déclinaison des vecteurs 
+     * @param {type} lat
+     * @param {type} lon
+     * @returns {Number} déclinaison en radian
      */
-    this.interpLatLonGridToDomain = function(params, data, res)
+    declination(lat, lon)
     {
-        /*params.minLat;
-        params.maxLat;
-        params.minLon;
-        params.maxLon;
-        params.width;
-        params.height;*/
-        
-        // Vent : rotation lambda par rapport à l'origine 
-        /*uprime = u*cos(theta)-v*sin(theta)
-        vprime = u*sin(theta)+v*cos(theta)*/
-    }
+        return -(Math.PI/2 + lon*Math.PI/180);
+    }    
 }
-

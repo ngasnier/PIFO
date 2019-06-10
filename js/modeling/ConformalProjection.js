@@ -146,13 +146,13 @@ export class ConformalProjection  {
                 case VariableDescription.NUMBER_TYPE_U_VECTOR:
                     for (var i=0;i<output.length;i++)
                     {
-                        output[i] = output[i]*Math.cos(declinations[i])-data2_regrid[i]*Math.sin(declinations[i]);
+                        output[i] = output[i]*Math.cos(declinations[i])+data2_regrid[i]*Math.sin(declinations[i]);
                     }
                     break;
                 case VariableDescription.NUMBER_TYPE_V_VECTOR:
                     for (var i=0;i<output.length;i++)
                     {
-                        output[i] = data2_regrid[i]*Math.sin(declinations[i])+output[i]*Math.cos(declinations[i]);
+                        output[i] = -data2_regrid[i]*Math.sin(declinations[i])+output[i]*Math.cos(declinations[i]);
                     }
                     break;
             }
@@ -187,9 +187,9 @@ export class ConformalProjection  {
         var y_out = [];
         for (var i=0;i<lats_out.length;i++)
         {
-            [x_out[i], y_out[i]] = this.latLonToXY(lats_out[i], lons_out[i]);            
+            [x_out[i], y_out[i]] = this.latLonToXY(lats_out[i], lons_out[i]);
         }
-
+        
         // Ne pas modifier les variables d'origine
         var input = Variable.clone(data_in);
         var data2_in = (data2!=null?Variable.clone(data2):null);
@@ -241,13 +241,13 @@ export class ConformalProjection  {
                 case VariableDescription.NUMBER_TYPE_U_VECTOR:
                     for (var i=0;i<input.length;i++)
                     {
-                        input[i] = input[i]*Math.cos(-declinations[i])-data2_in[i]*Math.sin(-declinations[i]);
+                        input[i] = input[i]*Math.cos(-declinations[i])+data2_in[i]*Math.sin(-declinations[i]);
                     }
                     break;
                 case VariableDescription.NUMBER_TYPE_V_VECTOR:
                     for (var i=0;i<input.length;i++)
                     {
-                        input[i] = data2_in[i]*Math.sin(-declinations[i])+input[i]*Math.cos(-declinations[i]);
+                        input[i] = -data2_in[i]*Math.sin(-declinations[i])+input[i]*Math.cos(-declinations[i]);
                     }
                     break;
             }
@@ -266,18 +266,39 @@ export class ConformalProjection  {
      */
     getMeshSize()
     {
-        return [0, 0];
+        return [(this.xmax-this.xmin)/this.width, (this.ymax-this.ymin)/this.height];
     }
     
     /**
-     * Calcule les latitudes des points de grille.
-     * @param {type} xoffset
-     * @param {type} yoffset
+     * Calcule les points du domaine en coordonnées naturelles.
+     * @param {type} offsetx
+     * @param {type} offsety
+     * @param {type} lats_out
+     * @param {type} lons_out
      * @returns {undefined}
      */
     calcLatitudesLongitudes(xoffset, yoffset, latitudes, longitudes)
     {
-        
+        var a = [this.xmin, this.ymin];
+        var b = [this.xmax, this.ymax];
+        var [dx, dy] = this.getMeshSize();
+
+        var yplan = b[1]-dy*yoffset*0.5;
+        var xplan = a[0];
+        var i = 0;
+        var lat, lon;
+        for (var y=0;y<this.height;y++)
+        {
+            xplan = a[0]+dx*xoffset*0.5;
+            for(var x=0;x<this.width;x++,i++)
+            {
+                [lat, lon] = this.xyToLatLon(xplan, yplan);
+                latitudes[i] = lat;
+                longitudes[i] = lon;
+                xplan += dx;
+            }
+            yplan -= dy;
+        }        
     }
     
     getXCoords(offsetx, offsety)
