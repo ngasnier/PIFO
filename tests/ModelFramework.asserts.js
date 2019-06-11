@@ -70,7 +70,8 @@ var configCible = {
             "minLon": 0,
             "maxLon": 359.5,
             "dlat": 0.5,
-            "dlon": 0.5
+            "dlon": 0.5,
+            "cyclic": true
         },
         
         "modelDomain": {
@@ -91,7 +92,8 @@ var configCible = {
             "minLon": -60,
             "maxLon": 51,
             "dlat": 1,
-            "dlon": 1
+            "dlon": 1,
+            "cyclic":false
         },
         
         "gfsdata": {

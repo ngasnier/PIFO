@@ -44,7 +44,7 @@ export class ProjectionComponent extends Component {
 
     get inputs()
     {
-        return ["main"];
+        return ["main", "secondary"];
     }
     
     get outputs()
@@ -55,13 +55,15 @@ export class ProjectionComponent extends Component {
     get parameters()
     {
         return ["gridPos", "scale", "numberType",
-            "gridPosVariable", "scaleVariable", "numberTypeVariable"];
+            "gridPosVariable", "scaleVariable", "numberTypeVariable",
+            "gridPos2", "gridPos2Variable"];
     }
 
     async process(data_in, data_out)
     {
         try {
             var variable_in = data_in["main"].getData();
+            var variable_sec = data_in["secondary"]!=null ? data_in["secondary"].getData():null;
             var variable_out;
             var latitudes;
             var longitudes;
@@ -81,6 +83,27 @@ export class ProjectionComponent extends Component {
             } 
             else
                 throw `${this.name} : invalid parameter gridPos.`;
+            
+            // Résolution paramètre gridPos variable secondaire
+            var offsetx2=0, offsety2=0;
+            if (variable_sec!=null)
+            {
+                if (this.gridPos2Variable!=null)
+                {
+                    var description = this.model.getVariableDescription(this.gridPos2Variable);
+                    offsetx2 = description.offsetx;
+                    offsety2 = description.offsety;
+                }
+                else if (Array.isArray(this.gridPos2)) 
+                {
+                     [offsetx2, offsety2] = this.gridPos2;
+                } 
+                else
+                {
+                    offsetx2 = offsetx;
+                    offsety2 = offsety;
+                }
+            }
             
             // Résolution paramètre scale
             var scale;
@@ -121,7 +144,7 @@ export class ProjectionComponent extends Component {
                     for (var k=0;k<variable_in.nbLevels;k++)
                     {
                         this.projection.interpLatLonGridToDomain(
-                            this.sourceDomain, variable_in[k], variable_out[k], offsetx, offsety, scale, numberType);
+                            this.sourceDomain, variable_in[k], variable_out[k], offsetx, offsety, scale, numberType, variable_sec!=null ? variable_sec[k] : null);
                     }
                 }
                 else if (this.destinationDomain!=null)
@@ -130,7 +153,7 @@ export class ProjectionComponent extends Component {
                     for (var k=0;k<variable_in.nbLevels;k++)
                     {
                         this.projection.interpDomainToLatLon(
-                            this.destinationDomain, variable_in[k], variable_out[k], offsetx, offsety, scale, numberType);
+                            this.destinationDomain, variable_in[k], variable_out[k], offsetx, offsety, scale, numberType, variable_sec!=null ? variable_sec[k]: null, offsetx2, offsety2);
                     }
                 }
                 else
@@ -144,13 +167,13 @@ export class ProjectionComponent extends Component {
                 {
                     variable_out = Variable.createVariable(0, this.projection.width, this.projection.height, false);
                     this.projection.interpLatLonGridToDomain(
-                        this.sourceDomain, variable_in, variable_out, offsetx, offsety, scale, numberType);
+                        this.sourceDomain, variable_in, variable_out, offsetx, offsety, scale, numberType, variable_sec);
                 }
                 else if (this.destinationDomain!=null)
                 {
                     variable_out = Variable.createVariable(0, this.destinationDomain.width, this.destinationDomain.height, false);
                     this.projection.interpDomainToLatLon(
-                        this.destinationDomain, variable_in, variable_out, offsetx, offsety, scale, numberType);                    
+                        this.destinationDomain, variable_in, variable_out, offsetx, offsety, scale, numberType, variable_sec, offsetx2, offsety2);
                 }
                 else
                 {

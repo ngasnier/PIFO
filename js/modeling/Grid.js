@@ -1,0 +1,487 @@
+/* 
+ * Copyright (C) 2019 Nicolas GASNIER (http://www.meteo-blois.fr/contact/)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+import { Variable } from "./Variable.js";
+import { Matrix } from "../math/Matrix.js";
+
+/**
+ * Gestion de l'interpolation entre grilles.
+ * @type type
+ */
+export class Grid {
+    
+    // [ 0 1 2 ]      x
+    // -------->
+    // [ 2 1 0 ]
+    optimizeGridIndices(x_in, x_out, cyclic, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2)
+    {
+        if (x_in.length>1)
+        {                
+            var di_in = x_in[0]>x_in[x_in.length-1] ? -1 : 1;
+            var nb_in = x_in.length;
+            var i_in1 = 0;
+            var i_in2 = 0;
+            var dx_start = (di_in>=0 ? x_in[1] - x_in[0] : x_in[nb_in-2]-x_in[nb_in-1]);
+            var dx_end = (di_in>=0 ? x_in[nb_in-1] - x_in[nb_in-2] : x_in[0]-x_in[1]);
+            var x_min = (di_in>=0 ? x_in[0] : x_in[nb_in-1]);
+            var x_max = (di_in>=0 ? x_in[nb_in-1] : x_in[0]);
+            var x_start_cycle = (di_in>=0 ? x_in[0]-dx_start : x_in[nb_in-1]-dx_start);
+            var x_end_cycle = (di_in>=0 ? x_in[nb_in-1]+dx_end : x_in[0]+dx_end);
+            var cycle_length = x_end_cycle - x_min;
+            var renorm = 0;
+            
+            var nb = x_out.length;
+            var x = 0;
+            var dx = 0;
+
+            for (var k=0;k<nb;k++)
+            {
+                i_in1 = (di_in>=0 ? 0 : x_in.length-1);
+                i_in2 = (di_in>=0 ? 1 : x_in.length-2);
+
+                x = x_out[k];
+                renorm = 0;
+                if (!cyclic && (x<x_min || x>x_max)) 
+                {
+                    if (x<x_min)
+                    {
+                        if (di_in>=0)
+                        {
+                            i_in1 = 0;
+                            i_in2 = 1;
+                            tab_i_in1[k] = i_in1;
+                            tab_i_in2[k] = i_in1;
+                        }
+                        else
+                        {
+                            i_in1 = nb_in-1;
+                            i_in2 = i_in1-1;
+                            tab_i_in1[k] = i_in1;
+                            tab_i_in2[k] = i_in1;
+                        }
+                    }
+                    else
+                    {
+                        if (di_in>=0)
+                        {
+                            i_in1 = nb_in-2;
+                            i_in2 = i_in1+1;
+                            tab_i_in1[k] = i_in2;
+                            tab_i_in2[k] = i_in2;
+                        }
+                        else
+                        {
+                            i_in1 = 1;
+                            i_in2 = i_in1-1;
+                            tab_i_in1[k] = i_in2;
+                            tab_i_in2[k] = i_in2;
+                        }
+                    }
+                    tab_x_adj1[k] = x_in[i_in1];
+                    tab_x_adj2[k] = x_in[i_in2];
+                }
+                else
+                {
+                    if ((x<x_min) || (x>x_end_cycle))
+                    {
+                        renorm = Math.floor((x-x_min)/cycle_length);
+                    }
+                    x = x - renorm*cycle_length;
+
+                    if (x>x_max && x<=x_end_cycle)
+                    {
+                        if (di_in>=0)
+                        {
+                            i_in1 = nb_in-1;
+                            i_in2 = 0;
+                        }
+                        else
+                        {
+                            i_in1 = 0;
+                            i_in2 = nb_in-1;
+                        }
+                        tab_x_adj1[k] = x_in[i_in1]+renorm*cycle_length;
+                        tab_x_adj2[k] = x_end_cycle+renorm*cycle_length;
+                    }
+                    else
+                    {
+                        while ((x<x_in[i_in1] || x>x_in[i_in2]) 
+                                && (i_in1>=0 && i_in1<nb_in && i_in2>=0 && i_in2<nb_in)) 
+                        {
+                            i_in1+=di_in;
+                            i_in2+=di_in;
+                        }
+                        if (i_in1<0) i_in1 = nb_in-1;
+                        if (i_in2<0) i_in2 = nb_in-1;
+                        if (i_in1>nb_in) i_in1 = 0;
+                        if (i_in2>nb_in) i_in2 = 0;
+                        tab_x_adj1[k] = x_in[i_in1]+renorm*cycle_length;
+                        tab_x_adj2[k] = x_in[i_in2]+renorm*cycle_length;
+                    }
+                    tab_i_in1[k] = i_in1;
+                    tab_i_in2[k] = i_in2;
+                }
+            }
+        }
+        else
+        {
+            throw `not enough coordinates to regrid.`;
+        }
+    }
+    
+    /**
+     * Interpolation d'une grille 2D vers une autre par interpolation bilinéaire.
+     * 
+     * <p>Les valeurs à interpoler sont dans un tableau linéaire dont les 
+     * coordonnées X et Y des axes sont fournies. Les intervalles séparant
+     * les coordonnées X ou Y ne sont pas nécessairement réguliers.</p>
+     * 
+     * <p>Le tableau linéaire est ordonné de sorte que les indices pour un point 
+     * de grille i, j sont calculés sous la forme k=j*NB coordonnéesY + X.</p>
+     * 
+     * <p>En sortie, on précise la liste des coordonnées X et Y que l'on
+     * souhaite obtenir. Celles-ci peuvent être quelquonques, il doit y
+     * en avoir autant que de point de sortie à obtenir.</p>
+     * 
+     * <p>Une interpolation bilinéaire entre les 4 points les plus proches
+     * est effectuée pour obtenir les valeurs de sortie.</p>
+     * 
+     * <p>Si les coordonnées sont en dehors du domaine définit par les 
+     * coordonnées de départ, la valeur du point le plus proche est prise.</p>
+     * 
+     * <p>Il est possible de faire reboucler la grille selon l'axe des X, 
+     * dans ce cas toute coordonnée qui dépasse reboucle dans l'intervalle 
+     * d'origine. L'intervalle dx entre le dernier point et le premier point 
+     * est considéré comme équivalent à l'intervalle entre l'avant-dernier 
+     * point et le dernier point.</p>
+     * 
+     * @param {type} x_in listing des coordonnées x d'origine. Doit être 
+     * monotoniquement croissant ou décroissant.
+     * @param {type} y_in listing des coordonnées y d'origine. Doit être 
+     * monotoniquement croissant ou décroissant.
+     * @param {type} data_in données d'entrée de taille x_in.length*y_in.length.
+     * @param {type} cyclic est-ce que les données doivent être concidérées 
+     * cycliques sur l'axe des X ? 
+     * @param {type} x_out liste des coordonnées x de sorties souhaitées.
+     * @param {type} y_out liste des coordonnées y de sorties souhaitées.
+     * @param {type} data_out tableau de sortie, dans l'ordre des coordonnées
+     * x_out, y_out fournies.
+     * @returns {undefined}
+     */
+    bilinearRegrid(x_in, y_in, data_in, cyclic, x_out, y_out, data_out)
+    {
+        var tab_i_in1 = [];
+        var tab_i_in2 = [];
+        var tab_x_adj1 = [];
+        var tab_x_adj2 = [];
+        var tab_j_in1 = [];
+        var tab_j_in2 = [];
+        var tab_y_adj1 = [];
+        var tab_y_adj2 = [];
+        
+        var in_width = x_in.length;
+        var in_height = y_in.length;
+
+        var x, y;
+
+        var i_in1, j_in1;
+        var i_in2, j_in2;
+
+        var x_in1, y_in1;
+        var x_in2, y_in2;
+
+        var v1, v2, v3, v4;
+        var vv1, vv2;
+        var alpha_x, alpha_y;
+
+        this.optimizeGridIndices(x_in, x_out, cyclic, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);
+        this.optimizeGridIndices(y_in, y_out, false, tab_j_in1, tab_j_in2, tab_y_adj1, tab_y_adj2);
+        
+        for (var i=0;i<x_out.length;i++)
+        {
+            x = x_out[i];
+            i_in1 = tab_i_in1[i];
+            i_in2 = tab_i_in2[i];
+            x_in1 = tab_x_adj1[i];
+            x_in2 = tab_x_adj2[i];
+            alpha_x = (x-x_in1)/(x_in2-x_in1);
+
+            y = y_out[i];
+            j_in1 = tab_j_in1[i];
+            j_in2 = tab_j_in2[i];
+            y_in1 = tab_y_adj1[i];
+            y_in2 = tab_y_adj2[i];
+            alpha_y = (y-y_in1)/(y_in2-y_in1);
+
+            v1 = data_in[i_in1+in_width*j_in1];
+            v2 = data_in[i_in1+in_width*j_in2];
+            v3 = data_in[i_in2+in_width*j_in1];
+            v4 = data_in[i_in2+in_width*j_in2];
+
+            vv1 = alpha_y*v2 + (1-alpha_y)*v1;
+            vv2 = alpha_y*v4 + (1-alpha_y)*v3;
+
+            data_out[i] = alpha_x*vv2 + (1-alpha_x)*vv1 ;
+        }
+    }
+    
+    /**
+     * Interpolation d'une grille vers une autre par interpolation bicubique.
+     * 
+     * <p>Le fonctionnement est identique à bilinearRegrid(). L'interpolation
+     * est cette fois-ci de type bicubique, donc plus précise, mais plus 
+     * coûteuse en temps de calcul.</p>
+     * 
+     * @param {type} x_in
+     * @param {type} y_in
+     * @param {type} data_in
+     * @param {type} x_out
+     * @param {type} y_out
+     * @param {type} data_out
+     * @returns {undefined}
+     * @see bilinearRegrid
+     */
+    bicubicRegrid(x_in, y_in, data_in, cyclic, x_out, y_out, data_out)
+    {
+        var width = x_out.length;
+        var height = y_out.length;
+        var in_width = x_in.length;
+        var in_height = y_in.length;
+        var i=0;
+        var ix, iy;
+        var x, y;
+        var alpha_x, alpha_y;
+        
+        var tab_i_in1 = [];
+        var tab_i_in2 = [];
+        var tab_x_adj1 = [];
+        var tab_x_adj2 = [];
+        var tab_j_in1 = [];
+        var tab_j_in2 = [];
+        var tab_y_adj1 = [];
+        var tab_y_adj2 = [];       
+
+        var i_in1, j_in1;
+        var i_in2, j_in2;
+
+        var x_in1, y_in1;
+        var x_in2, y_in2;
+
+        this.optimizeGridIndices(x_in, x_out, cyclic, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);
+        this.optimizeGridIndices(y_in, y_out, false, tab_j_in1, tab_j_in2, tab_y_adj1, tab_y_adj2);
+
+        var bicubic_coefs = this.calcBicubicCoefficients(x_in, y_in, data_in, cyclic, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2);
+        
+        var coefs;
+        var x_mat = Matrix.createMatrix(1, 4);
+        var y_mat = Matrix.createMatrix(4, 1);
+        var tmp_mat = Matrix.createMatrix(1, 4);
+        var int_mat = Matrix.createMatrix(1, 1);
+        var icoef, jcoef;
+        
+        for (var i=0;i<x_out.length;i++)
+        {
+            x = x_out[i];
+            i_in1 = tab_i_in1[i];
+            i_in2 = tab_i_in2[i];
+            x_in1 = tab_x_adj1[i];
+            x_in2 = tab_x_adj2[i];
+            alpha_x = (x-x_in1)/(x_in2-x_in1);
+
+            y = y_out[i];
+            j_in1 = tab_j_in1[i];
+            j_in2 = tab_j_in2[i];
+            y_in1 = tab_y_adj1[i];
+            y_in2 = tab_y_adj2[i];
+            alpha_y = (y-y_in1)/(y_in2-y_in1);
+                        
+            if (!cyclic) 
+                icoef = i_in1<i_in2?i_in1:i_in2;
+            else
+                icoef = i_in1;
+            jcoef = j_in1<j_in2?j_in1:j_in2;
+            
+            if (icoef<0) icoef = 0;
+            if (icoef>=x_in.length-1 && !cyclic) icoef = x_in.length-2;
+
+            if (jcoef<0) jcoef = 0;
+            if (jcoef>=y_in.length-1) jcoef = y_in.length-2;
+
+            coefs = bicubic_coefs[jcoef][icoef];           
+                
+            x_mat[0][0] = 1;
+            x_mat[1][0] = alpha_x;
+            x_mat[2][0] = alpha_x*alpha_x;
+            x_mat[3][0] = alpha_x*alpha_x*alpha_x;
+
+            y_mat[0][0] = 1;
+            y_mat[0][1] = alpha_y;
+            y_mat[0][2] = alpha_y*alpha_y;
+            y_mat[0][3] = alpha_y*alpha_y*alpha_y;
+            
+            Matrix.mul(x_mat, coefs, tmp_mat);
+            Matrix.mul(tmp_mat, y_mat, int_mat);
+
+            data_out[i] = int_mat[0][0];
+        }
+    }
+    
+    calcBicubicCoefficients(x, y, data_in, cyclic, tab_i_in1, tab_i_in2, tab_x_adj1, tab_x_adj2)
+    {
+        var m1 = [[1, 0, -3, 2],
+            [0, 0, 3, -2],
+            [0, 1, -2, 1],
+            [0, 0, -1, 1]];
+        var m2 = [[1, 0, 0, 0],
+            [0, 0, 1, 0],
+            [-3, 3, -2, -1],
+            [2, -2, 1, 1]];
+        
+        var width = x.length-(cyclic?0:1);
+        var height = y.length-1;
+        var di_in = x[0]>x[x.length-1] ? -1 : 1;
+        var dj_in = y[0]>y[height-1] ? -1 : 1;
+        
+        
+        var dx = Variable.createVariable(0, x.length, y.length);
+        var dy = Variable.createVariable(0, x.length, y.length); 
+        var dxy = Variable.createVariable(0, x.length, y.length); 
+                
+        var coeffs = [];
+        var c1 = Matrix.createMatrix(4, 4);
+        var i00, i10, i01, i11;
+        
+        this.calcDx(x, y, data_in, dx, cyclic);
+        this.calcDy(x, y, data_in, dy);
+        this.calcDy(x, y, dx, dxy);
+
+        // Itere sur chaque domaine carré
+        var ii, jj, tmp;
+        for (var j=0;j<height;j++)
+        {
+            coeffs[j] = [];
+            jj = j+di_in;
+            
+            if (jj<0) jj = 0;
+            if (jj>=y.length) jj = y.length-1;
+            
+            for (var i=0;i<width;i++)
+            {
+                var ii = i+di_in;
+                
+                if (ii<0) ii = cyclic ? x.length-1 : 0;
+                if (ii>=x.length) ii = cyclic ? 0 : x.length-1;
+                    
+                i00 = i         + j*x.length;
+                i10 = ii        + j*x.length;
+                i01 = i         + jj*x.length;
+                i11 = ii        + jj*x.length;
+                if (di_in<0)
+                {
+                    tmp = i00; i00=i10; i10=tmp;
+                    tmp = i01; i01=i11; i11=tmp;
+                } 
+                if (dj_in<0)
+                {
+                    tmp = i00; i00=i01; i01=tmp;
+                    tmp = i10; i10=i11; i11=tmp;
+                }
+                                
+                var f = [
+                    [data_in[i00], data_in[i10], dx[i00], dx[i10]], 
+                    [data_in[i01], data_in[i11], dx[i01], dx[i11]],
+                    [dy[i00], dy[i10], dxy[i00], dxy[i10]],
+                    [dy[i01], dy[i11], dxy[i01], dxy[i11]]
+                ];
+
+                var c = Matrix.createMatrix(4, 4);
+
+                Matrix.mul(m1, f, c1);
+                Matrix.mul(c1, m2, c);
+                
+                coeffs[j][i] = c;
+            }
+        }
+
+        return coeffs;
+    }    
+    
+    calcDx(x_in, y_in, data_in, data_out, cyclic)
+    {        
+        var di_in = x_in[0]>x_in[x_in.length-1] ? -1 : 1;
+        var nb_in = x_in.length;
+        var dx_start = (di_in>=0 ? x_in[1] - x_in[0] : x_in[nb_in-2]-x_in[nb_in-1]);
+        var dx_end = (di_in>=0 ? x_in[nb_in-1] - x_in[nb_in-2] : x_in[0]-x_in[1]);
+        var width = x_in.length;
+        var height = y_in.length;
+        var idx = 0;
+        var i1, i2;
+        for (var j=0;j<height;j++)
+        {
+            if (cyclic)
+            {
+                if (di_in>=0)
+                {
+                    i1 = idx+width-1;
+                    i2 = idx+1;
+                }
+                else
+                {
+                    ii = idx+1;
+                    i2 = idx+width-1;
+                }
+                data_out[idx] = (data_in[i2]-data_in[i1])/(dx_start + dx_end);
+            }
+            idx++;
+            for (var i=1;i<width-1;i++,idx++)
+            {
+                data_out[idx] = (data_in[idx+di_in]-data_in[idx-di_in])/(x_in[i+di_in]-x_in[i-di_in]);
+            }
+            if (cyclic)
+            {
+                if (di_in>=0)
+                {
+                    i1 = idx-1;
+                    i2 = idx-width+1;
+                }
+                else
+                {
+                    i1 = idx-width+1;
+                    i2 = idx-1;
+                }
+                data_out[idx] = (data_in[i2]-data_in[i1])/(dx_start + dx_end);
+            }
+            idx++;
+        }
+    }
+    
+    calcDy(x_in, y_in, data_in, data_out)
+    {
+        var width = x_in.length;
+        var height = y_in.length;
+        var dj_in = y_in[0]>y_in[height-1] ? -1 : 1;
+
+        var idx = width;
+        for (var j=1;j<height-1;j++)
+        {
+            for (var i=0;i<width;i++,idx++)
+            {
+                data_out[idx] = (data_in[idx+dj_in*width]-data_in[idx-dj_in*width])/(y_in[j+dj_in]-y_in[j-dj_in]);
+            }
+        }
+    }
+}
