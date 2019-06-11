@@ -119,35 +119,4 @@ export class MercatorProjection extends ConformalProjection {
     {
         return 1/Math.cos(lat*Math.PI/180);
     }
-   
-    /**
-     * Calcule les latitudes des points de grille.
-     * @param {type} xoffset
-     * @param {type} yoffset
-     * @returns {undefined}
-     */
-    // TODO : fonction remontée dans ConformatProjection, 
-    // une régression à tester avant de commit
-    /*calcLatitudesLongitudes(xoffset, yoffset, latitudes, longitudes)
-    {
-        var a = this.latLonToXY(this.minLat, this.minLon);
-        var b = this.latLonToXY(this.maxLat, this.maxLon);
-        var [dx, dy] = this.getMeshSize();
-        var yplan = b[1]-dy*yoffset*0.5;
-        var xplan = a[0];
-        var i = 0;
-        var lat, lon;
-        for (var y=0;y<this.height;y++)
-        {
-            xplan = a[0]+dx*xoffset*0.5;
-            for(var x=0;x<this.width;x++,i++)
-            {
-                [lat, lon] = this.xyToLatLon(xplan, yplan);
-                latitudes[i] = lat;
-                longitudes[i] = lon;
-                xplan += dx;
-            }
-            yplan -= dy;
-        }        
-    }    */
 }
