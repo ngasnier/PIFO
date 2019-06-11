@@ -113,7 +113,7 @@ module.exports.createMaps = function(context)
     var cmdline = "ncl";
     var args = [
         path.join(context.config.products[context.productName].custom_root, "pifo_all.ncl"),
-        "input_dir=\""+path.join(context.config.products[context.productName].pifo_root, "output")+"\"",
+        "input_dir=\""+path.join(context.config.products[context.productName].pifo_root, "barocline/pub")+"\"",
         "europe_dir=\""+context.europe_dir+"\"",
         "france_dir=\""+context.france_dir+"\"",
         "meteogram_dir=\""+context.meteogrammes_dir+"\"",
