@@ -37,6 +37,7 @@ module.exports.preprocessPifo = function(context)
     var cmdline = "node"
     var args = [
         "runpifo.js",
+        "barocline.json",
         "preprocessor"
         ];
     var options =  {cwd: path.join(context.config.products[context.productName].pifo_root)};
@@ -72,6 +73,7 @@ module.exports.runPifo = function(context)
     var cmdline = "node"
     var args = [
         "runpifo.js",
+        "barocline.json",
         "run"
         ];
     var options =  {cwd: path.join(context.config.products[context.productName].pifo_root)};
