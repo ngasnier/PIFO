@@ -168,7 +168,8 @@
 
         "dynamicsCore": {
             "class": "BaroclinicHydrostaticCore",
-            "diffusionFactor": 1000000
+            "dampingCoef": 0.0,
+            "diffusionCoef": 0.25
         },
 
         "name": "PIFO",
