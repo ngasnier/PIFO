@@ -744,7 +744,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
         for (var k=0;k<n;k++)
         {
             this.calcSuCouche(k);
-            this.divergenceDiffusion_u(this.model.U, this.model.U_tdcy, k, this.diffusionFactor);
+            this.divergenceDiffusion_u(this.model.U_tdcy, k, this.diffusionFactor);
         }
         this.horizontalDiffusion(this.model.U, this.model.U_tdcy);
     }    
@@ -842,7 +842,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
         for (var k=0;k<n;k++)
         {
             this.calcSvCouche(k);
-            this.divergenceDiffusion_v(this.model.V, this.model.V_tdcy, k, this.diffusionFactor);
+            this.divergenceDiffusion_v(this.model.V_tdcy, k, this.diffusionFactor);
         }            
         this.horizontalDiffusion(this.model.V, this.model.V_tdcy);
     }
@@ -1074,12 +1074,15 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
         this.horizontalDiffusion(this.model.qv, this.model.dQv);
     }    
     
-    divergenceDiffusion_u(U, U_tdcy, k, diffusionFactor)
+    divergenceDiffusion_u(U_tdcy, k, diffusionFactor)
     {
-        this.divergenceDiffusion_u_2o(U, U_tdcy, k, diffusionFactor);
+        if (this.dampingOrder==4)
+            this.divergenceDiffusion_u_4o(U_tdcy, k, diffusionFactor);
+        else
+            this.divergenceDiffusion_u_2o(U_tdcy, k, diffusionFactor);
     }
     
-    divergenceDiffusion_u_2o(U, U_tdcy, k, diffusionFactor)
+    divergenceDiffusion_u_2o(U_tdcy, k, diffusionFactor)
     {
         var width = this._model.width;
         var height = this._model.height;
@@ -1099,13 +1102,39 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
             i+=2;
         }
     }
-    
-    divergenceDiffusion_v(V, V_tdcy, k, diffusionFactor)
+
+    divergenceDiffusion_u_4o(U_tdcy, k, diffusionFactor)
     {
-        this.divergenceDiffusion_v_2o(V, V_tdcy, k, diffusionFactor);
+        var width = this._model.width;
+        var height = this._model.height;
+        var dx = this._model.dx;
+        var dx4 = dx*dx*dx*dx;
+        var divergence = this._model.divergence;
+        var dsigma = this.dsigma;
+        var ps = this._model.ps;
+        var i = width*2+2;
+        var x, y;
+        for (y=2;y<height-2;y++)
+        {
+            for (x=2;x<width-2;x++,i++)
+            {
+                U_tdcy[k][i] -= diffusionFactor / (dsigma[k]*ps[i])
+                        *(-4*(divergence[k][i+1]+divergence[k][i])+6/2*(divergence[k][i]+divergence[k][i+1])+divergence[k][i+2]+divergence[k][i-1])/dx4;
+                
+            }
+            i+=4;
+        }
+    }
+
+    divergenceDiffusion_v(V_tdcy, k, diffusionFactor)
+    {
+        if (this.dampingOrder==4)
+            this.divergenceDiffusion_v_4o(V_tdcy, k, diffusionFactor);
+        else
+            this.divergenceDiffusion_v_2o(V_tdcy, k, diffusionFactor);
     }
     
-    divergenceDiffusion_v_2o(V, V_tdcy, k, diffusionFactor)
+    divergenceDiffusion_v_2o(V_tdcy, k, diffusionFactor)
     {
         var width = this._model.width;
         var height = this._model.height;
@@ -1125,7 +1154,29 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
             i+=2;
         }
     }
-  
+
+    divergenceDiffusion_v_4o(V_tdcy, k, diffusionFactor)
+    {
+        var width = this._model.width;
+        var height = this._model.height;
+        var dy = this._model.dy;
+        var dy4 = dy*dy*dy*dy;
+        var divergence = this._model.divergence;
+        var dsigma = this.dsigma;
+        var ps = this._model.ps;
+        var i = width*2+2;
+        var x, y;
+        for (y=2;y<height-2;y++)
+        {
+            for (x=2;x<width-2;x++,i++)
+            {
+                V_tdcy[k][i] -= diffusionFactor / (dsigma[k]*ps[i])
+                        *(-4*(divergence[k][i+width]+divergence[k][i])+6/2*(divergence[k][i]+divergence[k][i+width])+divergence[k][i+2*width]+divergence[k][i-width])/dy4;
+            }
+            i+=4;
+        }
+    }
+
     horizontalDiffusion(psi, dpsi)
     {
         if (this.diffusionOrder==4)
@@ -1183,11 +1234,11 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
                 for (x=2;x<width-2;x++,i++)
                 {
                     dpsi[k][i] += -this.spatialDiffusionFactor  / (dsigma[k]*ps[i])
-                        * ((-4*(psi[k][i+1]+psi[k][i-1])+6*psi[k][i]+psi[k][i+2]+psi[k][i-2])/dx4                
-                        +(-4*(psi[k][i+width]+psi[k][i-width])+6*psi[k][i]+psi[k][i+2*width]+psi[k][i-2*width])/dx4
+                        * ((-4*(psi[k][i+1]+psi[k][i-1])+6*psi[k][i]+psi[k][i+2]+psi[k][i-2])/dx4
+                        +(-4*(psi[k][i+width]+psi[k][i-width])+6*psi[k][i]+psi[k][i+2*width]+psi[k][i-2*width])/dy4
                         );
                 }
-                i+=3;
+                i+=4;
             }
         }
     }

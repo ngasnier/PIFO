@@ -1,6 +1,7 @@
 
 #Configuration
 /.htaccess
+/package-lock.json
 /res/run
 /tools/node_modules/
 /tools/package-lock.json

@@ -169,8 +169,8 @@
         "dynamicsCore": {
             "class": "BaroclinicHydrostaticCore",
             "dampingCoef": 0.0,
-            "dampingOrder": 2,
-            "diffusionCoef": 0.0125,
+            "dampingOrder": 4,
+            "diffusionCoef": 0.05,
             "diffusionOrder": 4
         },
 
