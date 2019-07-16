@@ -134,6 +134,7 @@ begin
     sigma_surfaces = sigma(0::2)
     hyba_couches = fspan(0.,0.,dimsizes(sigma_couches))
     hyba_surfaces = fspan(0.,0.,dimsizes(sigma_surfaces))
+    nb_levels = dimsizes(sigma_couches)
 
     ; Parcours des previsions
     do filenum = idxstart, idxend
@@ -198,10 +199,16 @@ begin
         gen_res@gsnPaperOrientation = "portrait"
 
         phi = load3DField("phi", grfile, sigma_couches, lat2d, lon2d)/9.81;
+        T = load3DField("T", grfile, sigma_couches, lat2d, lon2d);
         ps = loadField("ps_"+grfile)
-        prmsl = ps / 100.0
+        sfcgeop = loadField("sfcgeop_"+grfile)
+        z = sfcgeop / 9.81 
+        ; Temperature de ref = celle de la couche la plus basse, satisfaisant
+        ; A revoir pour meilleur resultat quand on aura une temperature de surface
+        prmsl = ps * exp(-7*9.81/(2*1006*T(nb_levels-1,:,:))*-z) / 100
         hgt500 = vinth2p(phi, hyba_couches, sigma_couches, (/ 500 /), ps, 1 , 1000 , 1 , True)
 
+       
         plot_hgt500 = mb_geop_z500_fill(wks, hgt500(0,:,:), gen_res)
         prmsl_res = gen_res
         prmsl_res@cnLevelSpacingF = 2.
@@ -316,7 +323,7 @@ begin
         ; Temperature 850 hPa
         ; ************************************************************************
 
-        T = load3DField("T", grfile, sigma_couches, lat2d, lon2d);
+;        T = load3DField("T", grfile, sigma_couches, lat2d, lon2d);
 
         tt850 = vinth2p(T, hyba_couches, sigma_couches, (/ 850 /), ps, 1 , 1000 , 1 , True)
         t850 = tt850(0,:,:) - 273.15

@@ -168,9 +168,9 @@
 
         "dynamicsCore": {
             "class": "BaroclinicHydrostaticCore",
-            "dampingCoef": 0.025,
+            "dampingCoef": 0.00625,
             "dampingOrder": 4,
-            "diffusionCoef": 0.075,
+            "diffusionCoef": 0.0125,
             "diffusionOrder": 4
         },
 
@@ -217,7 +217,7 @@
             "class": "DataProcessor",
             
             "processList": [
-                { "name":"Z", "task" : "z_interpolation", "parameters": [{"name":"source", "value":"sfcprs"}, {"name":"variable", "value": "Z"} ]},
+                { "name":"Z", "task" : "z_interpolation", "parameters": [{"name":"source", "value":"prmsl"}, {"name":"variable", "value": "Z"} ]},
                 { "name":"U", "task" : "wind_interpolation", "parameters": [{"name":"source", "value":"ugrd"}, {"name":"component_source", "value":"vgrd"}, {"name": "variable", "value":"U"}]},
                 { "name":"V", "task" : "wind_interpolation", "parameters": [{"name":"source", "value":"vgrd"}, {"name":"component_source", "value":"ugrd"}, {"name":"variable", "value": "V"} ]},
                 { "name":"T", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"tmp"}, {"name":"variable", "value": "T"} ]},
@@ -253,7 +253,7 @@
                         {
                             "name": "pressure_source", 
                             "class":"WGRIBInputComponent", 
-                            "source" : "sfcprs",
+                            "source" : "prmsl",
                             "dataSource": { "ref": "gfsdata" }
                         },
                         {
@@ -310,7 +310,7 @@
                         {
                             "name": "pressure_source", 
                             "class":"WGRIBInputComponent", 
-                            "source" : "sfcprs",
+                            "source" : "prmsl",
                             "dataSource": { "ref": "gfsdata" }
                         },
                         {
@@ -418,7 +418,7 @@
                             "name": "enable_disable", 
                             "class":"ArithmeticComponent",
                             "operation":"*", 
-                            "value":1
+                            "value":0 
                         },
                         {
                             "name": "variable_destination", 
@@ -453,7 +453,7 @@
                         {
                             "name": "pressure_source", 
                             "class":"WGRIBInputComponent", 
-                            "source" : "sfcprs",
+                            "source" : "prmsl",
                             "dataSource": { "ref": "gfsdata" }
                         },
                         {
