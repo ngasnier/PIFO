@@ -226,7 +226,6 @@ export class Model {
             }
             var variable = Variable.createVariable(nblevs, this.width, this.height);
             variable = Object.assign(variable, v);
-            variable.productName = this.name;
             this.setVariable(v.name, variable);
         });
         
@@ -712,6 +711,7 @@ export class Model {
     setVariable(p_variable, p_data)
     {
         this[p_variable] = p_data;
+        p_data.productName = this.name;
     }
 
     /**

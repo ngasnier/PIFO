@@ -736,7 +736,7 @@
                 { "name":"sigmaf", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"sigmaf"}, {"name":"variable", "value": "sigmaf"}]},
                 { "name":"apcp", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"apcp"}, {"name":"variable", "value": "apcp"}]},
                 { "name":"acsnow", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"acsnow"}, {"name":"variable", "value": "acsnow"}]},
-                { "name":"sfcgrop", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"sfcgeop"}, {"name":"variable", "value": "sfcgeop"}]},
+                { "name":"sfcgeop", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"sfcgeop"}, {"name":"variable", "value": "sfcgeop"}]},
                 { "name":"levels", "task" : "copy", "parameters": [{"name":"source", "value":"levels"}, {"name":"variable", "value": "levels"}]}
             ],
            
