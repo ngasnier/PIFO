@@ -126,7 +126,7 @@ export class ConfigManager {
             {
                 obj[prop] = await this.getValue(p_node[prop]);
             }
-
+            
             return obj;
         }
         catch (e)

@@ -168,9 +168,9 @@
 
         "dynamicsCore": {
             "class": "BaroclinicHydrostaticCore",
-            "dampingCoef": 0.025,
+            "dampingCoef": 0.00625,
             "dampingOrder": 4,
-            "diffusionCoef": 0.075,
+            "diffusionCoef": 0.05,
             "diffusionOrder": 4
         },
 
@@ -587,6 +587,16 @@
             "dataSource": {"ref": "inputdata"},
 
             "stopTime": 3,
+            
+            "overrideModelParams": {
+                "dynamicsCore": {
+                    "class": "BaroclinicHydrostaticCore",
+                    "dampingCoef": 0.0,
+                    "dampingOrder": 4,
+                    "diffusionCoef": 0.0,
+                    "diffusionOrder": 4
+                }
+            },
             
             "steps": [
                 { 

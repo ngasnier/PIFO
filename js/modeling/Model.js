@@ -538,8 +538,7 @@ export class Model {
     {
         if (this._dynamicsCore!=null)
         {
-            // On doit dé-enregistrer les variables
-            throw "modèle déjà lié à un coeur";
+            this.variables = [];
         }
         this._dynamicsCore = p_core;
         p_core.model = this;

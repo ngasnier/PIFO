@@ -55,6 +55,7 @@ export class DFIInitScenario extends RunScenario {
         this.hindcastBackwardSum = [];
         this.hindcastSeries = [];
         this.filterCoeffs = [];
+        this.overrideModelParams = {};
     }
     
     /**
@@ -68,6 +69,11 @@ export class DFIInitScenario extends RunScenario {
     {
         try
         {
+            for (var prop in this.overrideModelParams)
+            {
+                this.model[prop] = this.overrideModelParams[prop] ;
+            }
+            
             await super.start();
             
             var me = this;
