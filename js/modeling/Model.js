@@ -252,6 +252,7 @@ export class Model {
     step()
     {
         // *** Calcule les champs nécessaires pour le coeur dynamique ***
+        if (this.time==0) this.calcConstants();
         this.calcDiagnostics();
         this.calcPhysics();
         this.calcPostPhysicsDiagnostics();
@@ -288,6 +289,21 @@ export class Model {
         // *** On avance finalement dans le temps ***
         this.time += this.dt;
         // TODO : gérer un calcul de date pour les paramètres solaires ?
+    }
+
+    /**
+     * Calcul des constantes
+     * @returns {undefined}
+     */
+    calcConstants()
+    {
+        for (var v in this.variables)
+        {
+            if (this.variables[v].category==VariableDescription.CAT_CONSTANT)
+            {
+                this._dynamicsCore.calcConstant(this.variables[v].name);
+            }
+        }
     }
 
     /**

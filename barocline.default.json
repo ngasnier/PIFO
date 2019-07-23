@@ -168,9 +168,9 @@
 
         "dynamicsCore": {
             "class": "BaroclinicHydrostaticCore",
-            "dampingCoef": 0.00625,
+            "dampingCoef": 0.075,
             "dampingOrder": 4,
-            "diffusionCoef": 0.05,
+            "diffusionCoef": 0.075,
             "diffusionOrder": 4
         },
 
@@ -577,9 +577,7 @@
                         
                     ]
                 }
-            ],
-            
-            "times": [0] 
+            ]
         },
         
         "init": {
@@ -875,9 +873,7 @@
                         {"outputComponent":"variable_source", "output":"main", "inputComponent":"variable_destination", "input":"main"}                        
                     ]
                 }                
-            ],
-            
-            "times": [0, 1] 
+            ]
         }        
     }
 }

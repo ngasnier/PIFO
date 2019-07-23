@@ -170,6 +170,7 @@ export class RunScenario extends Scenario {
             this.model.totalStep = 0;
             this.firstExecTime = new Date();
     
+            this.model.calcConstants();
             this.model.calcDiagnostics();
             
             await this.dataSource.close();

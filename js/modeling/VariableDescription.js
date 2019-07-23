@@ -63,6 +63,8 @@ VariableDescription.CAT_POST_PHYSICS_DIAGNOSTIC = "PhysicsDiagnostic";
 VariableDescription.CAT_PARAMETER = "Parameter";
 /** @constant */
 VariableDescription.CAT_INTERNAL = "Internal";
+/** @constant */
+VariableDescription.CAT_CONSTANT = "Constant";
 
 
 /** Variable décrivant des données sur une seule surface @constant */
