@@ -3,14 +3,20 @@
         "Model": "modeling/Model.js",
         "BarotropicCore": "modeling/BarotropicCore.js",
         "BarotropicSemiImplicitCore": "modeling/BarotropicSemiImplicitCore.js",
+        "BaroclinicHydrostaticCore": "modeling/BaroclinicHydrostaticCore.js",
+        "LatLonDomain": "modeling/LatLonDomain.js",
         "MercatorProjection": "modeling/MercatorProjection.js",
+        "PolarStereographicProjection": "modeling/PolarStereographicProjection.js",
         "LeapFrogTimeIntegrator": "modeling/LeapFrogTimeIntegrator.js",
         "RobertAsselinTimeFilter": "modeling/RobertAsselinTimeFilter.js",
         "SchumannFilter": "modeling/SchumannFilter.js",
         "CouplingLimitedAreaBoundaryCondition": "modeling/CouplingLimitedAreaBoundaryCondition.js",
+        "PrecipitationScheme": "modeling/PrecipitationScheme.js",
+        "SigmaHelper": "modeling/SigmaHelper.js",
         
         "WGRIBTextFieldDataSource": "front/WGRIBTextFieldDataSource.js",
-
+        "WGRIBTextFieldDataWriter": "front/WGRIBTextFieldDataWriter.js",
+        
         "DataProcessor": "processing/DataProcessor.js",
         "ProjectionComponent": "processing/ProjectionComponent.js",
         "ArithmeticComponent": "processing/ArithmeticComponent.js",
@@ -19,20 +25,27 @@
         "WorkflowTask": "processing/WorkflowTask.js",
         "WGRIBInputComponent": "processing/WGRIBInputComponent.js",
         "WGRIBOutputComponent": "processing/WGRIBOutputComponent.js",
+        "SigmaLevelInterpolationComponent": "processing/SigmaLevelInterpolationComponent.js",
+        "HumidityComponent": "processing/HumidityComponent.js",
+        "MultiDiffusionComponent": "processing/MultiDiffusionComponent.js",
         
         "RunScenario": "front/RunScenario.js",
+        "DFIInitScenario": "front/DFIInitScenario.js",
         "CouplingStep": "front/CouplingStep.js",
-        "HistoryStep": "front/HistoryStep.js"
+        "HistoryStep": "front/HistoryStep.js",
+        "RecorderStep": "front/RecorderStep.js"
     },
     
     "global": {
         "inputDomain":{
+            "class": "LatLonDomain",
             "minLat": -90,
             "maxLat": 90,
             "minLon": 0,
             "maxLon": 359.5,
             "dlat": 0.5,
-            "dlon": 0.5
+            "dlon": 0.5,
+            "cyclic": true
         },
         
         "modelDomain": {
@@ -47,6 +60,7 @@
         },
         
         "outputDomain": {
+            "class": "LatLonDomain",
             "minLat": 9,
             "maxLat": 81,
             "minLon": -60,
@@ -95,7 +109,7 @@
         "class": "Model",
 
         "dynamicsCore": {
-            "class": "BarotropicCore"
+            "class": "BarotropicSemiImplicitCore"
         },
 
         "name": "PIFO barotrope",
@@ -104,6 +118,11 @@
             "ref": "modelDomain"
         },
 
+            "timeFilter" : {
+            "class": "RobertAsselinTimeFilter",
+            "epsilon": 0.428
+        },
+        
         "timeIntegrator" : {
             "class": "LeapFrogTimeIntegrator"
         },                 
@@ -120,7 +139,7 @@
             "relaxation": 8
         },
 
-        "dt": 15
+        "dt": 120
     },
     
     "scenario": {
@@ -261,9 +280,7 @@
                         
                     ]
                 }
-            ],
-            
-            "times": [0] 
+            ]
         },        
         
         "run": {

@@ -20,6 +20,7 @@ import { BarotropicCore } from "./BarotropicCore.js";
 import { Model } from "./Model.js"
 import { Variable } from "./Variable.js"
 import { VariableDescription } from "./VariableDescription.js"
+import { TridiagonalSystem } from "../math/TridiagonalSystem.js"
 
 /**
  * Coeur dynamique barotrope, résolution semi-implicite.
@@ -57,7 +58,6 @@ export class BarotropicSemiImplicitCore extends BarotropicCore
     setup()
     {
         super.setup();
-
     }
     
     solveBegin()
@@ -100,7 +100,8 @@ export class BarotropicSemiImplicitCore extends BarotropicCore
         this.initPhiBVector();
         
         Variable.copy(this._model.phi, this._model.phi_t);
-        //console.log("convergence : "+this.sor(this._model.si_phi_b, 1.4, this._model.phi_t, this._model.si_residu, 0.000001, 1000));
+        
+        console.log("convergence : "+TridiagonalSystem.sor(this._model.si_cx, 1, this._model.si_cy, this._model.width, this._model.si_xy, this._model.si_phi_b, 1.4, this._model.phi_t, this._model.si_residu, 0.000001, 1000));
 
         // *** Calcul du vent et du géopotentiel final
         this.calcDx(this._model.phi_t, this._model.tmp_var);
@@ -123,46 +124,7 @@ export class BarotropicSemiImplicitCore extends BarotropicCore
             i+=2;
         }
     }
-
-    sor(b, w, x, r, epsilon=0.000001, maxiter=1000)
-    {
-        var i, j;
-        var s, k;
-        var nr;
-        var nb = this._model.width * this._model.height;
-
-        for (i=0;i<nb;i++) r[i] = 1;
-        nr = nb;
-
-        k=0;
-        while (nr>epsilon && k<maxiter)
-        {
-            k++;
-            nr = 0;
-            for (i=0;i<nb;i++)
-            {
-                s = 0;
-                if (i-this._model.width>=0) s += this._model.si_cy[i]*x[i-this._model.width];
-                if (i-1>=0) s += this._model.si_cx[i]*x[i-1];
-                if (i+1<nb) s += this._model.si_cx[i]*x[i+1];
-                if (i+this._model.width<nb) s += this._model.si_cy[i]*x[i+this._model.width];
-                x[i] = (1-w)*x[i]+w/this._model.si_xy[i]*(b[i]-s);
-
-                r[i] = 0;
-                if (i-this._model.width>=0) r[i] += this._model.si_cy[i]*x[i-this._model.width];
-                if (i-1>=0) r[i]+= this._model.si_cx[i]*x[i-1];
-                r[i] += this._model.si_xy[i]*x[i]
-                if (i+1<nb) r[i]+= this._model.si_cx[i]*x[i+1];
-                if (i+this._model.width<nb) r[i]+= this._model.si_cy[i]*x[i+this._model.width];
-                r[i] -= b[i];
-                nr += r[i]*r[i];
-            }
-            nr = Math.sqrt(nr);
-        }
-        return k;
-    }
-        
-        
+      
     initPhiAMatrix()
     {
         var i = 0;
