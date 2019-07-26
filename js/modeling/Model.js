@@ -805,3 +805,6 @@ Model.omega = 7.292115e-5;
 
 //** Rayon de la terre
 Model.Rterre = 6371000;
+
+//** Gradient adiabatique standard
+Model.StdTmpLapseRate = 6.5e-3;

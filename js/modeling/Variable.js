@@ -520,6 +520,69 @@ Variable.mean = function(x)
 }
 
 /**
+ * Maximum de la variable.
+ * 
+ * @param {type} x
+ * @returns {Number|Number.MIN_VALUE|Variable.max.x}
+ */
+Variable.max = function(x)
+{
+    var m = Number.MIN_VALUE;
+    var nb;
+    if (x.length>0 && (x[0].constructor===Array || x[0].constructor===Float64Array))
+    {    
+        for (var k=0;k<x.length;k++)
+        {
+            nb = x[k].length;
+            for(var i=0;i<nb;i++)
+            {
+                if (x[k][i]>m) m=x[k][i];
+            }
+        }
+    }
+    else
+    {
+        nb = x.length;
+        for(var i=0;i<nb;i++)
+        {
+            if (x[i]>m) m=x[i];
+        }        
+    }
+    return m;
+}
+
+/**
+ * Minimum de la variable
+ * @param {type} x
+ * @returns {Number|Number.MAX_VALUE|Number.MIN_VALUE|Variable.min.x}
+ */
+Variable.min = function(x)
+{
+    var m = Number.MAX_VALUE;
+    var nb;
+    if (x.length>0 && (x[0].constructor===Array || x[0].constructor===Float64Array))
+    {    
+        for (var k=0;k<x.length;k++)
+        {
+            nb = x[k].length;
+            for(var i=0;i<nb;i++)
+            {
+                if (x[k][i]<m) m=x[k][i];
+            }
+        }
+    }
+    else
+    {
+        nb = x.length;
+        for(var i=0;i<nb;i++)
+        {
+            if (x[i]<m) m=x[i];
+        }        
+    }
+    return m;
+}
+
+/**
  * Test si la variable contient des valeurs non numériques ou null
  * @param {type} x
  * @returns {Boolean}
