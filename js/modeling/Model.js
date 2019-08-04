@@ -807,4 +807,4 @@ Model.omega = 7.292115e-5;
 Model.Rterre = 6371000;
 
 //** Gradient adiabatique standard
-Model.StdTmpLapseRate = 6.5e-3;
+Model.StdTmpLapseRate = 9.75e-3;

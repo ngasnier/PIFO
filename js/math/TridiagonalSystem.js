@@ -80,7 +80,7 @@ TridiagonalSystem.sor = function(cx, xdist, cy, ydist, cxy, b, w, x, r, epsilon=
             x[i] = (1-w)*x[i]+w/cxy[i]*(b[i]-s);
 
             r[i] = 0;
-            if (i-ydist>=0) r[i] += cy[i]*x[i-ydist];
+            if (i-ydist>=0) r[i]+= cy[i]*x[i-ydist];
             if (i-xdist>=0) r[i]+= cx[i]*x[i-xdist];
             r[i] += cxy[i]*x[i]
             if (i+xdist<nb) r[i]+= cx[i]*x[i+xdist];

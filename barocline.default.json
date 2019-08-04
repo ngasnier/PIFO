@@ -28,6 +28,7 @@
         "SigmaLevelInterpolationComponent": "processing/SigmaLevelInterpolationComponent.js",
         "HumidityComponent": "processing/HumidityComponent.js",
         "MultiDiffusionComponent": "processing/MultiDiffusionComponent.js",
+        "PRMSLComponent": "processing/PRMSLComponent.js",        
         
         "RunScenario": "front/RunScenario.js",
         "DFIInitScenario": "front/DFIInitScenario.js",
@@ -596,10 +597,17 @@
             "overrideModelParams": {
                 "dynamicsCore": {
                     "class": "BaroclinicHydrostaticCore",
-                    "dampingCoef": 0.0,
-                    "dampingOrder": 4,
-                    "diffusionCoef": 0.0,
-                    "diffusionOrder": 4
+                    "divergenceDampingCoef": 0.0,
+                    "divergenceDampingOrder": 2,
+
+                    "windDiffusionCoef": 0.0,
+                    "windDiffusionOrder": 2,
+
+                    "temperatureDiffusionCoef": 0.0,
+                    "temperatureDiffusionOrder": 2,
+
+                    "humidityDiffusionCoef": 0.0,
+                    "humidityDiffusionOrder": 2
                 }
             },
             
@@ -740,10 +748,11 @@
             "class": "DataProcessor",
             
             "processList": [
+                { "name":"prmsl", "task" : "prmsl_interpolation", "parameters": [{"name":"source", "value":"ps"}, {"name":"temp_variable", "value":"T"}, {"name":"phi_variable", "value":"phi"}, {"name":"sfcgeop_variable", "value":"sfcgeop"},{"name":"m_variable", "value":"m"}, {"name":"variable", "value": "prmsl"}]},
                 { "name":"U", "task" : "wind_interpolation", "parameters": [{"name":"source", "value":"U"}, {"name":"component_source", "value":"V"}, {"name": "variable", "value":"U"}]},
                 { "name":"V", "task" : "wind_interpolation", "parameters": [{"name":"source", "value":"V"}, {"name":"component_source", "value":"U"}, {"name":"variable", "value": "V"}]},
                 { "name":"T", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"T"}, {"name":"variable", "value": "T"} ]},
-                { "name":"ps", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"ps"}, {"name":"variable", "value": "ps"}]},
+                { "name":"ps", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"ps"},{"name":"variable", "value": "ps"}]},
                 { "name":"qv", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"qv"}, {"name":"variable", "value": "qv"}]},
                 { "name":"phi", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"phi"}, {"name":"variable", "value": "phi"}]},
                 { "name":"f", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"f"}, {"name":"variable", "value": "f"}]},
@@ -801,6 +810,72 @@
                         {"outputComponent":"projection_component", "output":"main", "inputComponent":"variable_destination", "input":"main"},
                         {"outputComponent":"projection_component", "output":"latitudes", "inputComponent":"latitude_destination", "input":"main"},
                         {"outputComponent":"projection_component", "output":"longitudes", "inputComponent":"longitude_destination", "input":"main"}
+                    ]
+                },
+                {
+                    "name":"prmsl_interpolation",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
+                        {"name":"temp_variable", "bindComponent":"temp_source", "parameter":"source"},
+                        {"name":"phi_variable", "bindComponent":"phi_source", "parameter":"source"},
+                        {"name":"sfcgeop_variable", "bindComponent":"sfcgeop_source", "parameter":"source"},
+                        {"name":"m_variable", "bindComponent":"m_source", "parameter":"source"},
+                        {"name":"source", "bindComponent":"projection_component", "parameter":"gridPosVariable"},
+                        {"name":"source", "bindComponent":"projection_component", "parameter":"scaleVariable"},
+                        {"name":"source", "bindComponent":"projection_component", "parameter":"numberTypeVariable"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "variable_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "outputdir" }
+                        },
+                        {
+                            "name": "temp_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "outputdir" }
+                        },
+                        {
+                            "name": "phi_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "outputdir" }
+                        },
+                        {
+                            "name": "sfcgeop_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "outputdir" }
+                        },
+                        {
+                            "name": "m_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "outputdir" }
+                        },
+                        {
+                            "name": "prmsl_component", 
+                            "class":"PRMSLComponent"
+                        },
+                        {
+                            "name": "projection_component", 
+                            "class":"ProjectionComponent",
+                            "destinationDomain": { "ref": "outputDomain" },
+                            "projection": { "ref": "modelDomain" }
+                        },
+                        {
+                            "name": "variable_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "pubdir" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"variable_source", "output":"main", "inputComponent":"prmsl_component", "input":"ps"},
+                        {"outputComponent":"temp_source", "output":"main", "inputComponent":"prmsl_component", "input":"temperature"},
+                        {"outputComponent":"phi_source", "output":"main", "inputComponent":"prmsl_component", "input":"phi"},
+                        {"outputComponent":"sfcgeop_source", "output":"main", "inputComponent":"prmsl_component", "input":"sfcgeop"},
+                        {"outputComponent":"m_source", "output":"main", "inputComponent":"prmsl_component", "input":"m"},                        
+                        {"outputComponent":"prmsl_component", "output":"main", "inputComponent":"projection_component", "input":"main"},
+                        {"outputComponent":"projection_component", "output":"main", "inputComponent":"variable_destination", "input":"main"}
                     ]
                 },
                 {

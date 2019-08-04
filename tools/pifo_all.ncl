@@ -201,11 +201,12 @@ begin
         phi = load3DField("phi", grfile, sigma_couches, lat2d, lon2d)/9.81;
         T = load3DField("T", grfile, sigma_couches, lat2d, lon2d);
         ps = loadField("ps_"+grfile)
+        prmsl = loadField("prmsl_"+grfile) / 100
         sfcgeop = loadField("sfcgeop_"+grfile)
         z = sfcgeop / 9.81 
         ; Temperature de ref = celle de la couche la plus basse, satisfaisant
         ; A revoir pour meilleur resultat quand on aura une temperature de surface
-        prmsl = ps * exp(-7*9.81/(2*1006*T(nb_levels-1,:,:))*-z) / 100
+        ;prmsl = ps * exp(-7*9.81/(2*1006*T(nb_levels-1,:,:))*-z) / 100
         hgt500 = vinth2p(phi, hyba_couches, sigma_couches, (/ 500 /), ps, 1 , 1000 , 1 , True)
 
        
