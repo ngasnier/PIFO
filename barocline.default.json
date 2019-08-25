@@ -28,7 +28,7 @@
         "SigmaLevelInterpolationComponent": "processing/SigmaLevelInterpolationComponent.js",
         "HumidityComponent": "processing/HumidityComponent.js",
         "MultiDiffusionComponent": "processing/MultiDiffusionComponent.js",
-        "PRMSLComponent": "processing/PRMSLComponent.js",        
+        "PRMSLComponent": "processing/PRMSLComponent.js",
         
         "RunScenario": "front/RunScenario.js",
         "DFIInitScenario": "front/DFIInitScenario.js",

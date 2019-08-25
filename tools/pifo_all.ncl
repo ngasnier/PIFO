@@ -294,6 +294,34 @@ begin
         draw(mapid)
         frame(wks)
 
+        print("Precipitations France 3h");
+        outfile = france_dir+"/pifo_apcp_"+valid
+        wks = gsn_open_wks(device, outfile)
+
+        mb_set_colormap(wks)
+        rain_res = True
+        plot_precip = mb_precipitations(wks, apcp, rain_res)
+;        res_snow = True
+;        res_snow@cnFillColor = 0
+;        res_ice = True
+;        res_ice@cnFillColor = 6
+;        res_ice_pel = True
+;        res_ice_pel@cnFillColor = 1
+;        plot_snow = mb_hachure_categorie(wks, csnow, res_snow)
+;        plot_ice = mb_hachure_categorie(wks, cfrzr, res_ice)
+;        plot_ice_pel = mb_hachure_categorie(wks, cicep, res_ice_pel)
+
+        mapid = mb_map_france(wks, "Precipitations sur 3h", globalRes@validDate, globalRes@runInfo, fr_res_black)
+
+        overlay(mapid, plot_precip)
+;        overlay(mapid, plot_snow)
+;        overlay(mapid, plot_ice_pel)
+;        overlay(mapid, plot_ice)
+
+        draw(mapid)
+        frame(wks)
+
+
         print("Precipitations Europe");
         outfile = europe_dir+"/pifo_apcp_"+valid
         wks = gsn_open_wks(device, outfile)
@@ -319,6 +347,8 @@ begin
         delete(plot_precip)
         delete(apcp)
         delete(apcp_ech)
+
+
 
         ; ************************************************************************
         ; Temperature 850 hPa

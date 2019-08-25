@@ -33,8 +33,10 @@ start_stage=1
 end_stage=6
 output_dir_slices=res/test/maps/coupes
 output_dir_europe=res/test/maps/europe
+output_dir_france=res/test/maps/france
+output_dir_skewt=res/test/maps/skewt
 
-while getopts "h?s:e:c:d:o:p:" opt; do
+while getopts "h?s:e:c:d:o:p:r:f:" opt; do
     case "$opt" in
     h|\?)
         show_help
@@ -52,6 +54,10 @@ while getopts "h?s:e:c:d:o:p:" opt; do
         ;;
     p) output_dir_slices=$OPTARG
         ;;
+    r) output_dir_skewt=$OPTARG
+        ;;
+    f) output_dir_france=$OPTARG
+        ;;
     esac
 done
 
@@ -62,6 +68,8 @@ shift $((OPTIND-1))
 basedir=$(readlink -f $basedir)
 output_dir_slices=$(readlink -f $output_dir_slices)
 output_dir_europe=$(readlink -f $output_dir_europe)
+output_dir_france=$(readlink -f $output_dir_france)
+output_dir_skewt=$(readlink -f $output_dir_skewt)
 
 # reset du scenario apres les autotests. switch le fileinfo pour prendre
 # toutes les donnees. Nb : faudrait mieux reorganiser les scenarios pour
@@ -105,6 +113,6 @@ fi
 
 if [ $start_stage -le 6 ] && [ $end_stage -ge 6 ]
 then
-    tools/pifo_gen.sh $basedir/pub/ $output_dir_europe $output_dir_slices
+    tools/pifo_gen.sh $basedir/pub/ $output_dir_france $output_dir_europe $output_dir_slices $output_dir_skewt
 fi
 
