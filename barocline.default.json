@@ -29,6 +29,7 @@
         "HumidityComponent": "processing/HumidityComponent.js",
         "MultiDiffusionComponent": "processing/MultiDiffusionComponent.js",
         "PRMSLComponent": "processing/PRMSLComponent.js",
+        "AbsoluteVorticityComponent": "processing/AbsoluteVorticityComponent.js",
         
         "RunScenario": "front/RunScenario.js",
         "DFIInitScenario": "front/DFIInitScenario.js",
@@ -756,7 +757,9 @@
                 { "name":"qv", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"qv"}, {"name":"variable", "value": "qv"}]},
                 { "name":"phi", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"phi"}, {"name":"variable", "value": "phi"}]},
                 { "name":"f", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"f"}, {"name":"variable", "value": "f"}]},
+                { "name":"m", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"m"}, {"name":"variable", "value": "m"}]},
                 { "name":"tourbillon", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"tourbillon"}, {"name":"variable", "value": "tourbillon"}]},
+                { "name":"ta", "task" : "ta_interpolation", "parameters": [{"name":"u_variable", "value":"U"}, {"name":"v_variable", "value":"V"}, {"name":"variable", "value": "ta"}, {"name":"m_variable", "value":"m"},{"name":"f_variable", "value":"f"}]},
                 { "name":"sigmaf", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"sigmaf"}, {"name":"variable", "value": "sigmaf"}]},
                 { "name":"apcp", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"apcp"}, {"name":"variable", "value": "apcp"}]},
                 { "name":"acsnow", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"acsnow"}, {"name":"variable", "value": "acsnow"}]},
@@ -875,6 +878,65 @@
                         {"outputComponent":"sfcgeop_source", "output":"main", "inputComponent":"prmsl_component", "input":"sfcgeop"},
                         {"outputComponent":"m_source", "output":"main", "inputComponent":"prmsl_component", "input":"m"},                        
                         {"outputComponent":"prmsl_component", "output":"main", "inputComponent":"projection_component", "input":"main"},
+                        {"outputComponent":"projection_component", "output":"main", "inputComponent":"variable_destination", "input":"main"}
+                    ]
+                },
+                {
+                    "name":"ta_interpolation",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"u_variable", "bindComponent":"u_source", "parameter":"source"},
+                        {"name":"v_variable", "bindComponent":"v_source", "parameter":"source"},
+                        {"name":"f_variable", "bindComponent":"f_source", "parameter":"source"},
+                        {"name":"m_variable", "bindComponent":"m_source", "parameter":"source"},
+                        {"name":"f_variable", "bindComponent":"projection_component", "parameter":"gridPosVariable"},
+                        {"name":"f_variable", "bindComponent":"projection_component", "parameter":"scaleVariable"},
+                        {"name":"f_variable", "bindComponent":"projection_component", "parameter":"numberTypeVariable"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "u_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "outputdir" }
+                        },
+                        {
+                            "name": "v_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "outputdir" }
+                        },
+                        {
+                            "name": "f_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "outputdir" }
+                        },
+                        {
+                            "name": "m_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "outputdir" }
+                        },
+                        {
+                            "name": "ta_component", 
+                            "class":"AbsoluteVorticityComponent"
+                        },
+                        {
+                            "name": "projection_component", 
+                            "class":"ProjectionComponent",
+                            "destinationDomain": { "ref": "outputDomain" },
+                            "projection": { "ref": "modelDomain" }
+                        },
+                        {
+                            "name": "variable_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "pubdir" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"u_source", "output":"main", "inputComponent":"ta_component", "input":"U"},
+                        {"outputComponent":"v_source", "output":"main", "inputComponent":"ta_component", "input":"V"},
+                        {"outputComponent":"f_source", "output":"main", "inputComponent":"ta_component", "input":"f"},
+                        {"outputComponent":"m_source", "output":"main", "inputComponent":"ta_component", "input":"m"},                        
+                        {"outputComponent":"ta_component", "output":"main", "inputComponent":"projection_component", "input":"main"},
                         {"outputComponent":"projection_component", "output":"main", "inputComponent":"variable_destination", "input":"main"}
                     ]
                 },

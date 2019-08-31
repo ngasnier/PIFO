@@ -300,7 +300,7 @@ begin
 
         mb_set_colormap(wks)
         rain_res = True
-        plot_precip = mb_precipitations(wks, apcp, rain_res)
+        plot_precip = mb_precipitations(wks, apcp_ech, rain_res)
 ;        res_snow = True
 ;        res_snow@cnFillColor = 0
 ;        res_ice = True
@@ -317,6 +317,22 @@ begin
 ;        overlay(mapid, plot_snow)
 ;        overlay(mapid, plot_ice_pel)
 ;        overlay(mapid, plot_ice)
+
+        draw(mapid)
+        frame(wks)
+
+
+        print("Precipitations France cumulées");
+        outfile = france_dir+"/pifo_apcp_acc_"+valid
+        wks = gsn_open_wks(device, outfile)
+
+        mb_set_colormap(wks)
+        rain_res = True
+        plot_precip = mb_precipitations(wks, apcp, rain_res)
+
+        mapid = mb_map_france(wks, "Precipitations cumulees", globalRes@validDate, globalRes@runInfo, fr_res_black)
+
+        overlay(mapid, plot_precip)
 
         draw(mapid)
         frame(wks)
@@ -606,13 +622,11 @@ begin
         ; ************************************************************************
 
         print("Tourbillon absolu 500hPa");
-        ta = load3DField("tourbillon", grfile, sigma_couches, lat2d, lon2d);
+        ta = load3DField("ta", grfile, sigma_couches, lat2d, lon2d);
+        ta = ta * 10e4
         ftmp = loadField("f_"+grfile);
         f = conform_dims(dimsizes(ta), ftmp, (/1, 2/))
-        pstmp = conform_dims(dimsizes(ta), ps, (/1, 2/))
-        ta = (ta*pstmp - f) * 10e5
         delete(ftmp)
-        delete(pstmp)
 
         ta500 = vinth2p(ta, hyba_surfaces, sigma_surfaces, (/ 500 /), ps, 1 , 1000 , 1 , True)
 
