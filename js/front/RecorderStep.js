@@ -158,10 +158,10 @@ export class RecorderStep extends Step
                     if ("x" in pt) i = pt.x; else i = 0;
                     if ("y" in pt) j = pt.y; else j = 0;
                     if ("z" in pt) k = pt.z; else k = 0;
-                    if (X.nbLevels>0)
-                        value = X[k][i+j*X.width];
+                    if (X.nbLevels>1)
+                        value = X.get3(i,j,k);
                     else
-                        value = X[i+j*X.width];               
+                        value = X.get2(i,j,k);
                     line += sep+value.toString();                
                     sep = ";";
                 }

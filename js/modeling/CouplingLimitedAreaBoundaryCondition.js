@@ -82,15 +82,14 @@ export class CouplingLimitedAreaBoundaryCondition extends BoundaryCondition
     setup()
     {
         // *** Calcul de la zone de relaxation et autres termes de grilles nécessaires
-        var i = 0;
         for (var y=0;y<this.model.height;y++)
         {
-            for(var x=0;x<this.model.width;x++,i++)
+            for(var x=0;x<this.model.width;x++)
             {
                 // Initialisation du couplage
                 if (y==0 || y==this.model.height-1 || ((x==0 || x==this.model.width-1) && !this.model.global))
                 {
-                    this.model.alpha_couplage[i] = 1.0;
+                    this.model.alpha_couplage.set2(x,y,1.0);
                 }
                 else if ((y<1+this.relaxation||y>=this.model.height-this.relaxation-1)
                         || ((x<1+this.relaxation||x>=this.model.width-this.relaxation-1) && !this.model.global))
@@ -107,11 +106,11 @@ export class CouplingLimitedAreaBoundaryCondition extends BoundaryCondition
 
                     if (xd<yd || this.model.global) xd = yd;
 
-                    this.model.alpha_couplage[i] = 1-Math.tanh(0.5*(this.relaxation-xd+1));
+                    this.model.alpha_couplage.set2(x,y, 1-Math.tanh(0.5*(this.relaxation-xd+1)));
                 }
                 else 
                 {
-                    this.model.alpha_couplage[i] = 0.0;
+                    this.model.alpha_couplage.set2(x,y,0.0);
                 }
             }
         }
@@ -133,21 +132,6 @@ export class CouplingLimitedAreaBoundaryCondition extends BoundaryCondition
             }
         }
     }
-    
-    /**
-     * Couple une variable avec le domaine extérieur.
-     * @param {type} x la variable
-     * @param {type} c les valeurs du domaine extérieur
-     * @returns {undefined}
-     */
-    couple2D(x, c)
-    {
-        var alpha_couplage = this._model.alpha_couplage;
-        for (var i=0;i<x.length;i++)
-        {
-            x[i] = (1-alpha_couplage[i])*x[i] + alpha_couplage[i]*c[i];
-        }
-    }
 
     /**
      * Couple une variable avec le domaine extérieur.
@@ -157,21 +141,33 @@ export class CouplingLimitedAreaBoundaryCondition extends BoundaryCondition
      */
     couple(x, c)
     {
-        var i, k;
-        if (x.length>0 && (x[0].constructor===Array || x[0].constructor===Float64Array))
+        var i=0, j=0, k=0;
+        var alpha_couplage = this._model.alpha_couplage;
+        var width = x.width;
+        var height = x.height;
+        var nbLevels = x.nbLevels;
+        if (nbLevels>1)
         {    
-            var alpha_couplage = this._model.alpha_couplage;
-            for (k=0;k<x.length;k++)
+            for (k=0;k<nbLevels;k++)
             {
-                for (i=0;i<x[k].length;i++)
+                for (j=0;j<height;j++)
                 {
-                    x[k][i] = (1-alpha_couplage[i])*x[k][i] + alpha_couplage[i]*c[k][i];
+                    for (i=0;i<width;i++)
+                    {
+                        x.set3(i,j,k, (1-alpha_couplage.get2(i,j))*x.get3(i,j,k) + alpha_couplage.get2(i,j)*c.get3(i,j,k));
+                    }
                 }
             }
         }
         else
         {
-            this.couple2D(x, c);
+            for (j=0;j<height;j++)
+            {
+                for (i=0;i<width;i++)
+                {
+                    x.set2(i,j, (1-alpha_couplage.get2(i,j))*x.get2(i,j) + alpha_couplage.get2(i,j)*c.get2(i,j));
+                }
+            }
         }
     }   
 }

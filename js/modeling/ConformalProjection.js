@@ -285,16 +285,16 @@ export class ConformalProjection  {
 
         var yplan = b[1]-dy*yoffset*0.5;
         var xplan = a[0];
-        var i = 0;
+        var i = 0, j=0;
         var lat, lon;
-        for (var y=0;y<this.height;y++)
+        for (j=0;j<this.height;j++)
         {
             xplan = a[0]+dx*xoffset*0.5;
-            for(var x=0;x<this.width;x++,i++)
+            for(i=0;i<this.width;i++)
             {
                 [lat, lon] = this.xyToLatLon(xplan, yplan);
-                latitudes[i] = lat;
-                longitudes[i] = lon;
+                latitudes.set2(i,j,lat);
+                longitudes.set2(i,j,lon);
                 xplan += dx;
             }
             yplan -= dy;

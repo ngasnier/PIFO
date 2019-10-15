@@ -103,14 +103,14 @@ async function initialize(config)
         
         ui.beforeDisplayCallback = function()
         {
-            var k = ui.getDisplayLevel();
+            var k = Number(ui.getDisplayLevel());
             switch (ui.getDisplayVariable())
             {
                 case "Vent":
                     windRenderer.width = ui.model.width;
                     windRenderer.height = ui.model.height;
-                    windRenderer.U = ui.model.getVariable("U")[k];
-                    windRenderer.V = ui.model.getVariable("V")[k];
+                    windRenderer.U = ui.model.getVariable("U").getLevel(k);
+                    windRenderer.V = ui.model.getVariable("V").getLevel(k);
                     break;
                 case "Z500":
                     z500Renderer.width = ui.model.width;
@@ -132,39 +132,39 @@ async function initialize(config)
                 case "Tourbillon":
                     tourbillonRenderer.width = ui.model.width;
                     tourbillonRenderer.height = ui.model.height;
-                    tourbillonRenderer.variable = ui.model.getVariable("tourbillon")[k];
-                    tourbillonRenderer.ps = ui.model.getVariable("ps");
-                    tourbillonRenderer.f = ui.model.getVariable("f");
+                    tourbillonRenderer.variable = ui.model.getVariable("tourbillon").getLevel(k);
+                    tourbillonRenderer.ps = ui.model.getVariable("ps").data;
+                    tourbillonRenderer.f = ui.model.getVariable("f").data;
                     break;
                 case "VV":
                     verticalVelocityRenderer.width = ui.model.width;
                     verticalVelocityRenderer.height = ui.model.height;
-                    verticalVelocityRenderer.variable = ui.model.getVariable("sigmaf")[k];
+                    verticalVelocityRenderer.variable = ui.model.getVariable("sigmaf").getLevel(k);
                     break;
                 case "QV":
                     qvRenderer.width = ui.model.width;
                     qvRenderer.height = ui.model.height;
-                    qvRenderer.variable = ui.model.getVariable("qv")[k];
+                    qvRenderer.variable = ui.model.getVariable("qv").getLevel(k);
                     break;
                 case "Temperature":
                     temperatureRenderer.width = ui.model.width;
                     temperatureRenderer.height = ui.model.height;
-                    temperatureRenderer.variable = ui.model.getVariable("T")[k];
+                    temperatureRenderer.variable = ui.model.getVariable("T").getLevel(k);
                     break;
                 case "SfcPrs":
                     pressureRenderer.width = ui.model.width;
                     pressureRenderer.height = ui.model.height;
-                    pressureRenderer.variable = ui.model.getVariable("ps");
+                    pressureRenderer.variable = ui.model.getVariable("ps").data;
                     break;
                 case "Pluie":
                     rainRenderer.width = ui.model.width;
                     rainRenderer.height = ui.model.height;
-                    rainRenderer.variable = ui.model.getVariable("apcp");
+                    rainRenderer.variable = ui.model.getVariable("apcp").data;
                     break;
                 case "Neige":
                     rainRenderer.width = ui.model.width;
                     rainRenderer.height = ui.model.height;
-                    rainRenderer.variable = ui.model.getVariable("acsnow");
+                    rainRenderer.variable = ui.model.getVariable("acsnow").data;
                     break;
             }
         };

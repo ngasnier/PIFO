@@ -222,22 +222,32 @@ export class CouplingStep extends Step
     
     linint(a, b, t1, t2, t, res)
     {
+        var i, j, k;        
         var coef = (t - t1) / (t2 - t1);
-        if (a.length>0 && (a[0].constructor===Array || a[0].constructor===Float64Array))
-        {
-            for (var k=0;k<a.length;k++)
+        var width = a.width;
+        var height = a.height;
+        var nbLevels = a.nbLevels;
+        if (nbLevels>1)
+        {    
+            for (k=0;k<nbLevels;k++)
             {
-                for (var i = 0; i < a[k].length; i++)
+                for (j=0;j<height;j++)
                 {
-                    res[k][i] = (1 - coef) * a[k][i] + coef * b[k][i];
+                    for (i=0;i<width;i++)
+                    {
+                        res.set3(i,j,k, (1 - coef) * a.get3(i,j,k) + coef * b.get3(i,j,k));
+                    }
                 }
             }
         }
         else
         {
-            for (var i = 0; i < a.length; i++)
+            for (j=0;j<height;j++)
             {
-                res[i] = (1 - coef) * a[i] + coef * b[i];
+                for (i=0;i<width;i++)
+                {
+                    res.set2(i,j, (1 - coef) * a.get2(i,j) + coef * b.get2(i,j));
+                }
             }
         }
     }

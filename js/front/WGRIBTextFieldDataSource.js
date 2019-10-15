@@ -16,6 +16,7 @@
  */
 
 import { DataSource } from "./DataSource.js";
+import { Variable } from "../modeling/Variable.js";
 import { VariableDescription } from "../modeling/VariableDescription.js";
 import { WGRIBFormat } from "../util/WGRIBFormat.js";
 import { FileInfo } from "../util/FileInfo.js";
@@ -231,11 +232,7 @@ export class WGRIBTextFieldDataSource extends DataSource {
                     indices = [];
                     for (var i=0;i<field.levels.length;i++) indices[i] = i;
                 }
-                variable = [];
-                variable.nbLevels = field.levels.length;
-                variable.time = p_time;
-                variable.initDate = this.initDate;
-                variable.productName = this.fileInfo.name;
+                variable = null;
                 
                 for (var i in indices)
                 {
@@ -243,19 +240,26 @@ export class WGRIBTextFieldDataSource extends DataSource {
                     var fname = p_field+"_"+idx+"_"+timefmt+".txt";
                     var data = await this.readFile(fname);
                     var var_data = reader.read(data);
-                    variable.push(var_data);
-                    variable.width = var_data.width;
-                    variable.height = var_data.height;
+                    if (variable==null)
+                    {
+                        variable = Variable.createVariable(field.levels.length, var_data.width, var_data.height);
+                        variable.nbLevels = field.levels.length;
+                        variable.time = p_time;
+                        variable.initDate = this.initDate;
+                        variable.productName = this.fileInfo.name;
+                    }
+                    variable.setLevel(Number(i), var_data.data);
                 }
                 variable.levels = field.levels.slice();
-                                
                 return variable;
             }
             else
             {
                 var fname = p_field+"_"+timefmt+".txt";
                 var data = await this.readFile(fname);
-                var variable = reader.read(data);
+                var var_data = reader.read(data);
+                var variable = Variable.createVariable(0, var_data.width, var_data.height);
+                var_data.copy(variable);
                 variable.time = p_time;
                 variable.initDate = this.initDate;
                 variable.productName = this.fileInfo.name;
@@ -324,7 +328,7 @@ export class WGRIBTextFieldDataSource extends DataSource {
                     }
                     
                     this.fileInfo.addFile(dt, filename);
-                    await this.writeFile(filename, writer.write(p_data[k]));
+                    await this.writeFile(filename, writer.write(p_data.getLevelAsVariable(k)));
                 }
             }
             else

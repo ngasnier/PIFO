@@ -286,11 +286,11 @@ export class ModelUI
                 renderer.height = this.model.height;
                 if (description!=null && description.levels.length>1)
                 {
-                    renderer.variable = this.model.getVariable(this.currentField)[this.getDisplayLevel()];
+                    renderer.variable = this.model.getVariable(this.currentField).getLevel(this.getDisplayLevel());
                 }
                 else
                 {
-                    renderer.variable = this.model.getVariable(this.currentField);
+                    renderer.variable = this.model.getVariable(this.currentField).data;
                 }
             }
 
