@@ -68,7 +68,10 @@ $(document).ready(function () {
     {
         initialize(config).then(()=>{});
     });
-//    initialize(barotropeConfig).then(()=>{});
+    /*$.getJSON("/barotrope.default.json", function (config)
+    {
+        initialize(config).then(()=>{});
+    });*/
 });
 
 async function initialize(config) 
@@ -116,18 +119,20 @@ async function initialize(config)
                     z500Renderer.width = ui.model.width;
                     z500Renderer.height = ui.model.height;
                     verticalInterpolator.sigmaLevels = ui.model.layersCoords;
-                    Variable.copy(ui.model.getVariable("ps"), verticalInterpolator.surfacePressure);
+                    //Variable.copy(ui.model.getVariable("ps"), verticalInterpolator.surfacePressure);
+                    verticalInterpolator.surfacePressure = ui.model.getVariable("ps")
                     verticalInterpolator.modelToPressureLevel(ui.model.getVariable("phi"), 50000, z500_display);
                     geopInterpolator.modelToHeight(z500_display, z500_display);
-                    z500Renderer.variable = z500_display;
+                    z500Renderer.variable = z500_display.data;
                     break;
                 case "T850":
                     t850Renderer.width = ui.model.width;
                     t850Renderer.height = ui.model.height;
                     verticalInterpolator.sigmaLevels = ui.model.layersCoords;
-                    Variable.copy(ui.model.getVariable("ps"), verticalInterpolator.surfacePressure);
+                    //Variable.copy(ui.model.getVariable("ps"), verticalInterpolator.surfacePressure);
+                    verticalInterpolator.surfacePressure = ui.model.getVariable("ps");
                     verticalInterpolator.modelToPressureLevel(ui.model.getVariable("T"), 85000, t850_display);
-                    t850Renderer.variable = t850_display;
+                    t850Renderer.variable = t850_display.data;
                     break;
                 case "Tourbillon":
                     tourbillonRenderer.width = ui.model.width;
@@ -172,7 +177,12 @@ async function initialize(config)
 
         /* -------- BAROTROPE ------------ */
         
-/*        ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", levels:[1], renderer: windRenderer},
+        /*ui.beforeResetCallback = function()
+        {
+            z500_display = Variable.createVariable(0, ui.model.width, ui.model.height);
+        }
+        
+        ui.variableRepresentations = {Vent: {group:"HistoricVariables", name:"Vent", levels:[1], renderer: windRenderer},
             Z500 : {group:"HistoricVariables", name:"Z500", levels:[1], renderer: z500Renderer},
             Tourbillon : {group:"DiagnosticVariables", name:"Tourbillon", levels:[1], renderer: tourbillonRenderer},
             Verifications : {group:"DiagnosticVariables", name:"Verifications", levels:[1], renderer: verificationRenderer}
@@ -185,19 +195,19 @@ async function initialize(config)
                 case "Vent":
                     windRenderer.width = ui.model.width;
                     windRenderer.height = ui.model.height;
-                    windRenderer.U = ui.model.getVariable("U");
-                    windRenderer.V = ui.model.getVariable("V");
+                    windRenderer.U = ui.model.getVariable("U").data;
+                    windRenderer.V = ui.model.getVariable("V").data;
                     break;
                 case "Z500":
                     z500Renderer.width = ui.model.width;
                     z500Renderer.height = ui.model.height;
-                    interpolator.modelToZ500(ui.model.getVariable("phi"), z500_display);
-                    z500Renderer.variable = z500_display;
+                    interpolator.modelToZ500(ui.model.getVariable("phi").data, z500_display.data);
+                    z500Renderer.variable = z500_display.data;
                     break;
                 case "Tourbillon":
                     tourbillonRenderer.width = ui.model.width;
                     tourbillonRenderer.height = ui.model.height;
-                    tourbillonRenderer.variable = ui.model.getVariable("tourbillon");
+                    tourbillonRenderer.variable = ui.model.getVariable("tourbillon").data;
                     break;
                 case "Verifications":
                     verificationRenderer.model = ui.model;

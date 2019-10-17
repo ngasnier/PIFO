@@ -84,13 +84,13 @@ export class BarotropicCore extends DynamicsCore
                 {
                     i = x+y*this._model.width;
 
-                    xi = 0.5*(this._model.tourbillon[i]+this._model.f[i]+this._model.tourbillon[i-this._model.width]+this._model.f[i-this._model.width]);
+                    xi = 0.5*(this._model.tourbillon.data[i]+this._model.f.data[i]+this._model.tourbillon.data[i-this._model.width]+this._model.f.data[i-this._model.width]);
 
-                    v = (this._model.V[i]+this._model.V[i+1]+this._model.V[i-this._model.width]+this._model.V[i+1-this._model.width])/4;
+                    v = (this._model.V.data[i]+this._model.V.data[i+1]+this._model.V.data[i-this._model.width]+this._model.V.data[i+1-this._model.width])/4;
 
-                    kphi = (this._model.K[i+1]+this._model.phi[i+1]-(this._model.K[i]+this._model.phi[i]))/this._model.dx;
+                    kphi = (this._model.K.data[i+1]+this._model.phi.data[i+1]-(this._model.K.data[i]+this._model.phi.data[i]))/this._model.dx;
 
-                    this._model.U_tdcy[i] = xi*v - kphi;
+                    this._model.U_tdcy.data[i] = xi*v - kphi;
 
                     // Discretisation alternative
                     /*xi = 0.5*(this._model.tourbillon[i]+this._model.tourbillon[i-this._model.width]);
@@ -114,14 +114,14 @@ export class BarotropicCore extends DynamicsCore
                 {
                     i = x+y*this._model.width;
 
-                    c1 = this._model.K[i+1];
-                    c2 = this._model.phi[i+1];
-                    c3 = this._model.K[i-1];
-                    c4 = this._model.phi[i-1];
+                    c1 = this._model.K.data[i+1];
+                    c2 = this._model.phi.data[i+1];
+                    c3 = this._model.K.data[i-1];
+                    c4 = this._model.phi.data[i-1];
 
                     kphi = (c1+c2-c3-c4)/(2*this._model.dx);
 
-                    this._model.U_tdcy[i] = (this._model.tourbillon[i]+this._model.f[i])*this._model.V[i] - kphi;
+                    this._model.U_tdcy.data[i] = (this._model.tourbillon.data[i]+this._model.f.data[i])*this._model.V.data[i] - kphi;
                 }
             }
         }
@@ -144,13 +144,13 @@ export class BarotropicCore extends DynamicsCore
                 {
                     i = x+y*this._model.width;
 
-                    xi = 0.5*(this._model.tourbillon[i-1]+this._model.f[i-1]+this._model.tourbillon[i]+this._model.f[i]);
+                    xi = 0.5*(this._model.tourbillon.data[i-1]+this._model.f.data[i-1]+this._model.tourbillon.data[i]+this._model.f.data[i]);
 
-                    u = (this._model.U[i-1]+this._model.U[i]+this._model.U[i-1+this._model.width]+this._model.U[i+this._model.width])/4;
+                    u = (this._model.U.data[i-1]+this._model.U.data[i]+this._model.U.data[i-1+this._model.width]+this._model.U.data[i+this._model.width])/4;
 
-                    kphi = (this._model.K[i]+this._model.phi[i]-(this._model.K[i+this._model.width]+this._model.phi[i+this._model.width]))/this._model.dy;
+                    kphi = (this._model.K.data[i]+this._model.phi.data[i]-(this._model.K.data[i+this._model.width]+this._model.phi.data[i+this._model.width]))/this._model.dy;
 
-                    this._model.V_tdcy[i] = -xi*u - kphi;
+                    this._model.V_tdcy.data[i] = -xi*u - kphi;
 
                     // Discretisation alternative
                     /*xi = 0.5*(this._model.tourbillon[i-1]+this._model.tourbillon[i]);
@@ -177,14 +177,14 @@ export class BarotropicCore extends DynamicsCore
                 {
                     i = x+y*this._model.width;
 
-                    c1 = this._model.K[i-this._model.width];
-                    c2 = this._model.phi[i-this._model.width];
-                    c3 = this._model.K[i+this._model.width];
-                    c4 = this._model.phi[i+this._model.width];
+                    c1 = this._model.K.data[i-this._model.width];
+                    c2 = this._model.phi.data[i-this._model.width];
+                    c3 = this._model.K.data[i+this._model.width];
+                    c4 = this._model.phi.data[i+this._model.width];
 
                     kphi = (c1+c2-c3-c4)/(2*this._model.dy);
 
-                    this._model.V_tdcy[i] = -(this._model.tourbillon[i]+this._model.f[i])*this._model.U[i] - kphi;
+                    this._model.V_tdcy.data[i] = -(this._model.tourbillon.data[i]+this._model.f.data[i])*this._model.U.data[i] - kphi;
                 }
             }
         }
@@ -207,15 +207,15 @@ export class BarotropicCore extends DynamicsCore
                 {
                     i = x+y*this._model.width;
 
-                    m = this._model.m[i];
+                    m = this._model.m.data[i];
 
-                    d = this._model.phi_tdcy[i] = -(m*m)*(
-                        ((this._model.phi[i]+this._model.phi[i+1])*this._model.U[i] - (this._model.phi[i-1]+this._model.phi[i])*this._model.U[i-1])*0.5/this._model.dx
+                    d = this._model.phi_tdcy.data[i] = -(m*m)*(
+                        ((this._model.phi.data[i]+this._model.phi.data[i+1])*this._model.U.data[i] - (this._model.phi.data[i-1]+this._model.phi.data[i])*this._model.U.data[i-1])*0.5/this._model.dx
                        + 
-                        ((this._model.phi[i-this._model.width]+this._model.phi[i])*this._model.V[i-this._model.width] - (this._model.phi[i]+this._model.phi[i+this._model.width])*this._model.V[i])*0.5/this._model.dy
+                        ((this._model.phi.data[i-this._model.width]+this._model.phi.data[i])*this._model.V.data[i-this._model.width] - (this._model.phi.data[i]+this._model.phi.data[i+this._model.width])*this._model.V.data[i])*0.5/this._model.dy
                        );
 
-                    this._model.phi_tdcy[i] = d;
+                    this._model.phi_tdcy.data[i] = d;
                 }
             }
         }
@@ -233,11 +233,11 @@ export class BarotropicCore extends DynamicsCore
                 {
                     i = x+y*this._model.width;
 
-                    m = this._model.m[i];
+                    m = this._model.m.data[i];
 
-                    this._model.phi_tdcy[i] = -(m*m)*(
-                            (this._model.phi[i+1]*this._model.U[i+1] - this._model.phi[i-1]*this._model.U[i-1])/(this._model.dx*2)
-                            +(this._model.phi[i-this._model.width]*this._model.V[i-this._model.width] - this._model.phi[i+this._model.width]*this._model.V[i+this._model.width])/(this._model.dy*2)
+                    this._model.phi_tdcy.data[i] = -(m*m)*(
+                            (this._model.phi.data[i+1]*this._model.U.data[i+1] - this._model.phi.data[i-1]*this._model.U.data[i-1])/(this._model.dx*2)
+                            +(this._model.phi.data[i-this._model.width]*this._model.V.data[i-this._model.width] - this._model.phi.data[i+this._model.width]*this._model.V.data[i+this._model.width])/(this._model.dy*2)
                         );
                 }
             }
@@ -260,11 +260,11 @@ export class BarotropicCore extends DynamicsCore
                 for(var x=1;x<this._model.width-1;x++)
                 {
                     i = x+y*this._model.width;
-                    u1 = this._model.U[i-1];
-                    u2 = this._model.U[i];
-                    v1 = this._model.V[i];
-                    v2 = this._model.V[i-this._model.width]
-                    this._model.K[i] = this._model.m[i]*this._model.m[i]*(
+                    u1 = this._model.U.data[i-1];
+                    u2 = this._model.U.data[i];
+                    v1 = this._model.V.data[i];
+                    v2 = this._model.V.data[i-this._model.width]
+                    this._model.K.data[i] = this._model.m.data[i]*this._model.m.data[i]*(
                             0.5*(u1*u1 + u2*u2)
                             +0.5*(v1*v1 + v2*v2)
                         )/2;
@@ -281,9 +281,9 @@ export class BarotropicCore extends DynamicsCore
                 for(var x=1;x<this._model.width-1;x++)
                 {
                     i = x+y*this._model.width;
-                    u1 = this._model.U[i];
-                    v1 = this._model.V[i];
-                    this._model.K[i] = this._model.m[i]*this._model.m[i]*0.5*(u1*u1+v1*v1);
+                    u1 = this._model.U.data[i];
+                    v1 = this._model.V.data[i];
+                    this._model.K.data[i] = this._model.m.data[i]*this._model.m.data[i]*0.5*(u1*u1+v1*v1);
                 }
             }                
         }
@@ -307,15 +307,15 @@ export class BarotropicCore extends DynamicsCore
                 for(var x=1;x<this._model.width-1;x++)
                 {
                     i = x+y*this._model.width;
-                    m1 = this._model.m[i+this._model.width];
-                    m2 = this._model.m[i+1+this._model.width];
-                    m3 = this._model.m[i];
-                    m4 = this._model.m[i+1];
+                    m1 = this._model.m.data[i+this._model.width];
+                    m2 = this._model.m.data[i+1+this._model.width];
+                    m3 = this._model.m.data[i];
+                    m4 = this._model.m.data[i+1];
 
-                    this._model.tourbillon[i] = (
+                    this._model.tourbillon.data[i] = (
                             0.25*(m1*m1+m2*m2+m3*m3+m4*m4)
                             *(
-                                 (this._model.V[i+1]-this._model.V[i])/this._model.dx - (this._model.U[i]-this._model.U[i+this._model.width])/this._model.dy
+                                 (this._model.V.data[i+1]-this._model.V.data[i])/this._model.dx - (this._model.U.data[i]-this._model.U.data[i+this._model.width])/this._model.dy
                              )
                         );
                     // Discretisation alternative
@@ -341,15 +341,15 @@ export class BarotropicCore extends DynamicsCore
                 {
                     i = x+y*this._model.width;
 
-                    m1 = this._model.m[i];
+                    m1 = this._model.m.data[i];
 
-                    u1 = this._model.U[i-this._model.width];
-                    u2 = this._model.U[i+this._model.width];
+                    u1 = this._model.U.data[i-this._model.width];
+                    u2 = this._model.U.data[i+this._model.width];
 
-                    v1 = this._model.V[i+1];
-                    v2 = this._model.V[i-1];
+                    v1 = this._model.V.data[i+1];
+                    v2 = this._model.V.data[i-1];
 
-                    this._model.tourbillon[i] = m1*m1
+                    this._model.tourbillon.data[i] = m1*m1
                             *((v1-v2)/(2*this._model.dx)
                               - (u1-u2)/(2*this._model.dy)
                              );

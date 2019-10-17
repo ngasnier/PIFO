@@ -101,7 +101,7 @@ export class BarotropicSemiImplicitCore extends BarotropicCore
         
         Variable.copy(this._model.phi, this._model.phi_t);
         
-        console.log("convergence : "+TridiagonalSystem.sor(this._model.si_cx, 1, this._model.si_cy, this._model.width, this._model.si_xy, this._model.si_phi_b, 1.4, this._model.phi_t, this._model.si_residu, 0.000001, 1000));
+        console.log("convergence : "+TridiagonalSystem.sor(this._model.si_cx.data, 1, this._model.si_cy.data, this._model.width, this._model.si_xy.data, this._model.si_phi_b.data, 1.4, this._model.phi_t.data, this._model.si_residu.data, 0.000001, 1000));
 
         // *** Calcul du vent et du géopotentiel final
         this.calcDx(this._model.phi_t, this._model.tmp_var);
@@ -133,21 +133,21 @@ export class BarotropicSemiImplicitCore extends BarotropicCore
         {
             for(var x=0;x<this._model.width;x++,i++)
             {
-                cx = -this._model.m[i]*this._model.m[i]*this._model.dt*this._model.dt*this.si_phi_star/(this._model.dx*this._model.dx);
-                cy = -this._model.m[i]*this._model.m[i]*this._model.dt*this._model.dt*this.si_phi_star/(this._model.dy*this._model.dy);
+                cx = -this._model.m.data[i]*this._model.m.data[i]*this._model.dt*this._model.dt*this.si_phi_star/(this._model.dx*this._model.dx);
+                cy = -this._model.m.data[i]*this._model.m.data[i]*this._model.dt*this._model.dt*this.si_phi_star/(this._model.dy*this._model.dy);
 
                 if (x>0 && x<this._model.width-1 && y>0 && y<this._model.height-1)
                 {
-                    this._model.si_xy[i] = 2*this._model.m[i]*this._model.m[i]*this._model.dt*this._model.dt*this.si_phi_star*(1/(this._model.dx*this._model.dx)+1/(this._model.dy*this._model.dy))+1; 
-                    this._model.si_cx[i] = cx;
-                    this._model.si_cy[i] = cy;
+                    this._model.si_xy.data[i] = 2*this._model.m.data[i]*this._model.m.data[i]*this._model.dt*this._model.dt*this.si_phi_star*(1/(this._model.dx*this._model.dx)+1/(this._model.dy*this._model.dy))+1; 
+                    this._model.si_cx.data[i] = cx;
+                    this._model.si_cy.data[i] = cy;
                 }
                 else
                 {
                     // Conditions aux limites
-                    this._model.si_xy[i] = 1;
-                    this._model.si_cx[i] = 0;
-                    this._model.si_cy[i] = 0;
+                    this._model.si_xy.data[i] = 1;
+                    this._model.si_cx.data[i] = 0;
+                    this._model.si_cy.data[i] = 0;
                 }
             }
         }
@@ -163,10 +163,10 @@ export class BarotropicSemiImplicitCore extends BarotropicCore
             {
                 // tmp_var contient la divergence de U et V transitoires
                 if (x>0 && x<this._model.width-1 && y>0 && y<this._model.height-1)
-                    this._model.si_phi_b[i] = this._model.phi_trans[i]-this._model.m[i]*this._model.m[i]*this._model.dt*this._model.div_tmp[i];
+                    this._model.si_phi_b.data[i] = this._model.phi_trans.data[i]-this._model.m.data[i]*this._model.m.data[i]*this._model.dt*this._model.div_tmp.data[i];
                 else
                     // Conditions aux limites
-                    this._model.si_phi_b[i] = this._model.phi[i];
+                    this._model.si_phi_b.data[i] = this._model.phi.data[i];
             }
         }
     }
@@ -178,7 +178,7 @@ export class BarotropicSemiImplicitCore extends BarotropicCore
         {
             for(var x=1;x<this._model.width-1;x++,i++)
             {
-                res[i] = (f[i+1]-f[i])/this._model.dx;
+                res.data[i] = (f.data[i+1]-f.data[i])/this._model.dx;
             }
             i+=2;
         }
@@ -191,7 +191,7 @@ export class BarotropicSemiImplicitCore extends BarotropicCore
         {
             for(var x=1;x<this._model.width-1;x++,i++)
             {
-                res[i] = (f[i]-f[i+this._model.width])/this._model.dy;
+                res.data[i] = (f.data[i]-f.data[i+this._model.width])/this._model.dy;
             }
             i+=2;
         }

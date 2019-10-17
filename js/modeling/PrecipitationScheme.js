@@ -52,7 +52,9 @@ export class PrecipitationScheme extends PhysicsScheme
     step()
     {
         var qsat;
-        var nb = this._model.width*this._model.height;
+        var width = this._model.width;
+        var height = this._model.height;
+        var nbLayers = this._model.nbLayers;
         var k_tilde = 0;
         var k_couche = 0;
         var k_tilde1 = 0;
@@ -64,66 +66,107 @@ export class PrecipitationScheme extends PhysicsScheme
         var C_star, mevap;
         var P_temp = 0;
         var P_tot = 0, P_tot_save=0;
-        var k = 0;
-        for (var i=0;i<nb;i++)
+        var i=0, j=0, k = 0;
+        for (j=0;j<height;j++)
         {
-            P_tot = 0;
-            ri = 0;
-            ri_tmp = 0;
-            rf = 0;
-            rf_tmp = 0;
-            prems = true;
-            for (k=0;k<this._model.nbLayers ;k++)
+            for (i=0;i<width;i++)
             {
-                k_tilde = this._model.surfacesIndices[k];
-                k_couche = this._model.layersIndices[k];
-                k_tilde1 = this._model.surfacesIndices[k+1];
-                this._model.Pl[k+1][i] = 0;
-                this._model.Pi[k+1][i] = 0;
-                qsat = Utility.qsat(this._model.p[k_couche][i], this._model.T[k][i]);
-                dq = this._model.qv[k][i] - qsat;
-                P_tot_save = P_tot;
-
-                // Saturation
-                if (this._model.qv[k][i]>=qsat)
+                P_tot = 0;
+                ri = 0;
+                ri_tmp = 0;
+                rf = 0;
+                rf_tmp = 0;
+                prems = true;
+                for (k=0;k<nbLayers ;k++)
                 {
-                    // Ajout de flux de précipitations
-                    flux = (dq)*(this._model.p[k_tilde1][i]-this._model.p[k_tilde][i])/(this._model.dt*Model.g)
-                    P_tot = P_tot_save + flux;
+                    k_tilde = this._model.surfacesIndices[k];
+                    k_couche = this._model.layersIndices[k];
+                    k_tilde1 = this._model.surfacesIndices[k+1];
+                    this._model.Pl.set3(i,j,k+1, 0);
+                    this._model.Pi.set3(i,j,k+1, 0);
+                    qsat = Utility.qsat(this._model.p.get3(i,j,k_couche), this._model.T.get3(i,j,k));
+                    dq = this._model.qv.get3(i,j,k) - qsat;
+                    P_tot_save = P_tot;
 
-                    // Calcul de la proportion provisionnelle
-                    if (this._model.T[k][i]<Model.T00)
+                    // Saturation
+                    if (this._model.qv.get3(i,j,k)>=qsat)
                     {
-                        ri_tmp = (ri*P_tot_save+P_tot-P_tot_save)/P_tot;
-                        rf_tmp = (rf*P_tot_save+this.h(this._model.T[k][i])*(P_tot-P_tot_save))/P_tot;
-                    }
-                    else
-                    {
-                        ri_tmp = (ri*P_tot_save)/P_tot;
-                        rf_tmp = (rf*P_tot_save)/P_tot;
-                    }
+                        // Ajout de flux de précipitations
+                        flux = (dq)*(this._model.p.get3(i,j,k_tilde1)-this._model.p.get3(i,j,k_tilde))/(this._model.dt*Model.g)
+                        P_tot = P_tot_save + flux;
 
-                    // Effet de la fonte sur ri
-                    if (prems)
-                    {
-                        if (this._model.T[k][i]<Model.T00)
+                        // Calcul de la proportion provisionnelle
+                        if (this._model.T.get3(i,j,k)<Model.T00)
                         {
-                            ri = 1;
-                            rf = this.h(this._model.T[k][i]);
+                            ri_tmp = (ri*P_tot_save+P_tot-P_tot_save)/P_tot;
+                            rf_tmp = (rf*P_tot_save+this.h(this._model.T.get3(i,j,k))*(P_tot-P_tot_save))/P_tot;
                         }
                         else
                         {
-                            ri = 0;
-                            rf = 0;
+                            ri_tmp = (ri*P_tot_save)/P_tot;
+                            rf_tmp = (rf*P_tot_save)/P_tot;
                         }
-                        prems = false;
+
+                        // Effet de la fonte sur ri
+                        if (prems)
+                        {
+                            if (this._model.T.get3(i,j,k)<Model.T00)
+                            {
+                                ri = 1;
+                                rf = this.h(this._model.T.get3(i,j,k));
+                            }
+                            else
+                            {
+                                ri = 0;
+                                rf = 0;
+                            }
+                            prems = false;
+                        }
+                        else
+                        {
+                            // Le processus de fonte/gelage modifie ri
+                            C_star = 2.4e4 * (1-rf_tmp)+2.4e4*80*rf_tmp;
+                            mevap = C_star*((this._model.T.get3(i,j,k)-Model.T00)/(0.5*(Math.sqrt(P_tot_save)+Math.sqrt(P_tot))))
+                                *(1/this._model.p.get3(i,j,k_tilde)-1/this._model.p.get3(i,j,k_tilde1));
+                            ri = ri_tmp - mevap*(P_tot-P_tot_save);
+                            ri *= ri;
+                            rf = rf_tmp - mevap*(P_tot-P_tot_save);
+                            rf *= rf;
+
+                            // On ne peut pas fondre ou geler plus que 100% 
+                            if (ri>1) ri = 1;
+                            if (ri<0) ri = 0;
+                            if (rf>1) rf = 1;
+                            if (rf<0) rf = 0;
+                        }
+
+                        // Flux de vapeur vers liquide/solide dépend de ce qui 
+                        // est produit dans la couche
+                        flux = flux / (this._model.dt*2);
+                        this._model.Pl_1.set3(i, j, k+1, flux*(1-ri_tmp));
+                        this._model.Pi_1.set3(i, j, k+1, flux*ri_tmp);
+                        //this._model.Pl_1[k][i] = (this._model.qv[k][i]-qsat);
                     }
-                    else
+                    else if (this._model.Pl.get3(i,j,k+1)>0)
                     {
-                        // Le processus de fonte/gelage modifie ri
+                        // Evaporation du mélange pluie/neige
+                        C_star = 4.8e6*(1-rf_tmp)+4.8e6*80*rf_tmp;
+                        mevap = C_star*(this._model.qv.get3(i,j,k)-qsat)*(1/this._model.p.get3(i,j,k_tilde)-1/this._model.p.get3(i,j,k_tilde1));
+                        P_temp = Math.sqrt(P_tot_save) + mevap;
+                        P_tot = P_temp*P_temp;
+                        // Nb : ri et rf inchangés pendant l'évaporation
+                        ri_tmp = ri;
+                        rf_tmp = rf;
+
+                        // Flux de liquide/solide vers vapeur
+                        flux = (P_tot-P_tot_save) / (this._model.dt*2);
+                        this._model.Pl_3.set3(i, j, k+1, flux*(1-rf_tmp));
+                        this._model.Pi_3.set3(i, j, k+1, flux*ri_tmp);
+
+                        // Reste a modifier proportion neige/eau comme ci-dessus
                         C_star = 2.4e4 * (1-rf_tmp)+2.4e4*80*rf_tmp;
-                        mevap = C_star*((this._model.T[k][i]-Model.T00)/(0.5*(Math.sqrt(P_tot_save)+Math.sqrt(P_tot))))
-                            *(1/this._model.p[k_tilde][i]-1/this._model.p[k_tilde1][i]);
+                        mevap = C_star*((this._model.T.get3(i,j,k)-Model.T00)/(0.5*(Math.sqrt(P_tot_save)+Math.sqrt(P_tot))))
+                            *(1/this._model.p.get3(i,j,k_tilde)-1/this._model.p.get3(i,j,k_tilde1));
                         ri = ri_tmp - mevap*(P_tot-P_tot_save);
                         ri *= ri;
                         rf = rf_tmp - mevap*(P_tot-P_tot_save);
@@ -136,50 +179,12 @@ export class PrecipitationScheme extends PhysicsScheme
                         if (rf<0) rf = 0;
                     }
 
-                    // Flux de vapeur vers liquide/solide dépend de ce qui 
-                    // est produit dans la couche
-                    flux = flux / (this._model.dt*2);
-                    this._model.Pl_1[k+1][i] = flux*(1-ri_tmp);
-                    this._model.Pi_1[k+1][i] = flux*ri_tmp;
-                    //this._model.Pl_1[k][i] = (this._model.qv[k][i]-qsat);
+                    // Flux final, élimine toute erreur en tronquant le négatif
+                    if (P_tot<0.0) P_tot = 0.0;
+                    this._model.Pl.set3(i, j, k+1, (1-ri)*P_tot);
+                    this._model.Pi.set3(i, j, k+1, ri*P_tot);
                 }
-                else if (this._model.Pl[k+1][i]>0)
-                {
-                    // Evaporation du mélange pluie/neige
-                    C_star = 4.8e6*(1-rf_tmp)+4.8e6*80*rf_tmp;
-                    mevap = C_star*(this._model.qv[k][i]-qsat)*(1/this._model.p[k_tilde][i]-1/this._model.p[k_tilde1][i]);
-                    P_temp = Math.sqrt(P_tot_save) + mevap;
-                    P_tot = P_temp*P_temp;
-                    // Nb : ri et rf inchangés pendant l'évaporation
-                    ri_tmp = ri;
-                    rf_tmp = rf;
-
-                    // Flux de liquide/solide vers vapeur
-                    flux = (P_tot-P_tot_save) / (this._model.dt*2);
-                    this._model.Pl_3[k+1][i] = flux*(1-rf_tmp);
-                    this._model.Pi_3[k+1][i] = flux*ri_tmp;
-
-                    // Reste a modifier proportion neige/eau comme ci-dessus
-                    C_star = 2.4e4 * (1-rf_tmp)+2.4e4*80*rf_tmp;
-                    mevap = C_star*((this._model.T[k][i]-Model.T00)/(0.5*(Math.sqrt(P_tot_save)+Math.sqrt(P_tot))))
-                        *(1/this._model.p[k_tilde][i]-1/this._model.p[k_tilde1][i]);
-                    ri = ri_tmp - mevap*(P_tot-P_tot_save);
-                    ri *= ri;
-                    rf = rf_tmp - mevap*(P_tot-P_tot_save);
-                    rf *= rf;
-
-                    // On ne peut pas fondre ou geler plus que 100% 
-                    if (ri>1) ri = 1;
-                    if (ri<0) ri = 0;
-                    if (rf>1) rf = 1;
-                    if (rf<0) rf = 0;
-                }
-
-                // Flux final, élimine toute erreur en tronquant le négatif
-                if (P_tot<0.0) P_tot = 0.0;
-                this._model.Pl[k+1][i] = (1-ri)*P_tot;
-                this._model.Pi[k+1][i] = ri*P_tot;
             }
-        }        
+        }
     }
 }

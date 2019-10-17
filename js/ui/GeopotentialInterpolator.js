@@ -28,17 +28,17 @@ export var GeopotentialInterpolator = function ()
     
 GeopotentialInterpolator.prototype.heightToModel = function(g500, phi)
 {
-    for (var i=0;i<g500.length;i++)
+    for (var i=0;i<g500.data.length;i++)
     {
-        phi[i] = Model.g*g500[i];
+        phi.data[i] = Model.g*g500.data[i];
     }
 }
 
 GeopotentialInterpolator.prototype.modelToHeight = function(phi, g500)
 {
-    for (var i=0;i<phi.length;i++)
+    for (var i=0;i<phi.data.length;i++)
     {
-         g500[i] = phi[i]/Model.g;
+         g500.data[i] = phi.data[i]/Model.g;
     }
 }
 

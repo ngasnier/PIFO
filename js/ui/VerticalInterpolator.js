@@ -31,34 +31,37 @@ export var VerticalInterpolator = function ()
 
 VerticalInterpolator.prototype.interp = function(vin, vout)
 {
-    var i = 0;
+    var i = 0, j = 0;
     var p = 0;
     var pa, pb;
     var found = false;
     for (var k=0;k<this.sigmaLevels.length;k++)
     {
-        for(var i=0;i<vout[k].length;i++)
+        for (var j=0;j<vout.height;j++)
         {
-            p = this.sigmaLevels[k] * this.surfacePressure[i];
+            for(var i=0;i<vout.width;i++)
+            {
+                p = this.sigmaLevels[k] * this.surfacePressure.get2(i,j);
 
-            found = false;
-            for (var l=1;l<this.inputLevels.length;l++)
-            {
-                pa = this.inputLevels[l-1];
-                pb = this.inputLevels[l];
-                if (p>=pa && p<pb)
-                {                               
-                    vout[k][i] = vin[l-1][i]+(p-pa)*(vin[l][i]-vin[l-1][i])/(pb-pa);
-                    found = true;
-                    break;
+                found = false;
+                for (var l=1;l<this.inputLevels.length;l++)
+                {
+                    pa = this.inputLevels[l-1];
+                    pb = this.inputLevels[l];
+                    if (p>=pa && p<pb)
+                    {                               
+                        vout.set3(i, j, k, vin.get3(i,j,l-1)+(p-pa)*(vin.get3(i,j,l)-vin.get3(i,j,l-1))/(pb-pa));
+                        found = true;
+                        break;
+                    }
                 }
-            }
-            if (!found)
-            {
-                if (p<this.inputLevels[0])
-                    vout[k][i] = vin[0][i];
-                else
-                    vout[k][i] = vin[this.inputLevels.length-1][i];
+                if (!found)
+                {
+                    if (p<this.inputLevels[0])
+                        vout.set3(i, j, k, vin.get3(i,j,0));
+                    else
+                        vout.set3(i, j, k, vin.get3(i,j,this.inputLevels.length-1));
+                }
             }
         }
     }
@@ -68,29 +71,32 @@ VerticalInterpolator.prototype.modelToPressureLevel = function(vin, pressure, vo
 {
     var s, geop, sa, sb;
     var found = false;
-    for(var i=0;i<vout.length;i++)
+    for (var j=0;j<vout.height;j++)
     {
-        s = pressure / this.surfacePressure[i];
-        geop = 0;
-        found = false;
-        for (var z=1;z<vin.length;z++)
+        for(var i=0;i<vout.width;i++)
         {
-            sa = this.sigmaLevels[z-1];
-            sb = this.sigmaLevels[z];
-            if (s>=sa && s<sb)
+            s = pressure / this.surfacePressure.get2(i,j);
+            geop = 0;
+            found = false;
+            for (var z=1;z<vin.nbLevels;z++)
             {
-                geop = vin[z-1][i]+(s-sa)*(vin[z][i]-vin[z-1][i])/(sb-sa);
-                found=true;
-                break;
+                sa = this.sigmaLevels[z-1];
+                sb = this.sigmaLevels[z];
+                if (s>=sa && s<sb)
+                {
+                    geop = vin.get3(i,j,z-1)+(s-sa)*(vin.get3(i,j,z)-vin.get3(i,j,z-1))/(sb-sa);
+                    found=true;
+                    break;
+                }
             }
+            if (!found)
+            {
+                if (s<=this.sigmaLevels[0])
+                    geop = vin.get3(i,j,0);
+                else
+                    geop = vin.get3(i,j,vin.nbLevels-1);
+            }
+            vout.set2(i, j, geop);
         }
-        if (!found)
-        {
-            if (s<=this.sigmaLevels[0])
-                geop = vin[0][i];
-            else
-                geop = vin[vin.length-1][i];
-        }
-        vout[i] = geop;
     }
 }
