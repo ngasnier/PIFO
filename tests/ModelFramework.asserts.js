@@ -447,17 +447,17 @@ test('Barotrope - tests fonctionnement basiques', () => {
         expect(initialized).toBe(true);
         
         // 10-11 Les coordonnées du coint haut gauche du domaine
-        expect(model.getVariable("latitudes")[0]).toBeCloseTo(horizontalDomain.maxLat);
-        expect(model.getVariable("longitudes")[0]).toBeCloseTo(horizontalDomain.minLon);
+        expect(model.getVariable("latitudes").get2(0, 0)).toBeCloseTo(horizontalDomain.maxLat);
+        expect(model.getVariable("longitudes").get2(0,0)).toBeCloseTo(horizontalDomain.minLon);
         // 12-13 Coin haut droit
-        expect(model.getVariable("latitudes")[model.width-1]).toBeCloseTo(horizontalDomain.maxLat);
-        expect(model.getVariable("longitudes")[model.width-1]).toBeCloseTo(horizontalDomain.maxLon-1);
+        expect(model.getVariable("latitudes").get2(model.width-1, 0)).toBeCloseTo(horizontalDomain.maxLat);
+        expect(model.getVariable("longitudes").get2(model.width-1, 0)).toBeCloseTo(horizontalDomain.maxLon-1);
         // 14-15 Coin bas droit
         var [dx, dy] = model.projection.getMeshSize();
         var [x, y] = model.projection.latLonToXY(horizontalDomain.minLat, horizontalDomain.maxLon);
         var [lat, lon] = model.projection.xyToLatLon(x-dx, y+dy);
-        expect(model.getVariable("latitudes")[model.width*model.height-1]).toBeCloseTo(lat);
-        expect(model.getVariable("longitudes")[model.width*model.height-1]).toBeCloseTo(lon);
+        expect(model.getVariable("latitudes").get2(model.width-1, model.height-1)).toBeCloseTo(lat);
+        expect(model.getVariable("longitudes").get2(model.width-1, model.height-1)).toBeCloseTo(lon);
         
         // **** On teste un premier pas de temps ****
         // 16 Calcul d'un premier pas de temps
@@ -532,10 +532,10 @@ test('Barotrope - initialisation coriolis et scaling factor', () => {
         model.projection.getScaleFactors(model.getVariable("latitudes"), model.getVariable("longitudes"), m);
 
         // 1 Facteur d'échelle NO
-        expect(m[0]).toBeCloseTo(6.392453221499659);
+        expect(m.get2(0,0)).toBeCloseTo(6.392453221499659);
         
         // 2 Facteur d'échelle SE
-        expect(m[m.length-1]).toBeCloseTo(1.0182663877131644);
+        expect(m.get2(m.width-1, m.height-1)).toBeCloseTo(1.0182663877131644);
        
         // Vérifie le facteur de coriolis
         var f = model.getVariable("f");
@@ -546,10 +546,10 @@ test('Barotrope - initialisation coriolis et scaling factor', () => {
         earth.getCoriolisFactors(lats, f);
 
         // 3 Facteur NO
-        expect(f[0]).toBeCloseTo(0.00014398666634958814, 8);
+        expect(f.get2(0,0)).toBeCloseTo(0.00014398666634958814, 8);
         
         // 4 Facteur SE
-        expect(f[f.length-1]).toBeCloseTo(0.00002516423152187653, 8);
+        expect(f.get2(f.width-1, f.height-1)).toBeCloseTo(0.00002516423152187653, 8);
                 
         // 5-9 Les calculs doivent fonctionner
         model.step();
@@ -596,14 +596,14 @@ test('Barotrope - condition aux limites', () => {
         // 3 Quelques tests de valeurs des bordures...
         var alpha = model.getVariable("alpha_couplage");
         expect([
-            alpha[0], alpha[model.width-1], alpha[model.width*(model.height-1)], alpha[model.width*model.height-1],
-            alpha[1+model.width], alpha[model.width-2+model.width], alpha[1+model.width*(model.height-2)], alpha[model.width-2+model.width*(model.height-2)],
+            alpha.get2(0,0), alpha.get2(model.width-1,0), alpha.get2(model.width-1, model.height-1), alpha.get2(0, model.height-1),
+            alpha.get2(1,1), alpha.get2(model.width-2,1), alpha.get2(model.width-2, model.height-2), alpha.get2(1, model.height-2),
             
-            alpha[8+Math.floor(model.height/2)*model.width], alpha[model.width-9 + model.width*Math.floor(model.height/2)], 
-            alpha[Math.floor(model.width/2)+model.width*8], alpha[Math.floor(model.width/2)+model.width*(model.height-9)],
+            alpha.get2(8, Math.floor(model.height/2)), alpha.get2(model.width-9, Math.floor(model.height/2)), 
+            alpha.get2(Math.floor(model.width/2),8), alpha.get2(Math.floor(model.width/2), model.height-9),
             
-            alpha[8+8*model.width], alpha[model.width-9+model.width*8], alpha[8+model.width*(model.height-9)], alpha[model.width-9+model.width*(model.height-9)],
-            alpha[9+9*model.width], alpha[model.width-10+model.width*9], alpha[9+model.width*(model.height-10)], alpha[model.width-10+model.width*(model.height-10)],
+            alpha.get2(8, 8), alpha.get2(model.width-9, 8), alpha.get2(8, model.height-9), alpha.get2(model.width-9, model.height-9),
+            alpha.get2(9, 9), alpha.get2(model.width-10, 9), alpha.get2(9, model.height-10), alpha.get2(model.width-10, model.height-10),
         ]).arrayBeCloseTo([
             1, 1, 1, 1,
             0.5378828427399902, 0.5378828427399902, 0.5378828427399902, 0.5378828427399902,
@@ -620,10 +620,10 @@ test('Barotrope - condition aux limites', () => {
         
         alpha = model.getVariable("U");
         expect([
-            alpha[0], alpha[model.width-1], alpha[model.width*(model.height-1)], alpha[model.width*model.height-1],
-            alpha[1+model.width], alpha[model.width-2+model.width], alpha[1+model.width*(model.height-2)], alpha[model.width-2+model.width*(model.height-2)],
-            alpha[8+8*model.width], alpha[model.width-9+model.width*8], alpha[8+model.width*(model.height-9)], alpha[model.width-9+model.width*(model.height-9)],
-            alpha[9+9*model.width], alpha[model.width-10+model.width*9], alpha[9+model.width*(model.height-10)], alpha[model.width-10+model.width*(model.height-10)],
+            alpha.get2(0,0), alpha.get2(model.width-1,0), alpha.get2(model.width-1, model.height-1), alpha.get2(0, model.height-1),
+            alpha.get2(1,1), alpha.get2(model.width-2,1), alpha.get2(model.width-2, model.height-2), alpha.get2(1, model.height-2),
+            alpha.get2(8, 8), alpha.get2(model.width-9, 8), alpha.get2(8, model.height-9), alpha.get2(model.width-9, model.height-9),
+            alpha.get2(9, 9), alpha.get2(model.width-10, 9), alpha.get2(9, model.height-10), alpha.get2(model.width-10, model.height-10),
         ]).arrayBeCloseTo([
             1, 1, 1, 1,
             0.5378828427399902, 0.5378828427399902, 0.5378828427399902, 0.5378828427399902,
@@ -633,10 +633,10 @@ test('Barotrope - condition aux limites', () => {
         
         alpha = model.getVariable("V");
         expect([
-            alpha[0], alpha[model.width-1], alpha[model.width*(model.height-1)], alpha[model.width*model.height-1],
-            alpha[1+model.width], alpha[model.width-2+model.width], alpha[1+model.width*(model.height-2)], alpha[model.width-2+model.width*(model.height-2)],
-            alpha[8+8*model.width], alpha[model.width-9+model.width*8], alpha[8+model.width*(model.height-9)], alpha[model.width-9+model.width*(model.height-9)],
-            alpha[9+9*model.width], alpha[model.width-10+model.width*9], alpha[9+model.width*(model.height-10)], alpha[model.width-10+model.width*(model.height-10)],
+            alpha.get2(0,0), alpha.get2(model.width-1,0), alpha.get2(model.width-1, model.height-1), alpha.get2(0, model.height-1),
+            alpha.get2(1,1), alpha.get2(model.width-2,1), alpha.get2(model.width-2, model.height-2), alpha.get2(1, model.height-2),
+            alpha.get2(8, 8), alpha.get2(model.width-9, 8), alpha.get2(8, model.height-9), alpha.get2(model.width-9, model.height-9),
+            alpha.get2(9, 9), alpha.get2(model.width-10, 9), alpha.get2(9, model.height-10), alpha.get2(model.width-10, model.height-10),
         ]).arrayBeCloseTo([
             1, 1, 1, 1,
             0.5378828427399902, 0.5378828427399902, 0.5378828427399902, 0.5378828427399902,
@@ -646,10 +646,10 @@ test('Barotrope - condition aux limites', () => {
         
         alpha = model.getVariable("phi");
         expect([
-            alpha[0], alpha[model.width-1], alpha[model.width*(model.height-1)], alpha[model.width*model.height-1],
-            alpha[1+model.width], alpha[model.width-2+model.width], alpha[1+model.width*(model.height-2)], alpha[model.width-2+model.width*(model.height-2)],
-            alpha[8+8*model.width], alpha[model.width-9+model.width*8], alpha[8+model.width*(model.height-9)], alpha[model.width-9+model.width*(model.height-9)],
-            alpha[9+9*model.width], alpha[model.width-10+model.width*9], alpha[9+model.width*(model.height-10)], alpha[model.width-10+model.width*(model.height-10)],
+            alpha.get2(0,0), alpha.get2(model.width-1,0), alpha.get2(model.width-1, model.height-1), alpha.get2(0, model.height-1),
+            alpha.get2(1,1), alpha.get2(model.width-2,1), alpha.get2(model.width-2, model.height-2), alpha.get2(1, model.height-2),
+            alpha.get2(8, 8), alpha.get2(model.width-9, 8), alpha.get2(8, model.height-9), alpha.get2(model.width-9, model.height-9),
+            alpha.get2(9, 9), alpha.get2(model.width-10, 9), alpha.get2(9, model.height-10), alpha.get2(model.width-10, model.height-10),
         ]).arrayBeCloseTo([
             1, 1, 1, 1,
             0.5378828427399902, 0.5378828427399902, 0.5378828427399902, 0.5378828427399902,
@@ -759,11 +759,11 @@ test('Préprocesseur - barotrope', () => {
                             var f_res = await ds_res.getField("f", 0);
                             var m_res = await ds_res.getField("m", 0);
 
-                            expect(u_res).arrayBeCloseTo(u_orig, 0.00001);
-                            expect(v_res).arrayBeCloseTo(v_orig, 0.00001);
-                            expect(phi_res).arrayBeCloseTo(phi_orig, 0.00001);
-                            expect(f_res).arrayBeCloseTo(f_orig, 0.000000001);
-                            expect(m_res).arrayBeCloseTo(m_orig, 0.00001);
+                            expect(u_res.data).arrayBeCloseTo(u_orig.data, 0.00001);
+                            expect(v_res.data).arrayBeCloseTo(v_orig.data, 0.00001);
+                            expect(phi_res.data).arrayBeCloseTo(phi_orig.data, 0.00001);
+                            expect(f_res.data).arrayBeCloseTo(f_orig.data, 0.000000001);
+                            expect(m_res.data).arrayBeCloseTo(m_orig.data, 0.00001);
 
                             return "OK";
                         }
@@ -851,11 +851,11 @@ test('Run - barotrope', () => {
                             var f_res = await ds_res.getField("f", 1);
                             var m_res = await ds_res.getField("m", 1);
 
-                            expect(u_res).arrayBeCloseTo(u_orig, 0.00001);
-                            expect(v_res).arrayBeCloseTo(v_orig, 0.00001);
-                            expect(phi_res).arrayBeCloseTo(phi_orig, 0.00001);
-                            expect(f_res).arrayBeCloseTo(f_orig, 0.000000001);
-                            expect(m_res).arrayBeCloseTo(m_orig, 0.00001);
+                            expect(u_res.data).arrayBeCloseTo(u_orig.data, 0.00001);
+                            expect(v_res.data).arrayBeCloseTo(v_orig.data, 0.00001);
+                            expect(phi_res.data).arrayBeCloseTo(phi_orig.data, 0.00001);
+                            expect(f_res.data).arrayBeCloseTo(f_orig.data, 0.000000001);
+                            expect(m_res.data).arrayBeCloseTo(m_orig.data, 0.00001);
 
                             return "OK";
                         }

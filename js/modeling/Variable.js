@@ -112,6 +112,40 @@ export class Variable
         }
     }
     
+    setLevelFromVariable(k, v)
+    {
+        var x = this.data;
+        var idx3 = 0;
+        var idx2 = 0;
+        for(var j=0;j<this.height;j++)
+        {
+            for(var i=0;i<this.width;i++)
+            {
+                idx3 = this.idx3(i, j, k);
+                idx2 = this.idx2(i, j);
+                x[idx3] = v.data[idx2];
+            }
+        }
+    }
+    
+    copyLevel(k, variable)
+    {
+        var buffer = new ArrayBuffer(this.width*this.height * 8);
+        var v = variable.data;
+        var x = this.data;
+        var idx3 = 0;
+        var idx2 = 0;
+        for(var j=0;j<this.height;j++)
+        {
+            for(var i=0;i<this.width;i++)
+            {
+                idx3 = this.idx3(i, j, k);
+                idx2 = this.idx2(i, j);
+                v[idx2] = x[idx3];
+            }
+        }
+    }
+    
     getLevel(k)
     {
         var buffer = new ArrayBuffer(this.width*this.height * 8);
@@ -172,7 +206,7 @@ export class Variable
      */
     clone()
     {
-        var c = new Variable(this.nbLev, this.width, this.height);
+        var c = new Variable(this.nbLevels, this.width, this.height);
         this.copy(c);
 
         var a = this;

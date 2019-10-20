@@ -136,24 +136,36 @@ export class ProjectionComponent extends Component {
                 throw `${this.name} : invalid type for parameter 'numberType'. `;
 
             // Projection de la variable
-            if (variable_in.nbLevels>0)
+            if (variable_in.nbLevels>1)
             {
                 if (this.sourceDomain!=null)
                 {
+                    var level_in = Variable.createVariable(1, this.sourceDomain.width, this.sourceDomain.height);
+                    var level_out = Variable.createVariable(1, this.projection.width, this.projection.height);
+                    var level_sec = variable_sec ? Variable.createVariable(1, this.sourceDomain.width, this.sourceDomain.height):null;
                     variable_out = Variable.createVariable(variable_in.nbLevels, this.projection.width, this.projection.height, true);
                     for (var k=0;k<variable_in.nbLevels;k++)
                     {
+                        variable_in.copyLevel(k, level_in);
+                        if (variable_sec!=null) variable_sec.copyLevel(k, level_sec);
                         this.projection.interpLatLonGridToDomain(
-                            this.sourceDomain, variable_in[k], variable_out[k], offsetx, offsety, scale, numberType, variable_sec!=null ? variable_sec[k] : null);
+                            this.sourceDomain, level_in, level_out, offsetx, offsety, scale, numberType);
+                        variable_out.setLevelFromVariable(k, level_out);
                     }
                 }
                 else if (this.destinationDomain!=null)
                 {
+                    var level_in = Variable.createVariable(1, this.projection.width, this.projection.height);
+                    var level_out = Variable.createVariable(1, this.destinationDomain.width, this.destinationDomain.height);
+                    var level_sec = variable_sec ? Variable.createVariable(1, this.projection.width, this.projection.height):null;
                     variable_out = Variable.createVariable(variable_in.nbLevels, this.destinationDomain.width, this.destinationDomain.height, true);
                     for (var k=0;k<variable_in.nbLevels;k++)
                     {
+                        variable_in.copyLevel(k, level_in);
+                        if (variable_sec!=null) variable_sec.copyLevel(k, level_sec);
                         this.projection.interpDomainToLatLon(
-                            this.destinationDomain, variable_in[k], variable_out[k], offsetx, offsety, scale, numberType, variable_sec!=null ? variable_sec[k]: null, offsetx2, offsety2);
+                            this.destinationDomain, level_in, level_out, offsetx, offsety, scale, numberType, level_sec, offsetx2, offsety2);
+                        variable_out.setLevelFromVariable(k, level_out);
                     }
                 }
                 else
@@ -181,7 +193,7 @@ export class ProjectionComponent extends Component {
                 }
             }
 
-            Variable.copyMetadata(variable_in, variable_out);
+            variable_in.copyMetadata(variable_out);
             variable_out.offsetx = offsetx;
             variable_out.offsety = offsety;
             variable_out.scale = scale;

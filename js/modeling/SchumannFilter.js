@@ -69,74 +69,58 @@ export class SchumannFilter extends SpatialFilter {
             if (variables[v].category==VariableDescription.CAT_PRONOSTIC)
             {
                 var x = this.model.getVariable(variables[v].name);
-                if (x.length>0 && (x[0].constructor===Array || x[0].constructor===Float64Array))
-                {    
-                    // 3D
-                    var k = 0;
-                    for (var k=0;k<x.length;k++)
-                    {
-                        this._filter2D(x[k]);
-                    }
-                }
-                else
+                var k = 0;
+                for (var k=0;k<x.length;k++)
                 {
-                    // 2D
-                    this._filter2D(x);
+                    this._filter2D(x[k], k);
                 }
             }
         }
     }
     
-    _filter2D(a)
+    _filter2D(a, k)
     {
         // TODO : enregistrer cette variable dans l'init et l'allouer
         var tmp = this.model.getVariable("schumann_tmp");
-        this._filtre2DMoyenneX(a, 0.5, tmp);
-        this._filtre2DMoyenneX(tmp, -0.5, a);
+        this._filtre2DMoyenneX(a, 0.5, tmp, k);
+        this._filtre2DMoyenneX(tmp, -0.5, a, k);
 
-        this._filtre2DMoyenneY(a, 0.5, tmp);
-        this._filtre2DMoyenneY(tmp, 0.5, a);
+        this._filtre2DMoyenneY(a, 0.5, tmp, k);
+        this._filtre2DMoyenneY(tmp, 0.5, a, k);
     }
 
-    _filtre2DMoyenneX(a, v, res)
+    _filtre2DMoyenneX(a, v, res, k)
     {
         var width = this.model.width;
         var height = this.model.height;
-        for (var y=0;y<height;y++)
+        for (var j=0;j<height;j++)
         {
-            var i = y*width;
-            res[i] = a[i];
-            for(var x=1;x<width-1;x++)
+            res.set3(0, j, k, a.get3(0, j, k));
+            for(var i=1;i<width-1;i++)
             {
-                var i = x+y*width;
-                res[i] = a[i]*(1-v)+(a[i+1]+a[i-1])*v/2;
+                res.set3(i, j, k, a.get3(i, j, k)*(1-v)+(a.get3(i+1, j, k)+a.get3(i-1, j, k))*v/2);
             }
-            i = width-1+y*width;
-            res[i] = a[i];
+            res.set3(width-1, j, k, a.get3(width-1, j, k));
         }
     }
 
-    _filtre2DMoyenneY(a, v, res)
+    _filtre2DMoyenneY(a, v, res, k)
     {
         var width = this.model.width;
         var height = this.model.height;
-        for (var x=0;x<width;x++)
+        for (var i=0;i<width;i++)
         {
-            var i = x+width*(height-1);
-            res[x] = a[x];
-            res[i] = a[i];
+            res.set3(i, 0, k, a.get3(i, 0, k));
+            res.set3(i, height-1, k, a.get3(i, height-1, k));
         }
-        for (var y=1;y<height-1;y++)
+        for (var j=1;j<height-1;j++)
         {
-            var i = y*width;
-            res[i] = a[i];
-            for(var x=1;x<width-1;x++)
+            res.set3(0, j, k, a.get3(0, j, k));
+            for(var i=1;i<width-1;i++)
             {
-                var i = x+y*width;
-                res[i] = a[i]*(1-v)+(a[i+width]+a[i-width])*v/2;
+                res.set3(i, j, k, a.get3(i,j,k)*(1-v)+(a.get3(i,j+1,k)+a.get3(i,j-1,k))*v/2);
             }
-            i = width-1+y*width;
-            res[i] = a[i];
+            res.set3(width-1, j, k, a.get3(width-1, j, k));
         }
     }
 }

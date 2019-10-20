@@ -64,48 +64,22 @@ export class ArithmeticComponent extends Component {
                     Variable.mulConst(data, 1/this.value, data);
                     break;
                 case "log":
-                    if (data_in.nbLevels>0)
+                    for (var i=0;i<input_var.data.length;i++)
                     {
-                        for (var k=0;k<input_var.nbLevels;k++)
-                        {
-                            for (var i=0;i<input_var[k].length;i++)
-                            {
-                                data[k][i] = Math.log(input_var[k][i]);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        for (var i=0;i<input_var.length;i++)
-                        {
-                            data[i] = Math.log(input_var[i]);
-                        }
+                        data.data[i] = Math.log(input_var.data[i]);
                     }
                     break;
                 case "exp":
-                    if (input_var.nbLevels>0)
+                    for (var i=0;i<input_var.data.length;i++)
                     {
-                        for (var k=0;k<input_var.nbLevels;k++)
-                        {
-                            for (var i=0;i<input_var[k].length;i++)
-                            {
-                                data[k][i] = Math.exp(input_var[k][i]);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        for (var i=0;i<input_var.length;i++)
-                        {
-                            data[i] = Math.exp(input_var[i]);
-                        }
+                        data.data[i] = Math.exp(input_var.data[i]);
                     }
                     break;
                 default:
                     throw `${this.name} : invalid operation '${this.operation}'`;
             }
             
-            Variable.copyMetadata(input_var, data);
+            input_var.copyMetadata(data);
             
             data_out["main"].setData(data);
 

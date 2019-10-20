@@ -365,9 +365,9 @@ export class Grid {
         var c1 = Matrix.createMatrix(4, 4);
         var i00, i10, i01, i11;
         
-        this.calcDx(x, y, data_in, dx, cyclic);
-        this.calcDy(x, y, data_in, dy);
-        this.calcDy(x, y, dx, dxy);
+        this.calcDx(x, y, data_in, dx.data, cyclic);        
+        this.calcDy(x, y, data_in, dy.data);
+        this.calcDy(x, y, dx.data, dxy.data);
 
         // Itere sur chaque domaine carré
         var ii, jj, tmp;
@@ -402,10 +402,10 @@ export class Grid {
                 }
                                 
                 var f = [
-                    [data_in[i00], data_in[i10], dx[i00], dx[i10]], 
-                    [data_in[i01], data_in[i11], dx[i01], dx[i11]],
-                    [dy[i00], dy[i10], dxy[i00], dxy[i10]],
-                    [dy[i01], dy[i11], dxy[i01], dxy[i11]]
+                    [data_in[i00], data_in[i10], dx.data[i00], dx.data[i10]], 
+                    [data_in[i01], data_in[i11], dx.data[i01], dx.data[i11]],
+                    [dy.data[i00], dy.data[i10], dxy.data[i00], dxy.data[i10]],
+                    [dy.data[i01], dy.data[i11], dxy.data[i01], dxy.data[i11]]
                 ];
 
                 var c = Matrix.createMatrix(4, 4);

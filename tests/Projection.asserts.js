@@ -102,7 +102,7 @@ test('projection mercator interpolations', () => {
     {
         for (var lon=latLonDomain1.minLon;lon<=latLonDomain1.maxLon;lon+=latLonDomain1.dlon,i++)
         {
-            data_in[i] = Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180);
+            data_in.data[i] = Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180);
         }
     }
     
@@ -113,19 +113,19 @@ test('projection mercator interpolations', () => {
     // *** Premier test sans offset
     projection.interpLatLonGridToDomain(latLonDomain1, data_in, data_proj, 0, 0, false, Variable.NUMBER_TYPE_SCALAR);
     // Validité de la valeur du coin haut gauche
-    expect(data_proj[0]).toBeCloseTo(Math.sin(Math.PI*mercatorProjectionDomain.maxLat/180)+Math.cos(Math.PI*mercatorProjectionDomain.minLon/180), 5);   
+    expect(data_proj.get2(0, 0)).toBeCloseTo(Math.sin(Math.PI*mercatorProjectionDomain.maxLat/180)+Math.cos(Math.PI*mercatorProjectionDomain.minLon/180), 5);   
     // Validité du coin haut droit
     var [x, y] = projection.latLonToXY(mercatorProjectionDomain.maxLat, mercatorProjectionDomain.maxLon);
     [lat, lon] = projection.xyToLatLon(x-dx, y);
-    expect(data_proj[mercatorProjectionDomain.width-1]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 5);   
+    expect(data_proj.get2(mercatorProjectionDomain.width-1, 0)).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 5);   
     // Validité du coin bas droit
     [x, y] = projection.latLonToXY(mercatorProjectionDomain.minLat, mercatorProjectionDomain.maxLon);
     [lat, lon] = projection.xyToLatLon(x-dx, y+dy);
-    expect(data_proj[mercatorProjectionDomain.width*(mercatorProjectionDomain.height-1)+mercatorProjectionDomain.width-1]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180));
+    expect(data_proj.get2(mercatorProjectionDomain.width-1, mercatorProjectionDomain.height-1)).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180));
     // Validité du coin bas gauche
     [x, y] = projection.latLonToXY(mercatorProjectionDomain.minLat, mercatorProjectionDomain.minLon);
     [lat, lon] = projection.xyToLatLon(x, y+dy);
-    expect(data_proj[mercatorProjectionDomain.width*(mercatorProjectionDomain.height-1)]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180));
+    expect(data_proj.get2(0, mercatorProjectionDomain.height-1)).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180));
 
 
     // *** Second test avec offset x
@@ -133,38 +133,38 @@ test('projection mercator interpolations', () => {
     // Validité de la valeur du coin haut gauche
     [x, y] = projection.latLonToXY(mercatorProjectionDomain.maxLat, mercatorProjectionDomain.minLon);
     [lat, lon] = projection.xyToLatLon(x+dx/2, y);
-    expect(data_proj[0]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 3);
+    expect(data_proj.get2(0, 0)).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 3);
     // Validité du coin haut droit
     [x, y] = projection.latLonToXY(mercatorProjectionDomain.maxLat, mercatorProjectionDomain.maxLon);
     [lat, lon] = projection.xyToLatLon(x-dx/2, y);
-    expect(data_proj[mercatorProjectionDomain.width-1]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 3);
+    expect(data_proj.get2(mercatorProjectionDomain.width-1, 0)).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 3);
     // Validité du coin bas droit
     [x, y] = projection.latLonToXY(mercatorProjectionDomain.minLat, mercatorProjectionDomain.maxLon);
     [lat, lon] = projection.xyToLatLon(x-dx/2, y+dy);
-    expect(data_proj[mercatorProjectionDomain.width*(mercatorProjectionDomain.height-1)+mercatorProjectionDomain.width-1]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180));
+    expect(data_proj.get2(mercatorProjectionDomain.width-1, mercatorProjectionDomain.height-1)).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180));
     // Validité du coin bas gauche
     [x, y] = projection.latLonToXY(mercatorProjectionDomain.minLat, mercatorProjectionDomain.minLon);
     [lat, lon] = projection.xyToLatLon(x+dx/2, y+dy);
-    expect(data_proj[mercatorProjectionDomain.width*(mercatorProjectionDomain.height-1)]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180));
+    expect(data_proj.get2(0, mercatorProjectionDomain.height-1)).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180));
 
     // *** Second test avec offset y
     projection.interpLatLonGridToDomain(latLonDomain1, data_in, data_proj, 0, 1, false, Variable.NUMBER_TYPE_SCALAR);
     // Validité de la valeur du coin haut gauche
     [x, y] = projection.latLonToXY(mercatorProjectionDomain.maxLat, mercatorProjectionDomain.minLon);
     [lat, lon] = projection.xyToLatLon(x, y-dy/2);
-    expect(data_proj[0]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 3);   
+    expect(data_proj.get2(0, 0)).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 3);   
     // Validité du coin haut droit
     [x, y] = projection.latLonToXY(mercatorProjectionDomain.maxLat, mercatorProjectionDomain.maxLon);
     [lat, lon] = projection.xyToLatLon(x-dx, y-dy/2);
-    expect(data_proj[mercatorProjectionDomain.width-1]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 3);
+    expect(data_proj.get2(mercatorProjectionDomain.width-1, 0)).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 3);
     // Validité du coin bas droit
     [x, y] = projection.latLonToXY(mercatorProjectionDomain.minLat, mercatorProjectionDomain.maxLon);
     [lat, lon] = projection.xyToLatLon(x-dx, y+dy/2);
-    expect(data_proj[mercatorProjectionDomain.width*(mercatorProjectionDomain.height-1)+mercatorProjectionDomain.width-1]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180));
+    expect(data_proj.get2(mercatorProjectionDomain.width-1, mercatorProjectionDomain.height-1)).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180));
     // Validité du coin bas gauche
     [x, y] = projection.latLonToXY(mercatorProjectionDomain.minLat, mercatorProjectionDomain.minLon);
     [lat, lon] = projection.xyToLatLon(x, y+dy/2);
-    expect(data_proj[mercatorProjectionDomain.width*(mercatorProjectionDomain.height-1)]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180));
+    expect(data_proj.get2(0, mercatorProjectionDomain.height-1)).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180));
 
     // *** Test avec scaling
     projection.interpLatLonGridToDomain(latLonDomain1, data_in, data_proj, 0, 1, true, Variable.NUMBER_TYPE_V_VECTOR);
@@ -172,13 +172,12 @@ test('projection mercator interpolations', () => {
     [lat, lon] = projection.xyToLatLon(x, y);
     var m = projection.scaleFactor(lat, lon);
     [lat, lon] = projection.xyToLatLon(x, y-dy/2);
-    expect(data_proj[0]).toBeCloseTo((Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180))/m, 5);
+    expect(data_proj.get2(0,0)).toBeCloseTo((Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180))/m, 5);
     
     
     // ***************** TEST PROJECTION DOMAINE VER LAT/LON *****************
     // Commence par créer une donnée projetée (ce code est validé plus haut)
     projection.interpLatLonGridToDomain(latLonDomain1, data_in, data_proj, 0, 0, false, Variable.NUMBER_TYPE_SCALAR);
-    
     // *** Projection sans 
     var outputDomain1 = new LatLonDomain();
     Object.assign(outputDomain1, outputDomain);
@@ -186,15 +185,15 @@ test('projection mercator interpolations', () => {
     // Validité du coin haut gauche
     lat = outputDomain1.maxLat;
     lon = outputDomain1.minLon;
-    expect(data_out[0]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 5);
+    expect(data_out.get2(0, 0)).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 5);
     // Validité du coin haut droit
     lat = outputDomain1.maxLat;
     lon = outputDomain1.maxLon-outputDomain1.dlon; // faudrait faire par rapport à x, y mais sur cette proj ok
-    expect(data_out[out_width-1]).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 3);
+    expect(data_out.get2(out_width-1,0)).toBeCloseTo(Math.sin(Math.PI*lat/180)+Math.cos(Math.PI*lon/180), 3);
     // Validité du coin bas droit - les tableaux doivent correspondre
-    expect(data_out[out_width*out_height-1]).toBeCloseTo(data_proj[mercatorProjectionDomain.width*mercatorProjectionDomain.height-1], 3);
+    expect(data_out.get2(out_width-1, out_height-1)).toBeCloseTo(data_proj.get2(mercatorProjectionDomain.width-1, mercatorProjectionDomain.height-1), 3);
     // Validité du coin bas gauche - les tableaux doivent correspondre
-    expect(data_out[out_width*(out_height-1)]).toBeCloseTo(data_proj[mercatorProjectionDomain.width*(mercatorProjectionDomain.height-1)], 3);
+    expect(data_out.get2(0, out_height-1)).toBeCloseTo(data_proj.get2(0, mercatorProjectionDomain.height-1), 3);
 });
 
 test('projection mercator calcLatitutesLongitudes', () => {
@@ -206,16 +205,16 @@ test('projection mercator calcLatitutesLongitudes', () => {
    
     projection.calcLatitudesLongitudes(0, 0, latitudes, longitudes);
     // Coin haut gauche
-    expect(latitudes[0]).toBeCloseTo(mercatorProjectionDomain.maxLat);
-    expect(longitudes[0]).toBeCloseTo(mercatorProjectionDomain.minLon);
+    expect(latitudes.get2(0,0)).toBeCloseTo(mercatorProjectionDomain.maxLat);
+    expect(longitudes.get2(0,0)).toBeCloseTo(mercatorProjectionDomain.minLon);
     // Coin haut droit
-    expect(latitudes[mercatorProjectionDomain.width-1]).toBeCloseTo(mercatorProjectionDomain.maxLat);
-    expect(longitudes[mercatorProjectionDomain.width-1]).toBeCloseTo(mercatorProjectionDomain.maxLon-1);
+    expect(latitudes.get2(mercatorProjectionDomain.width-1,0)).toBeCloseTo(mercatorProjectionDomain.maxLat);
+    expect(longitudes.get2(mercatorProjectionDomain.width-1,0)).toBeCloseTo(mercatorProjectionDomain.maxLon-1);
     // Coin bas droit
     var [x, y] = projection.latLonToXY(mercatorProjectionDomain.minLat, mercatorProjectionDomain.maxLon);
     var [lat, lon] = projection.xyToLatLon(x-dx, y+dy);
-    expect(latitudes[mercatorProjectionDomain.width*mercatorProjectionDomain.height-1]).toBeCloseTo(lat);
-    expect(longitudes[mercatorProjectionDomain.width*mercatorProjectionDomain.height-1]).toBeCloseTo(lon);
+    expect(latitudes.get2(mercatorProjectionDomain.width-1, mercatorProjectionDomain.height-1)).toBeCloseTo(lat);
+    expect(longitudes.get2(mercatorProjectionDomain.width-1, mercatorProjectionDomain.height-1)).toBeCloseTo(lon);
 });
 
 test('projection polaire', () => {

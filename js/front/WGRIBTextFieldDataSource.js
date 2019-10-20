@@ -302,7 +302,7 @@ export class WGRIBTextFieldDataSource extends DataSource {
                 this.fileInfo.name = p_data.productName;
             }
             
-            if (p_data.nbLevels>0)
+            if (p_data.nbLevels>1)
             {
                 for (var k=0;k<p_data.nbLevels;k++)
                 {

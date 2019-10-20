@@ -36,9 +36,9 @@ export class Earth
      */
     getCoriolisFactors(latitudes, f)
     {
-        for (var i=0;i<latitudes.length;i++)
+        for (var i=0;i<latitudes.data.length;i++)
         {
-            f[i] = 2 * Earth.OMEGA * Math.sin(latitudes[i]*Math.PI/180);
+            f.data[i] = 2 * Earth.OMEGA * Math.sin(latitudes.data[i]*Math.PI/180);
         }
     }
 }

@@ -103,37 +103,37 @@ export class ConformalProjection  {
         var lons = latLonParams.getLongitudes(0, 0);
         var lats = latLonParams.getLatitudes(0, 0);
        
-        var lats_out = [];
-        var lons_out = [];
+        var lats_out = Variable.createVariable(1, this.width, this.height);
+        var lons_out = Variable.createVariable(1, this.width, this.height);
         this.calcLatitudesLongitudes(offsetx, offsety, lats_out, lons_out);
-        
+
         var grid = new Grid();
         if (this.regrid=="bicubic")
-            grid.bicubicRegrid(lons, lats, data, latLonParams.cyclic, lons_out, lats_out, output);
+            grid.bicubicRegrid(lons, lats, data.data, latLonParams.cyclic, lons_out.data, lats_out.data, output.data);
         else
-            grid.bilinearRegrid(lons, lats, data, latLonParams.cyclic, lons_out, lats_out, output);
-        
-        
-        var data2_regrid = [];
+            grid.bilinearRegrid(lons, lats, data.data, latLonParams.cyclic, lons_out.data, lats_out.data, output.data);
+
+        var data2_regrid = Variable.createVariable(1, this.width, this.height);
         var scale_factor = 1;
         if (data2!=null)
         {
             if (this.regrid=="bicubic")
-                grid.bicubicRegrid(lons, lats, data2, latLonParams.cyclic, lons_out, lats_out, data2_regrid);
+                grid.bicubicRegrid(lons, lats, data2.data, latLonParams.cyclic, lons_out.data, lats_out.data, data2_regrid.data);
             else
-                grid.bilinearRegrid(lons, lats, data2, latLonParams.cyclic, lons_out, lats_out, data2_regrid);            
+                grid.bilinearRegrid(lons, lats, data2.data, latLonParams.cyclic, lons_out.data, lats_out.data, data2_regrid.data);            
         }
         if (scale)
         {
-            var lats_scale = [], lons_scale = [];
-            this.calcLatitudesLongitudes(0, 0, lats_scale, lons_scale);
-            for (var i=0;i<output.length;i++)
+            var lats_scale = Variable.createVariable(1, this.width, this.height);
+            var lons_scale = Variable.createVariable(1, this.width, this.height);
+            this.calcLatitudesLongitudes(0, 0, lats_scale, lons_scale);            
+            for (var i=0;i<output.data.length;i++)
             {
-                scale_factor = this.scaleFactor(lats_scale[i], lons_scale[i]);
-                output[i] = output[i]/scale_factor;
+                scale_factor = this.scaleFactor(lats_scale.data[i], lons_scale.data[i]);
+                output.data[i] = output.data[i]/scale_factor;
                 if (data2!=null)
                 {
-                    data2_regrid[i] = data2_regrid[i]/scale_factor;
+                    data2_regrid.data[i] = data2_regrid.data[i]/scale_factor;
                 }
             }
         }
@@ -144,15 +144,15 @@ export class ConformalProjection  {
             switch (fieldType)
             {
                 case VariableDescription.NUMBER_TYPE_U_VECTOR:
-                    for (var i=0;i<output.length;i++)
+                    for (var i=0;i<output.data.length;i++)
                     {
-                        output[i] = output[i]*Math.cos(declinations[i])+data2_regrid[i]*Math.sin(declinations[i]);
+                        output.data[i] = output.data[i]*Math.cos(declinations.data[i])+data2_regrid.data[i]*Math.sin(declinations.data[i]);
                     }
                     break;
                 case VariableDescription.NUMBER_TYPE_V_VECTOR:
                     for (var i=0;i<output.length;i++)
                     {
-                        output[i] = -data2_regrid[i]*Math.sin(declinations[i])+output[i]*Math.cos(declinations[i]);
+                        output.data[i] = -data2_regrid.data[i]*Math.sin(declinations.data[i])+output.data[i]*Math.cos(declinations.data[i]);
                     }
                     break;
             }
@@ -178,18 +178,18 @@ export class ConformalProjection  {
 
         var x_coords = this.getXCoords(offsetx, offsety);
         var y_coords = this.getYCoords(offsetx, offsety);
-    
-        var lats_out = [];
-        var lons_out = [];
+
+        var lats_out = Variable.createVariable(1, latLonParams.width, latLonParams.height);
+        var lons_out = Variable.createVariable(1, latLonParams.width, latLonParams.height);
         latLonParams.calcLatitudesLongitudes(0, 0, lats_out, lons_out);
-        
-        var x_out = [];
-        var y_out = [];
-        for (var i=0;i<lats_out.length;i++)
+
+        var x_out = Variable.createVariable(1, this.width, this.height);
+        var y_out = Variable.createVariable(1, this.width, this.height);
+        for (var i=0;i<lats_out.data.length;i++)
         {
-            [x_out[i], y_out[i]] = this.latLonToXY(lats_out[i], lons_out[i]);
+            [x_out.data[i], y_out.data[i]] = this.latLonToXY(lats_out.data[i], lons_out.data[i]);
         }
-        
+
         // Ne pas modifier les variables d'origine
         var input = Variable.clone(data_in);
         var data2_in = (data2!=null?Variable.clone(data2):null);
@@ -198,15 +198,16 @@ export class ConformalProjection  {
         var scale_factor = 1;
         if (scale)
         {
-            var lats_scale = [], lons_scale = [];
+            var lats_scale = Variable.createVariable(1, latLonParams.width, latLonParams.height);
+            var lons_scale = Variable.createVariable(1, latLonParams.width, latLonParams.height);
             this.calcLatitudesLongitudes(0, 0, lats_scale, lons_scale);
-            for (var i=0;i<input.length;i++)
+            for (var i=0;i<input.data.length;i++)
             {
-                scale_factor = this.scaleFactor(lats_scale[i], lons_scale[i]);
-                input[i] = input[i]*scale_factor;
+                scale_factor = this.scaleFactor(lats_scale.data[i], lons_scale.data[i]);
+                input.data[i] = input.data[i]*scale_factor;
                 if (data2!=null)
                 {
-                    data2_in[i] = data2_in[i]*scale_factor;
+                    data2_in.data[i] = data2_in.data[i]*scale_factor;
                 }
             }
         }       
@@ -216,23 +217,27 @@ export class ConformalProjection  {
         {
             if (offsetx2!=offsetx && offsety2!=offsety)
             {
-                var lats2 = [], lons2 = [];
+                var lats2 = Variable.createVariable(1, this.width, this.height);
+                var lons2 = Variable.createVariable(1, this.width, this.height);
                 this.calcLatitudesLongitudes(offsetx2, offsety2, lats2, lons2);
-                var x_coords2 = this.getXCoords(offsetx2, offsety2);
-                var y_coords2 = this.getYCoords(offsetx2, offsety2);
-                for (var i=0;i<lats_out.length;i++)
+                /*var x_coords2 = this.getXCoords(offsetx2, offsety2);
+                var y_coords2 = this.getYCoords(offsetx2, offsety2);*/
+                var x_coords2 = Variable.createVariable(1, this.width, this.height);
+                var y_coords2 = Variable.createVariable(1, this.width, this.height);
+                for (var i=0;i<lats_out.data.length;i++)
                 {
-                    [x_coords2[i], y_coords2[i]] = this.latLonToXY(lats2[i], lons2[i]);
+                    [x_coords2.data[i], y_coords2.data[i]] = this.latLonToXY(lats2.data[i], lons2.data[i]);
                 }
-                var data2_out = [];
+                var data2_out = Variable.createVariable(1, this.width, this.height);
                 if (this.regrid=="bicubic")
-                    grid.bicubicRegrid(x_coords2, y_coords2, data2_in, this.cyclic, x_coords2, y_coords2, data2_out);
+                    grid.bicubicRegrid(x_coords2, y_coords2, data2_in.data, this.cyclic, x_coords2.data, y_coords2.data, data2_out.data);
                 else
-                    grid.bilinearRegrid(x_coords2, y_coords2, data2_in, this.cyclic, x_coords2, y_coords2, data2_out);
+                    grid.bilinearRegrid(x_coords2, y_coords2, data2_in.data, this.cyclic, x_coords2.data, y_coords2.data, data2_out.data);
                 data2_in = data2_out;
             }
 
-            var lats = [], lons = [];
+            var lats = Variable.createVariable(1, this.width, this.height);
+            var lons = Variable.createVariable(1, this.width, this.height);
             this.calcLatitudesLongitudes(offsetx, offsety, lats, lons);
             
             var declinations = this.getDeclinations(lats, lons);
@@ -241,23 +246,23 @@ export class ConformalProjection  {
                 case VariableDescription.NUMBER_TYPE_U_VECTOR:
                     for (var i=0;i<input.length;i++)
                     {
-                        input[i] = input[i]*Math.cos(-declinations[i])+data2_in[i]*Math.sin(-declinations[i]);
+                        input.data[i] = input.data[i]*Math.cos(-declinations.data[i])+data2_in.data[i]*Math.sin(-declinations.data[i]);
                     }
                     break;
                 case VariableDescription.NUMBER_TYPE_V_VECTOR:
                     for (var i=0;i<input.length;i++)
                     {
-                        input[i] = -data2_in[i]*Math.sin(-declinations[i])+input[i]*Math.cos(-declinations[i]);
+                        input.data[i] = -data2_in.data[i]*Math.sin(-declinations.data[i])+input.data[i]*Math.cos(-declinations.data[i]);
                     }
                     break;
             }
         }
     
-        // On peut maintenant regrid le champ        
+        // On peut maintenant regrid le champ
         if (this.regrid=="bicubic")
-            grid.bicubicRegrid(x_coords, y_coords, input, this.cyclic, x_out, y_out, data_out);
+            grid.bicubicRegrid(x_coords, y_coords, input.data, this.cyclic, x_out.data, y_out.data, data_out.data);
         else
-            grid.bilinearRegrid(x_coords, y_coords, input, this.cyclic, x_out, y_out, data_out);
+            grid.bilinearRegrid(x_coords, y_coords, input.data, this.cyclic, x_out.data, y_out.data, data_out.data);
     }
 
     /**
@@ -337,9 +342,9 @@ export class ConformalProjection  {
     getScaleFactors(latitudes, longitudes, m=null)
     {
         var m_out = m;
-        if (m_out==null) m_out=[];
-        for (var i=0;i<latitudes.length;i++)
-            m_out[i] = this.scaleFactor(latitudes[i], longitudes[i]);
+        if (m_out==null) m_out=Variable.createVariable(1, this.width, this.height);
+        for (var i=0;i<latitudes.data.length;i++)
+            m_out.data[i] = this.scaleFactor(latitudes.data[i], longitudes.data[i]);
         return m_out;
     }
     
@@ -353,9 +358,9 @@ export class ConformalProjection  {
     getDeclinations(latitudes, longitudes, dec=null)
     {
         var dec_out = dec;
-        if (dec_out==null) dec_out=[];
-        for (var i=0;i<latitudes.length;i++)
-            dec_out[i] = this.declination(latitudes[i], longitudes[i]);
+        if (dec_out==null) dec_out=Variable.createVariable(1, this.width, this.height);
+        for (var i=0;i<latitudes.data.length;i++)
+            dec_out.data[i] = this.declination(latitudes.data[i], longitudes.data[i]);
         return dec_out;
     }
 }

@@ -53,8 +53,8 @@ export class LatLonDomain {
             lon = this.minLon+xoffset*0.5*this.dlon;
             for (var x=0;x<w;x++,i++)
             {
-                latitudes[i] = lat;
-                longitudes[i] = lon;
+                latitudes.set2(x, y, lat);
+                longitudes.set2(x, y, lon);
                 lon+=this.dlon;
             }
             lat -= this.dlat;

@@ -138,7 +138,6 @@ Matrix.mul = function(a, b, res, diagw=0)
     var colstart, colend;
     
     //if (na!=mb) throw Exception("produit interdit");
-    
     if (ma>1)
     {
         // Matrice ma*na et mb*nb quelquonques
