@@ -161,7 +161,7 @@ export class RecorderStep extends Step
                     if (X.nbLevels>1)
                         value = X.get3(i,j,k);
                     else
-                        value = X.get2(i,j,k);
+                        value = X.get2(i,j);
                     line += sep+value.toString();                
                     sep = ";";
                 }

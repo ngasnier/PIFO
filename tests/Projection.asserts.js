@@ -44,6 +44,18 @@ var mercatorProjectionDomain = {
     "maxLon":51
 };
 
+var polarProjectionDomain = {
+            "class": "PolarStereographicProjection",
+            "width": 72,
+            "height": 111,
+            "horizontalStaggering": "C",
+            "xmin":0,
+            "ymin":-10000000,
+            "xmax":11000000,
+            "ymax":10000000,
+            "regrid":"bilinear"
+};
+
 var outputDomain = {
     "minLat":9,
     "maxLat":81,
@@ -219,6 +231,8 @@ test('projection mercator calcLatitutesLongitudes', () => {
 
 test('projection polaire', () => {
     var projection = new PolarStereographicProjection();
+    Object.assign(projection, polarProjectionDomain);
+    
     var m = projection.scaleFactor(0, 0);
     expect(m).toBeCloseTo(2);
     
@@ -226,6 +240,12 @@ test('projection polaire', () => {
     var latlon = projection.xyToLatLon(xy[0], xy[1]);
     expect(latlon).arrayBeCloseTo([9, 0]);
     
+    var latitudes = Variable.createVariable(1, projection.width, projection.height, false);
+    var longitudes = Variable.createVariable(1, projection.width, projection.height, false);
+    var [dx, dy] = projection.getMeshSize();      
+    projection.calcLatitudesLongitudes(0, 0, latitudes, longitudes);
+    var declinations = projection.getDeclinations(latitudes, longitudes);
+    expect(declinations.containsBadValues()).toBe(false);
 });
 
 test('regridding', ()=> {
