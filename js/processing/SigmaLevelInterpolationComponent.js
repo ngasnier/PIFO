@@ -62,7 +62,7 @@ export class SigmaLevelInterpolationComponent extends Component {
             else
                 this.sigmaToPressureLevel(variable_in, pressure, variable_out);
             
-            Variable.copyMetadata(variable_in, variable_out);
+            variable_in.copyMetadata(variable_out);
             variable_out.levels = this.sigmaLevels.slice();
             
             data_out["main"].setData(variable_out);
@@ -77,37 +77,45 @@ export class SigmaLevelInterpolationComponent extends Component {
     
     pressureToSigmaLevel(vin, surfacePressure, vout)
     {        
-        var i = 0;
+        var i = 0, j = 0;
+        var width = vout.width;
+        var height = vout.height;
         var p = 0;
         var pa, pb;
         var found = false;
         for (var k=0;k<this.sigmaLevels.length;k++)
         {
-            for(var i=0;i<vout[k].length;i++)
+            for (j=0;j<height;j++)
             {
-                p = this.sigmaLevels[k] * surfacePressure[i];
+                for(i=0;i<width;i++)
+                {
+                    p = this.sigmaLevels[k] * surfacePressure.get2(i,j);
 
-                found = false;
-                for (var l=1;l<this.pressureLevels.length;l++)
-                {
-                    pa = this.pressureLevels[l-1];
-                    pb = this.pressureLevels[l];
-                    if (p>=pa && p<pb)
-                    {                               
-                        vout[k][i] = vin[l-1][i]+(p-pa)*(vin[l][i]-vin[l-1][i])/(pb-pa);
-                        found = true;
-                        break;
+                    found = false;
+                    for (var l=1;l<this.pressureLevels.length;l++)
+                    {
+                        pa = this.pressureLevels[l-1];
+                        pb = this.pressureLevels[l];
+                        
+                        if (p>=pa && p<pb)
+                        {                               
+                            vout.set3(i, j, k, vin.get3(i,j,l-1)+(p-pa)*(vin.get3(i,j,l)-vin.get3(i,j,l-1))/(pb-pa));
+                            found = true;
+                            break;
+                        }
                     }
-                }
-                
-                if (!found)
-                {
-                    if (p<this.pressureLevels[0]) {
-                        vout[k][i] = vin[0][i]; 
-                    } else {
-                        vout[k][i] = vin[this.pressureLevels.length-1][i];
+
+                    if (!found)
+                    {
+                        
+                        
+                        if (p<this.pressureLevels[0]) {
+                            vout.set3(i, j, k, vin.get3(i,j,0)); 
+                        } else {
+                            vout.set3(i, j, k, vin.get3(i,j,this.pressureLevels.length-1));
+                        }
+
                     }
-                    
                 }
             }
         }
@@ -115,34 +123,41 @@ export class SigmaLevelInterpolationComponent extends Component {
 
     sigmaToPressureLevel(vin, surfacePressure, vout)
     {
+        var i = 0, j = 0;
+        var width = vout.width;
+        var height = vout.height;
         var s, val, sa, sb;
         var found = false;
+        var nbLevels = vin.nbLevels;
         for (var k=0;k<this.pressureLevels.length;k++)
         {
-            for(var i=0;i<vout.length;i++)
+            for (j=0;j<height;j++)
             {
-                s = this.pressureLevels[k] / surfacePressure[i];
-                val = 0;
-                found = false;
-                for (var z=1;z<vin.length;z++)
+                for(i=0;i<width;i++)
                 {
-                    sa = this.sigmaLevels[z-1];
-                    sb = this.sigmaLevels[z];
-                    if (s>=sa && s<sb)
+                    s = this.pressureLevels[k] / surfacePressure.get2(i,j);
+                    val = 0;
+                    found = false;
+                    for (var z=1;z<nbLevels;z++)
                     {
-                        val = vin[z-1][i]+(s-sa)*(vin[z][i]-vin[z-1][i])/(sb-sa);
-                        found=true;
-                        break;
+                        sa = this.sigmaLevels[z-1];
+                        sb = this.sigmaLevels[z];
+                        if (s>=sa && s<sb)
+                        {
+                            val = vin.get3(i,j,z-1)+(s-sa)*(vin.get3(i,j,z)-vin.get3(i,j,z-1))/(sb-sa);
+                            found=true;
+                            break;
+                        }
                     }
+                    if (!found)
+                    {
+                        if (s<=this.sigmaLevels[0])
+                            val = vin.get3(i, j, 0);
+                        else
+                            val = vin.get3(i, j, vin.length-1);
+                    }
+                    vout.set3(i, j, k, val);
                 }
-                if (!found)
-                {
-                    if (s<=this.sigmaLevels[0])
-                        val = vin[0][i];
-                    else
-                        val = vin[vin.length-1][i];
-                }
-                vout[k][i] = val;
             }
         }
     } 

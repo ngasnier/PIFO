@@ -163,7 +163,7 @@ export class RunScenario extends Scenario {
                 {
                     this.sendMessage(`loading variable data ${variable.name} at t=0`);
                     this.model.setVariable(variable.name, 
-                        await this.dataSource.getField(variable.name, 0));
+                        await this.dataSource.getField(variable.name, 0));                    
                 }
             }
             this.model.totalTime = 0;

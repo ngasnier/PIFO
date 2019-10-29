@@ -588,3 +588,9 @@ Variable.containsBadValues = function(x)
 {
     return x.containsBadValues();
 }
+
+
+Variable.copyMetadata = function(a, b)
+{
+    a.copyMetadata(b);
+}

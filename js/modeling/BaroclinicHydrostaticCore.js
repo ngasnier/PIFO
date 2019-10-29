@@ -1208,7 +1208,7 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
             {
                 V_tdcy.set3(i,j,k, V_tdcy.get3(i,j,k)
                             + diffusionFactor / (dsigma[k]*ps.get2(i,j))
-                            *(divergence.get3(i,j+1)-divergence.get3(i,j+1,k))/dy);
+                            *(divergence.get3(i,j+1,k)-divergence.get3(i,j+1,k))/dy);
             }
         }
     }

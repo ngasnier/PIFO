@@ -58,27 +58,30 @@ export class PRMSLComponent extends Component {
             if (sfcgeop_in==null) throw `${this.name} : no surface geoporential data.`;
             if (m_in==null) throw `${this.name} : no map scaling factor data.`;
             
-            if (ps_in.nbLevels>0) throw `${this.name} : ps must not be 3D data.`;
-            if (sfcgeop_in.nbLevels>0) throw `${this.name} : sfcgeop must not be 3D data.`;
-            if (m_in.nbLevels>0) throw `${this.name} : m must not be 3D data.`;
+            if (ps_in.nbLevels>1) throw `${this.name} : ps must not be 3D data.`;
+            if (sfcgeop_in.nbLevels>1) throw `${this.name} : sfcgeop must not be 3D data.`;
+            if (m_in.nbLevels>1) throw `${this.name} : m must not be 3D data.`;
             if (tmp_in.nbLevels==0) throw `${this.name} : temperature must be 3D data.`;
             if (phi_in.nbLevels==0) throw `${this.name} : phi must be 3D data.`;
-            
+                       
             // 1 Calculer les coefficients du laplacien avec boundary condition
             var [nabla, nabla_x, nabla_y] = this.calcLaplacian(m_in);
             
             // 2 Calculer les coefficients de forçage
-            var [Ts, Tsl] = this.guessTs(tmp_in[tmp_in.length-1], phi_in[phi_in.length-1], sfcgeop_in);
+            var t_low = tmp_in.getLevelAsVariable(tmp_in.nbLevels-1);
+            var phi_low = phi_in.getLevelAsVariable(phi_in.nbLevels-1);
+
+            var [Ts, Tsl] = this.guessTs(t_low, phi_low, sfcgeop_in);
             var PIs = this.exner(ps_in);
             var thetas = this.calcTheta(Ts, ps_in);
-            var PIsl = this.guessPIsl(Tsl, sfcgeop_in, ps_in, tmp_in[tmp_in.length-1], phi_in[phi_in.length-1]);
+            var PIsl = this.guessPIsl(Tsl, sfcgeop_in, ps_in, t_low, phi_low);
 
             // 3 Calculer la première estimation
             var F = this.calcForcing(PIs, PIsl, thetas, sfcgeop_in, m_in);
 
             // 4 Résoudre l'équation de Poisson
             var residu = Variable.createVariable(0, this.model.width, this.model.height);
-            var n = TridiagonalSystem.sor(nabla_x, 1, nabla_y, this.model.width, nabla, F, 1.0, PIsl, residu, 1e-20);
+            var n = TridiagonalSystem.sor(nabla_x.data, 1, nabla_y.data, this.model.width, nabla.data, F.data, 1.0, PIsl.data, residu.data, 1e-20);
             if (n>=1000) throw `${this.name} : Poisson equation did not converge.`;
 
             // 5 On n'a plus qu'à calculer Psl
@@ -102,10 +105,10 @@ export class PRMSLComponent extends Component {
         var Tsl = Variable.clone(T);
 
         // Première estimation
-        for (var i=0;i<Ts.length;i++)
+        for (var i=0;i<Ts.data.length;i++)
         {
-            Ts[i] += (phi_n[i]-phi_s[i])*Model.StdTmpLapseRate/Model.g;
-            Tsl[i] += phi_n[i]*Model.StdTmpLapseRate/Model.g;
+            Ts.data[i] += (phi_n.data[i]-phi_s.data[i])*Model.StdTmpLapseRate/Model.g;
+            Tsl.data[i] += phi_n.data[i]*Model.StdTmpLapseRate/Model.g;
         }
         
         // Ajustement en condition froide selon IFS 36r1        
@@ -132,12 +135,12 @@ export class PRMSLComponent extends Component {
     {
         var prmsl = Variable.createVariable(0, this.model.width, this.model.height);        
         var PIsl = Variable.createVariable(0, this.model.width, this.model.height);
-        for (var i=0;i<Tsl.length;i++)
+        for (var i=0;i<Tsl.data.length;i++)
         {
             // Ma méthode donne un meilleur résultat sur le groenland que 
             // celle donnée par Boone...
-            prmsl[i] = ps[i] * Math.exp(-7*9.81/(2*1006*T[i])*-phi_s[i]/9.81);
-            PIsl[i] = Math.pow(prmsl[i]/100000, Model.R/Model.Cp);
+            prmsl.data[i] = ps.data[i] * Math.exp(-7*9.81/(2*1006*T.data[i])*-phi_s.data[i]/9.81);
+            PIsl.data[i] = Math.pow(prmsl.data[i]/100000, Model.R/Model.Cp);
             
             // Formule donnée par Boone... bof
             /*PIsl[i] = Math.pow(
@@ -151,9 +154,9 @@ export class PRMSLComponent extends Component {
     exner(p)
     {
         var ex = Variable.clone(p);
-        for (var i=0;i<ex.length;i++)
+        for (var i=0;i<ex.data.length;i++)
         {
-            ex[i] = Math.pow(p[i]/1e5, Model.R/Model.Cp);
+            ex.data[i] = Math.pow(p.data[i]/1e5, Model.R/Model.Cp);
         }
         return ex;
     }
@@ -161,9 +164,9 @@ export class PRMSLComponent extends Component {
     calcTheta(T, p)
     {
         var theta = Variable.clone(T);
-        for (var i=0;i<T.length;i++)
+        for (var i=0;i<T.data.length;i++)
         {
-            theta[i] = T[i] / Math.pow(p[i]/1e5, Model.R/Model.Cp);
+            theta.data[i] = T.data[i] / Math.pow(p.data[i]/1e5, Model.R/Model.Cp);
         }
         return theta;
     }
@@ -174,28 +177,28 @@ export class PRMSLComponent extends Component {
         var nabla = Variable.createVariable(0, this.model.width, this.model.height);
         var nabla_x = Variable.createVariable(0, this.model.width, this.model.height);
         var nabla_y = Variable.createVariable(0, this.model.width, this.model.height);
-        var i=0;
+        var i=0, j=0;
         var m2 = 0;
         var dx2 = this.model.dx*this.model.dx;
         var dy2 = this.model.dy*this.model.dy;
-        for (var y=0;y<this.model.height;y++)
+        for (j=0;j<this.model.height;j++)
         {
-            for (var x=0;x<this.model.width;x++,i++)
+            for (i=0;i<this.model.width;i++)
             {
                 
-                if (x>0 && x<this.model.width-1 && y>0 && y<this.model.height-1)
+                if (i>0 && i<this.model.width-1 && j>0 && j<this.model.height-1)
                 {
-                    m2 = m[i]*m[i];
-                    nabla[i] = -2*(m2/dx2 + m2/dy2);
-                    nabla_x[i] = m2/dx2;
-                    nabla_y[i] = m2/dy2;
+                    m2 = m.get2(i,j)*m.get2(i,j);
+                    nabla.set2(i, j, -2*(m2/dx2 + m2/dy2));
+                    nabla_x.set2(i, j, m2/dx2);
+                    nabla_y.set2(i, j, m2/dy2);
                 }
                 else
                 {
                     // Conditions aux limites
-                    nabla[i] = 1;
-                    nabla_x[i] = 0;
-                    nabla_y[i] = 0;
+                    nabla.set2(i, j, 1);
+                    nabla_x.set2(i, j, 0);
+                    nabla_y.set2(i, j, 0);
                 }                
             }
         }
@@ -207,7 +210,7 @@ export class PRMSLComponent extends Component {
         var F = Variable.clone(PIsl); // Sera notre condition aux limites sur les bords
         var dphix = Variable.createVariable(0, this.model.width, this.model.height);
         var dphiy = Variable.createVariable(0, this.model.width, this.model.height);
-        var i=this.model.width+1;
+        var i,j;
         var width=this.model.width;
         var height=this.model.height;
         var m2 = 0;
@@ -230,15 +233,14 @@ export class PRMSLComponent extends Component {
             }
         }*/
         
-        i=width+1;
-        for (var y=1;y<height-1;y++,i+=2)
+        for (j=1;j<height-1;j++)
         {
-            for (var x=1;x<width-1;x++,i++)
+            for (i=1;i<width-1;i++)
             {
                 // Juste forcer à zero semble suffire à "lisser" la pression
                 // sur les reliefs sans affecter la pression initiale
                 // Donne un résultat fidèle à GFS
-                F[i] = 0;
+                F.set2(i,j,0);
                 
                 // Foçage désactivé... CF ci-dessous
                 /*m2 = m[i]*m[i];                
@@ -257,9 +259,9 @@ export class PRMSLComponent extends Component {
     calcPsl(PIsl)
     {
         var Psl = Variable.createVariable(0, this.model.width, this.model.height);
-        for (var i=0;i<Psl.length;i++)
+        for (var i=0;i<Psl.data.length;i++)
         {
-            Psl[i] = Math.exp(Math.log(PIsl[i])/(Model.R/Model.Cp))*100000;
+            Psl.data[i] = Math.exp(Math.log(PIsl.data[i])/(Model.R/Model.Cp))*100000;
         }
  
         return Psl;

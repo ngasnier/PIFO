@@ -609,8 +609,12 @@
 
                     "humidityDiffusionCoef": 0.0,
                     "humidityDiffusionOrder": 2
-                }
+                },
+                "physicsSchemes": [
+       		]
             },
+            
+            
             
             "steps": [
                 { 

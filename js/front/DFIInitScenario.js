@@ -179,7 +179,7 @@ export class DFIInitScenario extends RunScenario {
                     
                     // Calcul des valeurs initiales à partir des sommes de fourier
                     this.model.getHistoricVariables().forEach(function (item) {
-                        Variable.sum(me.hindcastBackwardSum[item.name], me.hindcastForwardSum[item.name], me.model.getVariable(item.name));
+                        Variable.sum(me.hindcastBackwardSum[item.name], me.hindcastForwardSum[item.name], me.model.getVariable(item.name));                        
                     });
                     
                     // Le modèle peut être reset à t=0 pour historisation 

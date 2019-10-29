@@ -56,12 +56,12 @@ export class AbsoluteVorticityComponent extends Component {
             if (f_in==null) throw `${this.name} : no coriolis factor data.`;
             if (m_in==null) throw `${this.name} : no map scaling factor data.`;
             
-            if (f_in.nbLevels>0) throw `${this.name} : f must not be 3D data.`;
-            if (m_in.nbLevels>0) throw `${this.name} : m must not be 3D data.`;
+            if (f_in.nbLevels>1) throw `${this.name} : f must not be 3D data.`;
+            if (m_in.nbLevels>1) throw `${this.name} : m must not be 3D data.`;
             if (U_in.nbLevels==0) throw `${this.name} : U must be 3D data.`;
             if (V_in.nbLevels==0) throw `${this.name} : V must be 3D data.`;
             
-            var i = 0;
+            var i = 0, j = 0;
             var u1, u2, v1, v2;
             var width = U_in.width;
             var height = U_in.height;
@@ -72,15 +72,15 @@ export class AbsoluteVorticityComponent extends Component {
             for (var k=0;k<U_in.nbLevels;k++)
             {
                 i = U_in.width+1;
-                for (var y=1;y<height-1;y++,i+=2)
+                for (j=1;j<height-1;j++)
                 {
-                    for (var x=1;x<width-1;x++,i++)
+                    for (i=1;i<width-1;i++)
                     {
-                        u1 = U_in[k][i]*m_in[i];
-                        u2 = U_in[k][i+width]*m_in[i+width];
-                        v1 = V_in[k][i+1]*m_in[i+1];
-                        v2 = V_in[k][i]*m_in[i];
-                        variable_out[k][i] = (v1-v2)/dx-(u1-u2)/dy + f_in[i];
+                        u1 = U_in.get3(i,j,k)*m_in.get2(i,j);
+                        u2 = U_in.get3(i,j+1,k)*m_in.get2(i,j+1);
+                        v1 = V_in.get3(i+1,j,k)*m_in.get2(i+1,j);
+                        v2 = V_in.get3(i,j,k)*m_in.get2(i,j);
+                        variable_out.set3(i, j, k, (v1-v2)/dx-(u1-u2)/dy + f_in.get2(i,j));
                     }
                 }
             }

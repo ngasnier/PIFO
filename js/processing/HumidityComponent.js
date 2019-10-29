@@ -46,19 +46,8 @@ export class HumidityComponent extends Component {
             if (tmp_in==null) throw `${this.name} : no temperature data.`;
             
             var variable_out;
-            if (variable_in.nbLevels>0) 
-            {
-                variable_out = Variable.createVariable(variable_in.nbLevels, variable_in.width, variable_in.height, true);
-                for (var k=0;k<variable_in.nbLevels;k++)
-                {
-                    this.rhToSpecific(variable_in[k], tmp_in[k], variable_out[k]);
-                }
-            }
-            else
-            {
-                variable_out = Variable.createVariable(variable_in.nbLevels, variable_in.width, variable_in.height, false);
-                this.rhToSpecific(variable_in, tmp_in, variable_out);
-            }            
+            variable_out = Variable.createVariable(variable_in.nbLevels, variable_in.width, variable_in.height, false);
+            this.rhToSpecific(variable_in.data, tmp_in.data, variable_out.data);
                        
             Variable.copyMetadata(variable_in, variable_out);
             
