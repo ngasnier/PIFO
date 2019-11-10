@@ -8,15 +8,19 @@
   },
   "dependencies": {
     "esm": "^3.2.25",
-    "full-icu": "^1.3.0"
+    "full-icu": "^1.3.0",
+    "node-addon-api": "^1.7.1"
   },
   "devDependencies": {
     "jest": "^23.6.0",
-    "jsdoc": "^3.6.2"
+    "jsdoc": "^3.6.2",
+    "node-gyp": "^6.0.1"
   },
   "scripts": {
     "test": "jest",
-    "doc": "./node_modules/.bin/jsdoc js -r -d docs"
+    "doc": "./node_modules/.bin/jsdoc js -r -d docs",
+    "build": "node-gyp rebuild",
+    "clean": "node-gyp clean"
   },
   "repository": {
     "type": "git",

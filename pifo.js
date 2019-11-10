@@ -22,10 +22,32 @@ import { ConfigManager } from "./js/front/ConfigManager.js";
 var fs = require('fs');
 const path = require('path');
 
+const MPI = require('nodempi');
+
 // Environnement de fonctionnement
 var mode = "run";
 var config = {};
 var configFile = "";
+
+// *** Gestion de cleanup
+function exitHandler(options, exitCode) {
+    if (options.cleanup) 
+    {
+        console.log('MPI finalize');
+        MPI.Finalize();
+    }
+    if (exitCode || exitCode === 0) console.log("exit code : ", exitCode);
+    if (options.exit) process.exit();
+}
+
+process.on('exit', exitHandler.bind(null,{cleanup:true}));
+//process.on('SIGINT', exitHandler.bind(null, {exit:true}));
+process.on('SIGUSR1', exitHandler.bind(null, {exit:true}));
+process.on('SIGUSR2', exitHandler.bind(null, {exit:true}));
+process.on('uncaughtException', exitHandler.bind(null, {exit:true}));
+
+// *** Init MPI
+MPI.Init();
 
 // *** traitement de la ligne de commande
 if (process.argv.length>2)
@@ -50,6 +72,12 @@ else
 console.log("PIFO mode "+mode);
 console.log("config : "+configFile);
 
+var comm_size = MPI.CommSize();
+console.log("MPI size", comm_size);
+
+var world_rank = MPI.CommRank();
+console.log("MPI rank", world_rank);
+
 config = require(configFile);
 
 var classpath = "js/";
@@ -70,7 +98,7 @@ manager.getScenario(mode)
        console.log("error :", e);
        process.exit(1);
     });
-    
+   
 async function runScenario(scenario)
 {
     try {
@@ -91,18 +119,3 @@ async function runScenario(scenario)
         process.exit(1);
     }
 }
-
-// ..........
-
-/*// Choix de surfaces régulièrement espacées sur un nombre souhaité de niveaux
-var ptop = config.verticalDomain.ptop;
-var surfaces = [ ptop/100000];
-var nbsurfaces = config.verticalDomain.nbSurfaces;
-var lev = ptop/100000;
-for (var i=1;i<nbsurfaces;i++)
-{
-    lev += ((100000-ptop)/100000)/(nbsurfaces-1);
-    surfaces.push(lev);
-}
-model.setSurfaceLevels(surfaces);*/
-
