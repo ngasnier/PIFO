@@ -18,6 +18,8 @@ namespace nodempi {
     void mpiInit(const Napi::CallbackInfo& info);
     Napi::Number CommSize(const Napi::CallbackInfo& info);
     Napi::Number CommRank(const Napi::CallbackInfo& info);
+    Napi::Value CommSplit(const Napi::CallbackInfo& info);
+    
     void mpiFinalize(const Napi::CallbackInfo& info);
     void Barrier(const Napi::CallbackInfo& info);
     void Send(const Napi::CallbackInfo& info);
@@ -26,6 +28,7 @@ namespace nodempi {
     void Scatterv(const Napi::CallbackInfo& info);
     void Gather(const Napi::CallbackInfo& info);
     void Gatherv(const Napi::CallbackInfo& info);
+    void Alltoallw(const Napi::CallbackInfo& info);
     Napi::Value TypeCreateSubarray(const Napi::CallbackInfo& info);
     Napi::Value TypeCreateResized(const Napi::CallbackInfo& info);
     void TypeCommit(const Napi::CallbackInfo& info);
