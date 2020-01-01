@@ -27,12 +27,14 @@ void MPICommFinalizer(Napi::Env env, MPI_Comm* c)
     delete c;
 }
 
+void MPIRequestFinalizer(Napi::Env env, MPI_Request* c)
+{
+    delete c;
+}
+
 
 // NB sur certains environnements pour que ça marche :
 //export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so
-
-// TODO : replace usage of Napi::Float64Array for data buffers with something 
-// more generic : maybe a helper function to cast it to void pointer...
 
 void nodempi::mpiInit(const Napi::CallbackInfo& info)
 {    
@@ -220,7 +222,7 @@ void nodempi::Send(const Napi::CallbackInfo& info)
         return; 
     }
     
-    Napi::Float64Array data = info[0].As<Napi::Float64Array>();
+    Napi::TypedArray data = info[0].As<Napi::TypedArray>();
     int count = info[1].As<Napi::Number>().Int32Value();
     Napi::Buffer<MPI_Datatype> send_type = info[2].As<Napi::Buffer<MPI_Datatype>>();
     int destination = info[3].As<Napi::Number>().Int32Value();
@@ -228,7 +230,7 @@ void nodempi::Send(const Napi::CallbackInfo& info)
     Napi::Buffer<MPI_Comm> comm = info[5].As<Napi::Buffer<MPI_Comm>>();
     
     int ret = MPI_Send(
-            data.Data(),
+            data.ArrayBuffer().Data(),
             count,
             *send_type.Data(),
             destination,
@@ -273,7 +275,7 @@ void nodempi::Receive(const Napi::CallbackInfo& info)
         return;
     }
     
-    Napi::Float64Array data = info[0].As<Napi::Float64Array>();
+    Napi::TypedArray data = info[0].As<Napi::TypedArray>();
     int count = info[1].As<Napi::Number>().Int32Value();
     Napi::Buffer<MPI_Datatype> rcv_type = info[2].As<Napi::Buffer<MPI_Datatype>>();
     int source = info[3].As<Napi::Number>().Int32Value();
@@ -284,7 +286,7 @@ void nodempi::Receive(const Napi::CallbackInfo& info)
     MPI_Status status;
     
     int ret = MPI_Recv(
-            data.Data(),
+            data.ArrayBuffer().Data(),
             count,
             *rcv_type.Data(),
             source,
@@ -295,6 +297,146 @@ void nodempi::Receive(const Napi::CallbackInfo& info)
     if (ret!=MPI_SUCCESS) { 
         Napi::Error::New(env, "MPI error : "+ret).ThrowAsJavaScriptException(); 
         return; 
+    }
+}
+
+Napi::Value nodempi::Isend(const Napi::CallbackInfo& info)
+{
+    Napi::Env env = info.Env();
+    if (info.Length() < 6) { 
+        Napi::Error::New(env, "6 parameters expected").ThrowAsJavaScriptException(); 
+        return env.Null(); 
+    }
+    if (!info[0].IsTypedArray()) { 
+        Napi::TypeError::New(env, "Param 1 : typed array expected").ThrowAsJavaScriptException(); 
+        return env.Null(); 
+    }
+    if (!info[1].IsNumber()) { 
+        Napi::TypeError::New(env, "Param 2 : Number expected").ThrowAsJavaScriptException(); 
+        return env.Null(); 
+    }
+    if (!info[2].IsBuffer()) { 
+        Napi::TypeError::New(env, "Param 3 : Buffer expected").ThrowAsJavaScriptException(); 
+        return env.Null(); 
+    }
+    if (!info[3].IsNumber()) { 
+        Napi::TypeError::New(env, "Param 4 : Number expected").ThrowAsJavaScriptException(); 
+        return env.Null(); 
+    }
+    if (!info[4].IsNumber()) { 
+        Napi::TypeError::New(env, "Param 5 : Number expected").ThrowAsJavaScriptException(); 
+        return env.Null(); 
+    }
+    if (!info[5].IsBuffer()) { 
+        Napi::TypeError::New(env, "Param 6 : Buffer expected").ThrowAsJavaScriptException(); 
+        return env.Null(); 
+    }
+    
+    Napi::TypedArray data = info[0].As<Napi::TypedArray>();
+    int count = info[1].As<Napi::Number>().Int32Value();
+    Napi::Buffer<MPI_Datatype> send_type = info[2].As<Napi::Buffer<MPI_Datatype>>();
+    int destination = info[3].As<Napi::Number>().Int32Value();
+    int tag = info[4].As<Napi::Number>().Int32Value();
+    Napi::Buffer<MPI_Comm> comm = info[5].As<Napi::Buffer<MPI_Comm>>();
+    MPI_Request* request = new MPI_Request;
+    
+    int ret = MPI_Isend(
+            data.ArrayBuffer().Data(),
+            count,
+            *send_type.Data(),
+            destination,
+            tag,
+            *comm.Data(),
+            request);
+    
+    if (ret!=MPI_SUCCESS) { 
+        Napi::Error::New(env, "MPI error : "+ret).ThrowAsJavaScriptException(); 
+        return env.Null(); 
+    }
+    
+    return Napi::Buffer<MPI_Request>::New(env, request, 1, MPIRequestFinalizer); 
+}
+
+Napi::Value nodempi::Ireceive(const Napi::CallbackInfo& info)
+{
+    Napi::Env env = info.Env();
+    if (info.Length() < 6) { 
+        Napi::Error::New(env, "6 parameters expected").ThrowAsJavaScriptException(); 
+        return env.Null(); 
+    }
+    if (!info[0].IsTypedArray()) { 
+        Napi::TypeError::New(env, "Param 1 : typed array expected").ThrowAsJavaScriptException(); 
+        return env.Null(); 
+    }
+    if (!info[1].IsNumber()) { 
+        Napi::TypeError::New(env, "Param 2 : Number expected").ThrowAsJavaScriptException(); 
+        return env.Null();
+    }
+    if (!info[2].IsBuffer()) { 
+        Napi::TypeError::New(env, "Param 3 : Buffer expected").ThrowAsJavaScriptException(); 
+        return env.Null();
+    }
+    if (!info[3].IsNumber()) { 
+        Napi::TypeError::New(env, "Param 4 : Number expected").ThrowAsJavaScriptException(); 
+        return env.Null();
+    }
+    if (!info[4].IsNumber()) { 
+        Napi::TypeError::New(env, "Param 5 : Number expected").ThrowAsJavaScriptException(); 
+        return env.Null();
+    }
+    if (!info[5].IsBuffer()) { 
+        Napi::TypeError::New(env, "Param 6 : Buffer expected").ThrowAsJavaScriptException(); 
+        return env.Null();
+    }
+    
+    Napi::TypedArray data = info[0].As<Napi::TypedArray>();
+    int count = info[1].As<Napi::Number>().Int32Value();
+    Napi::Buffer<MPI_Datatype> rcv_type = info[2].As<Napi::Buffer<MPI_Datatype>>();
+    int source = info[3].As<Napi::Number>().Int32Value();
+    int tag = info[4].As<Napi::Number>().Int32Value();
+    Napi::Buffer<MPI_Comm> comm = info[5].As<Napi::Buffer<MPI_Comm>>();
+    
+    MPI_Request* request = new MPI_Request;
+    
+    int ret = MPI_Irecv(
+            data.ArrayBuffer().Data(),
+            count,
+            *rcv_type.Data(),
+            source,
+            tag,
+            *comm.Data(),
+            request);
+    
+    if (ret!=MPI_SUCCESS) { 
+        Napi::Error::New(env, "MPI error : "+ret).ThrowAsJavaScriptException(); 
+        return env.Null();
+    }
+    
+    return Napi::Buffer<MPI_Request>::New(env, request, 1, MPIRequestFinalizer); 
+}
+
+void nodempi::Wait(const Napi::CallbackInfo& info)
+{
+    Napi::Env env = info.Env();
+    if (info.Length() < 1) { 
+        Napi::Error::New(env, "1 parameters expected").ThrowAsJavaScriptException(); 
+        return;
+    }
+    if (!info[0].IsBuffer()) { 
+        Napi::TypeError::New(env, "Param 1 : buffer expected").ThrowAsJavaScriptException(); 
+        return;
+    }  
+
+    // We should return this to the caller...
+    MPI_Status status;
+    
+    Napi::Buffer<MPI_Request> request = info[0].As<Napi::Buffer<MPI_Request>>();
+    
+    int ret = MPI_Wait(request.Data(), &status);
+    
+    if (ret!=MPI_SUCCESS) { 
+        Napi::Error::New(env, "MPI error : "+ret).ThrowAsJavaScriptException(); 
+        return;
     }
 }
 
@@ -341,12 +483,12 @@ void nodempi::Scatter(const Napi::CallbackInfo& info)
     void* send_data = NULL;
     if (!info[0].IsNull())
     {
-        Napi::Float64Array send_data_prm = info[0].As<Napi::Float64Array>();
-        send_data = send_data_prm.Data();
+        Napi::TypedArray send_data_prm = info[0].As<Napi::TypedArray>();
+        send_data = send_data_prm.ArrayBuffer().Data();
     }
     int send_count = info[1].As<Napi::Number>().Int32Value();
     Napi::Buffer<MPI_Datatype> send_type = info[2].As<Napi::Buffer<MPI_Datatype>>();
-    Napi::Float64Array rcv_data = info[3].As<Napi::Float64Array>();
+    Napi::TypedArray rcv_data = info[3].As<Napi::TypedArray>();
     int recv_count = info[4].As<Napi::Number>().Int32Value();
     Napi::Buffer<MPI_Datatype> rcv_type = info[5].As<Napi::Buffer<MPI_Datatype>>();
     int root = info[6].As<Napi::Number>().Int32Value();
@@ -356,7 +498,7 @@ void nodempi::Scatter(const Napi::CallbackInfo& info)
             send_data,
             send_count,
             *send_type.Data(),
-            rcv_data.Data(),
+            rcv_data.ArrayBuffer().Data(),
             recv_count,
             *rcv_type.Data(),
             root,
@@ -415,8 +557,8 @@ void nodempi::Scatterv(const Napi::CallbackInfo& info)
     void* send_data = NULL;
     if (!info[0].IsNull())
     {
-        Napi::Float64Array send_data_prm = info[0].As<Napi::Float64Array>();
-        send_data = send_data_prm.Data();
+        Napi::TypedArray send_data_prm = info[0].As<Napi::TypedArray>();
+        send_data = send_data_prm.ArrayBuffer().Data();
     }
     int* send_count = NULL;
     if (!info[1].IsNull())
@@ -432,7 +574,7 @@ void nodempi::Scatterv(const Napi::CallbackInfo& info)
     }
 
     Napi::Buffer<MPI_Datatype> send_type = info[3].As<Napi::Buffer<MPI_Datatype>>();
-    Napi::Float64Array rcv_data = info[4].As<Napi::Float64Array>();
+    Napi::TypedArray rcv_data = info[4].As<Napi::TypedArray>();
     int recv_count = info[5].As<Napi::Number>().Int32Value();
     Napi::Buffer<MPI_Datatype> rcv_type = info[6].As<Napi::Buffer<MPI_Datatype>>();
     int root = info[7].As<Napi::Number>().Int32Value();
@@ -443,7 +585,7 @@ void nodempi::Scatterv(const Napi::CallbackInfo& info)
             send_count,
             displs,
             *send_type.Data(),
-            rcv_data.Data(),
+            rcv_data.ArrayBuffer().Data(),
             recv_count,
             *rcv_type.Data(),
             root,
@@ -496,14 +638,14 @@ void nodempi::Gather(const Napi::CallbackInfo& info)
     }
 
     
-    Napi::Float64Array send_data = info[0].As<Napi::Float64Array>();
+    Napi::TypedArray send_data = info[0].As<Napi::TypedArray>();
     int send_count = info[1].As<Napi::Number>().Int32Value();
     Napi::Buffer<MPI_Datatype> send_type = info[2].As<Napi::Buffer<MPI_Datatype>>();
     void* recv_data = NULL;
     if (!info[3].IsNull())
     {
-        Napi::Float64Array recv_data_prm = info[3].As<Napi::Float64Array>();
-        recv_data = recv_data_prm.Data();
+        Napi::TypedArray recv_data_prm = info[3].As<Napi::TypedArray>();
+        recv_data = recv_data_prm.ArrayBuffer().Data();
     }
     int recv_count = info[4].As<Napi::Number>().Int32Value();
     Napi::Buffer<MPI_Datatype> rcv_type = info[5].As<Napi::Buffer<MPI_Datatype>>();
@@ -511,7 +653,7 @@ void nodempi::Gather(const Napi::CallbackInfo& info)
     Napi::Buffer<MPI_Comm> comm = info[7].As<Napi::Buffer<MPI_Comm>>();
 
     int ret = MPI_Gather(
-            send_data.Data(),
+            send_data.ArrayBuffer().Data(),
             send_count,
             *send_type.Data(),
             recv_data,
@@ -571,14 +713,14 @@ void nodempi::Gatherv(const Napi::CallbackInfo& info)
         return;
     }
     
-    Napi::Float64Array send_data = info[0].As<Napi::Float64Array>();
+    Napi::TypedArray send_data = info[0].As<Napi::TypedArray>();
     int send_count = info[1].As<Napi::Number>().Int32Value();
     Napi::Buffer<MPI_Datatype> send_type = info[2].As<Napi::Buffer<MPI_Datatype>>();
     void* recv_data = NULL;
     if (!info[3].IsNull())
     {
-        Napi::Float64Array recv_data_prm = info[3].As<Napi::Float64Array>();
-        recv_data = recv_data_prm.Data();
+        Napi::TypedArray recv_data_prm = info[3].As<Napi::TypedArray>();
+        recv_data = recv_data_prm.ArrayBuffer().Data();
     }
     int* recv_count = NULL;
     if (!info[4].IsNull())
@@ -597,7 +739,7 @@ void nodempi::Gatherv(const Napi::CallbackInfo& info)
     Napi::Buffer<MPI_Comm> comm = info[8].As<Napi::Buffer<MPI_Comm>>();
 
     int ret = MPI_Gatherv(
-            send_data.Data(),
+            send_data.ArrayBuffer().Data(),
             send_count,
             *send_type.Data(),
             recv_data,
@@ -657,7 +799,7 @@ void nodempi::Alltoallw(const Napi::CallbackInfo& info)
         return;
     }
     
-    Napi::Float64Array send_data = info[0].As<Napi::Float64Array>();
+    Napi::TypedArray send_data = info[0].As<Napi::TypedArray>();
     
     Napi::Int32Array send_counts = info[1].As<Napi::Int32Array>();
     
@@ -672,7 +814,7 @@ void nodempi::Alltoallw(const Napi::CallbackInfo& info)
         send_types[i] = *send_types_arr.Get(i).As<Napi::Buffer<MPI_Datatype>>().Data();
     }
     
-    Napi::Float64Array receive_data = info[4].As<Napi::Float64Array>();
+    Napi::TypedArray receive_data = info[4].As<Napi::TypedArray>();
 
     int* recv_count = NULL;
     if (!info[5].IsNull())
@@ -701,11 +843,11 @@ void nodempi::Alltoallw(const Napi::CallbackInfo& info)
 
     // Call...
     int ret = MPI_Alltoallw(
-            send_data.Data(),
+            send_data.ArrayBuffer().Data(),
             send_counts.Data(),
             sdispls.Data(),
             send_types,
-            receive_data.Data(),
+            receive_data.ArrayBuffer().Data(),
             recv_count,
             displs,
             receive_types,
@@ -895,6 +1037,9 @@ Napi::Object nodempi::Init(Napi::Env env, Napi::Object exports)
     exports.Set("CommFree", Napi::Function::New(env, nodempi::CommFree));
     exports.Set("Send", Napi::Function::New(env, nodempi::Send));  
     exports.Set("Receive", Napi::Function::New(env, nodempi::Receive));  
+    exports.Set("Isend", Napi::Function::New(env, nodempi::Isend));  
+    exports.Set("Ireceive", Napi::Function::New(env, nodempi::Ireceive));  
+    exports.Set("Wait", Napi::Function::New(env, nodempi::Wait));  
     exports.Set("Scatter", Napi::Function::New(env, nodempi::Scatter));  
     exports.Set("Scatterv", Napi::Function::New(env, nodempi::Scatterv));  
     exports.Set("Gather", Napi::Function::New(env, nodempi::Gather));

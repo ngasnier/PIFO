@@ -25,6 +25,9 @@ namespace nodempi {
     void Barrier(const Napi::CallbackInfo& info);
     void Send(const Napi::CallbackInfo& info);
     void Receive(const Napi::CallbackInfo& info);
+    Napi::Value Isend(const Napi::CallbackInfo& info);
+    Napi::Value Ireceive(const Napi::CallbackInfo& info);
+    void Wait(const Napi::CallbackInfo& info);
     void Scatter(const Napi::CallbackInfo& info);
     void Scatterv(const Napi::CallbackInfo& info);
     void Gather(const Napi::CallbackInfo& info);

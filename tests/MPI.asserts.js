@@ -90,6 +90,12 @@ test('Basic MPI communication', () => {
    });
 });
 
+test('Nom-blocking communication', () => {
+   return spawnCommand("mpirun -n 2 node tests/MPI_NonBlockingCommunication.js").then((result) => {
+       expect(cleanOutput(result)).toBe("Process 1 received from process 0 Float64Array [ 1 ]");
+   });
+});
+
 test('Gather/Scatter', () => {
    return spawnCommand("mpirun -n 4 node tests/MPI_GatherScatter.js").then((result) => {
        expect(cleanOutput(result)).toBe("Process 0 gathered Float64Array [ 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4 ]");
