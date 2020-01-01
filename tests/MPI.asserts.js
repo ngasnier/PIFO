@@ -89,3 +89,34 @@ test('Basic MPI communication', () => {
        expect(cleanOutput(result)).toBe("Process 1 received from process 0 Float64Array [ -1 ]");
    });
 });
+
+test('Gather/Scatter', () => {
+   return spawnCommand("mpirun -n 4 node tests/MPI_GatherScatter.js").then((result) => {
+       expect(cleanOutput(result)).toBe("Process 0 gathered Float64Array [ 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4 ]");
+   });
+});
+
+test('Gatherv/Scatterv', () => {
+   return spawnCommand("mpirun -n 4 node tests/MPI_GathervScatterv.js").then((result) => {
+       expect(cleanOutput(result)).toBe("Process 0 gathered Float64Array [\n  1,\n  1,\n  1,\n  2,\n  2,\n  2,\n"
+                                                                          +"  1,\n  1,\n  1,\n  2,\n  2,\n  2,\n"
+                                                                          +"  1,\n  1,\n  1,\n  2,\n  2,\n  2,\n"
+                                                                          +"  3,\n  3,\n  3,\n  4,\n  4,\n  4,\n"
+                                                                          +"  3,\n  3,\n  3,\n  4,\n  4,\n  4,\n"
+                                                                          +"  3,\n  3,\n  3,\n  4,\n  4,\n  4 ]");
+   });
+});
+
+test('CommSplit/TypeVector', () => {
+   return spawnCommand("mpirun -n 4 node tests/MPI_CommSplit.js").then((result) => {
+       expect(cleanOutput(result)).toBe("Process 0 gathered Float64Array [ 1, 1, 1, 2, 2, 1, 1, 1, 2, 2, 1, 1, 1, 2, 2, 3, 3, 3, 4, 4, 3, 3, 3, 4, 4 ]");
+   });
+});
+
+// This test fails for now. Code is unfinished and implementation 
+// of MPI_Alltoallw is not fully validated.
+/* test('Alltoallw', () => {
+   return spawnCommand("mpirun -n 4 node tests/MPI_Alltoallw.js").then((result) => {
+       expect(cleanOutput(result)).toBe("ok");
+   });
+});*/
