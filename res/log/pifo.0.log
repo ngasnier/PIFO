@@ -1,0 +1,11 @@
+PIFO mode run
+config : ./barocline.default.json
+MPI size 4
+MPI rank 0
+divergence diffusion : 476297439417581100000
+wind diffusion : 476297439417581100000
+temperature diffusion : 476297439417581100000
+humidity diffusion : 476297439417581100000
+scattering to 2x2 processes
+MPI finalize
+exit code :  0

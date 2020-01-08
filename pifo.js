@@ -15,14 +15,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 import { Scenario } from "./js/front/Scenario.js";
 import { ConfigManager } from "./js/front/ConfigManager.js";
+import { MPI } from "./js/util/MPI.js";
 
 // Node.js specific
-var fs = require('fs');
+const fs = require('fs');
+const log4js = require('log4js');
+
 const path = require('path');
 
-const MPI = require('nodempi');
 
 // Environnement de fonctionnement
 var mode = "run";
@@ -33,10 +36,10 @@ var configFile = "";
 function exitHandler(options, exitCode) {
     if (options.cleanup) 
     {
-        console.log('MPI finalize');
+        logger.info('MPI finalize');
         MPI.Finalize();
     }
-    if (exitCode || exitCode === 0) console.log("exit code : ", exitCode);
+    if (exitCode || exitCode === 0) logger.info("exit code : ", exitCode);
     if (options.exit) process.exit();
 }
 
@@ -48,6 +51,10 @@ process.on('uncaughtException', exitHandler.bind(null, {exit:true}));
 
 // *** Init MPI
 MPI.Init();
+
+var comm_size = MPI.CommSize(MPI.MPI_COMM_WORLD);
+
+var world_rank = MPI.CommRank(MPI.MPI_COMM_WORLD);
 
 // *** traitement de la ligne de commande
 if (process.argv.length>2)
@@ -69,14 +76,34 @@ else
     mode = "run";
 }
 
-console.log("PIFO mode "+mode);
-console.log("config : "+configFile);
+// *** Logging configuration
+const logger = log4js.getLogger();
+var logfile = `res/log/pifo.${world_rank}.log`;
 
-var comm_size = MPI.CommSize();
-console.log("MPI size", comm_size);
+// Clear log file
+if (fs.existsSync(logfile)) fs.unlinkSync(logfile);
 
-var world_rank = MPI.CommRank();
-console.log("MPI rank", world_rank);
+var logconfig = {
+    appenders: { 
+        'file': { type: 'fileSync', filename: logfile, flags:'w',  layout: { type: 'messagePassThrough' }}
+    },
+    categories: { 
+        default: { appenders: ['file'], level: 'debug' } 
+    }
+};
+
+if (world_rank==0) {
+    logconfig.appenders.out = { type: 'stdout', layout: { type: 'messagePassThrough' }};
+    logconfig.categories.default.appenders.push('out');
+}
+
+log4js.configure(logconfig);
+
+// *** Now PIFO can run
+logger.info("PIFO mode "+mode);
+logger.info("config : "+configFile);
+logger.info("MPI size", comm_size);
+logger.info("MPI rank", world_rank);
 
 config = require(configFile);
 
@@ -86,16 +113,16 @@ var manager = new ConfigManager(classpath, config);
 manager.getScenario(mode)
     .then((scenario)=> {
         
-        scenario.onMessage = (m)=>console.log(m);
+        scenario.onMessage = (m)=>logger.info(m);
        
-        return runScenario(scenario).then((scenario)=>console.log("end "+mode))
+        return runScenario(scenario).then((scenario)=>logger.info("end "+mode))
             .catch((e)=> {
-                console.log(e);
+                logger.error(e);
                 process.exit(1);
             });
     })
     .catch((e)=> {
-       console.log("error :", e);
+       logger.error("error :", e);
        process.exit(1);
     });
    
@@ -115,7 +142,7 @@ async function runScenario(scenario)
     }
     catch (e)
     {
-        console.log("error :", e);
+        logger.error("error :", e);
         process.exit(1);
     }
 }

@@ -15,6 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import { configure, getLogger } from 'log4js';
+
 import { Scenario } from "./Scenario.js";
 import { RunScenario } from "./RunScenario.js";
 import { DataSource } from "./DataSource.js";
@@ -186,7 +188,7 @@ export class DFIInitScenario extends RunScenario {
                     this.model.time = 0;
                     this.model.dt = -this.model.dt;
                     
-                    console.log(this.hindcastLcSum);
+                    this.sendMessage(this.hindcastLcSum);
 
                     this._status = Scenario.STATE_END;
                 }

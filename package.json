@@ -9,12 +9,13 @@
   "dependencies": {
     "esm": "^3.2.25",
     "full-icu": "^1.3.0",
+    "log4js": "^6.1.0",
     "node-addon-api": "^1.7.1"
   },
   "devDependencies": {
-    "jest": "^23.6.0",
-    "jsdoc": "^3.6.2",
-    "node-gyp": "^6.0.1"
+    "jest": "^25.0.0",
+    "jsdoc": "^3.6.3",
+    "node-gyp": "^6.1.0"
   },
   "scripts": {
     "test": "jest",

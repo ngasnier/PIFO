@@ -20,6 +20,8 @@ import { DynamicsCore } from "./DynamicsCore.js";
 import { Model } from "./Model.js"
 import { Variable } from "./Variable.js"
 import { VariableDescription } from "./VariableDescription.js"
+import { Logger } from "../util/Logger.js";
+
 
 /**
  * Coeur dynamique barocline, équations hydrostatiques, calcul explicite.
@@ -254,13 +256,13 @@ export class BaroclinicHydrostaticCore extends DynamicsCore
         super.setup();
         
         this.divergenceDiffusionFactor = this.divergenceDampingFactor(this.divergenceDampingCoef, this.divergenceDampingOrder);
-        console.log("divergence diffusion : "+this.divergenceDiffusionFactor);
+        Logger.getLogger().info("divergence diffusion : "+this.divergenceDiffusionFactor);
         this.windDiffusionFactor = this.diffusionFactor(this.windDiffusionCoef, this.windDiffusionOrder);
-        console.log("wind diffusion : "+this.windDiffusionFactor);
+        Logger.getLogger().info("wind diffusion : "+this.windDiffusionFactor);
         this.temperatureDiffusionFactor = this.diffusionFactor(this.temperatureDiffusionCoef, this.temperatureDiffusionOrder);
-        console.log("temperature diffusion : "+this.temperatureDiffusionFactor);
+        Logger.getLogger().info("temperature diffusion : "+this.temperatureDiffusionFactor);
         this.humidityDiffusionFactor = this.diffusionFactor(this.humidityDiffusionCoef, this.humidityDiffusionOrder);
-        console.log("humidity diffusion : "+this.humidityDiffusionFactor);
+        Logger.getLogger().info("humidity diffusion : "+this.humidityDiffusionFactor);
         
         this.sigma = this._model.verticalCoords;
         this.dsigma = [];
