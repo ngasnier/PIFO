@@ -119,6 +119,12 @@ test('CommSplit/TypeVector', () => {
    });
 });
 
+test('Model Gather/Scatter', () => {
+   return spawnCommand("mpirun -n 4 node tests/MPI_ModelGatherScatterStub.js").then((result) => {
+       expect(cleanOutput(result)).toBe("data_ok=true");
+   });
+});
+
 // This test fails for now. Code is unfinished and implementation 
 // of MPI_Alltoallw is not fully validated.
 /* test('Alltoallw', () => {

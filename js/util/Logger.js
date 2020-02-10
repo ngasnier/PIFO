@@ -16,7 +16,7 @@
  */
 
 /**
- * Basic wrapper for logging functionnality.
+ * Basic wrapper for logging functionnality with browser mode compatibility.
  */
 export class Logger {
     constructor()

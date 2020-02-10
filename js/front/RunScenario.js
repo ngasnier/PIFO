@@ -162,10 +162,10 @@ export class RunScenario extends Scenario {
                         || variable.category == VariableDescription.CAT_PARAMETER)
                 {
                     this.sendMessage(`loading variable data ${variable.name} at t=0`);
-                    this.model.setVariable(variable.name, 
-                        await this.dataSource.getField(variable.name, 0));                    
+                        this.model.setVariable(variable.name, 
+                            await this.dataSource.getField(variable.name, 0));
+                    }
                 }
-            }
             this.model.totalTime = 0;
             this.model.totalStep = 0;
             this.firstExecTime = new Date();

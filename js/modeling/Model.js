@@ -17,14 +17,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Variable } from "./Variable.js";
 import { VariableDescription } from "./VariableDescription.js";
+import { Logger } from "../util/Logger.js";
+import { MPI } from "../util/MPI.js";
 
 /**
- * Un modèle créé par composition.
+ * Model class, made by composition of cores and helpers.
  * 
  * @type type
  */
 export class Model {
-    // **** PARAMETRES DU MODELE ****
+    
     constructor()
     {
         //** Nom compréhensible du modèle.
@@ -55,10 +57,16 @@ export class Model {
         this.dy = 1111110;
 
         //** Largeur de grille du domaine
-        this.width=36;    
+        this._globalWidth = 36;
 
         //** Hauteur de grille du domaine
-        this.height=36;
+        this._globalHeight = 36;
+
+        //** Largeur de grille locale
+        this._width=36;
+
+        //** Hauteur de grille locale
+        this._height=36;
        
         //** Pas de temps (attention à la stabilité !)
         this.dt = 3600;
@@ -102,7 +110,51 @@ export class Model {
         this._boundaryCondition = null;
         
         this._physicsSchemes = [];
+                
+        // *** MPI management
 
+        // Our rank in the MPI cluster
+        this.worldRank = 0;
+        
+        // Size of MPI cluster.
+        this.worldSize = 1;
+        
+        // Width of the grid partition
+        this.partitionWidth = 1;
+        
+        // Height of the grid partition
+        this.partitionHeight = 1;
+        
+        // Our column position
+        this.partitionColumn = 0;
+        
+        // Our partition row
+        this.partitionRow = 0;
+        
+        // Informations about our neighbours for MPI communication
+        this.neighboursInfo = [];
+        
+        // Communicator for row dispatching
+        this.rowComm = null;
+        
+        // Communicator for column dispatching
+        this.colComm = null;
+        
+        // Global types for 2D/3D variables gather/scatter
+        this.globalVecType = [];
+        
+        // Local types for 2D/3D variables gather/scatter
+        this.localVecType = [];
+        
+        // Buffers for MPI communication
+        this.rowDataBuffer = null;
+        
+        this.colComm_sendcounts = null;
+        this.colComm_senddispls = null;
+        this.rowComm_sendcounts = null;
+        this.rowComm_senddispls = null;
+        this.rowComm_recvcounts = null;
+        
         // Méthodes privées du modèle
         if( typeof Model.initialized == "undefined" ) 
         {
@@ -199,7 +251,10 @@ export class Model {
      * Initialisation du modèle avant le démarrage du run.
      */
     setup()
-    {       
+    {    
+        // *** Setup MPI partition and communication
+        this.setupMPI();
+
         // *** Déclaration des variables
         this.setupVariablesDescriptions();
         
@@ -368,6 +423,26 @@ export class Model {
             }
         }
         this.setupVariablesLevels();
+    }
+    
+    get globalWidth()
+    {
+        return this._globalWidth;
+    }
+    
+    set globalWidth(w)
+    {
+        this._globalWidth = w;
+    }
+    
+    get width()
+    {
+        return this._width;
+    }
+    
+    get height()
+    {
+        return this._height;
     }
     
     /**
@@ -750,6 +825,199 @@ export class Model {
         dt.setSeconds(dt.getSeconds()+this.time);
         return dt;
     }   
+    
+    setupMPI()
+    {        
+        this.worldSize = MPI.CommSize(MPI.MPI_COMM_WORLD);
+        this.worldRank = MPI.CommRank(MPI.MPI_COMM_WORLD);
+        if (this.worldSize<2) return;
+        
+        // Découpage de la grille en nombre de zones
+        this.partitionWidth = Math.floor(Math.sqrt(this.worldSize));
+        this.partitionHeight = Math.floor(Math.sqrt(this.worldSize));
+        while (this.partitionWidth*this.partitionHeight<this.worldSize)
+        {
+            partitionWidth++;
+        }
+        if (this.partitionWidth*this.partitionHeight>this.worldSize) 
+            throw `MPI partition failed. world=${this.worldSize} partitionWidth=${this.partitionWidth} partitionHeight=${this.partitionHeight}`;
+        
+        // Our row and column position in the partition
+        this.partitionRow = Math.floor(this.worldRank/this.partitionWidth);
+        this.partitionColumn = this.worldRank-this.partitionRow*this.partitionWidth;
+        
+        // Two possible cases of grid size in each axis
+        var ncol = Math.trunc(this.globalWidth/this.partitionWidth);
+        var nrow = Math.trunc(this.globalHeight/this.partitionHeight);
+        this.dispatch_cols_size = [ncol, ncol+(this.globalWidth-ncol*this.partitionWidth)];
+        this.dispatch_rows_size = [nrow, nrow+(this.globalHeight-nrow*this.partitionHeight)];
+
+        // create communicators which have processors with the same row or column in them
+        this.rowComm = MPI.CommSplit(MPI.MPI_COMM_WORLD, this.partitionRow, this.worldRank);
+        this.colComm = MPI.CommSplit(MPI.MPI_COMM_WORLD, this.partitionColumn, this.worldRank);
+
+        var row_rank = MPI.CommRank(this.rowComm);
+        var col_rank = MPI.CommRank(this.colComm);
+
+        this._height = (this.partitionRow==(this.partitionHeight-1) ? this.dispatch_rows_size[1] : this.dispatch_rows_size[0]);
+        this._width = (this.partitionColumn==(this.partitionWidth-1) ? this.dispatch_cols_size[1] : this.dispatch_cols_size[0]);
+        
+        // Create types for 2D fields
+        var vec = MPI.TypeVector(this.height, 1, this.globalWidth, MPI.MPI_DOUBLE);
+        this.globalVecType[0] = MPI.TypeCreateResized(vec, 0, 8);
+        MPI.TypeCommit(this.globalVecType[0]);
+
+        var localvec = MPI.TypeVector(this.height, 1, this.width, MPI.MPI_DOUBLE);
+        this.localVecType[0] = MPI.TypeCreateResized(localvec, 0, 8);
+        MPI.TypeCommit(this.localVecType[0]);
+
+        // Create types for layer fields
+        vec = MPI.TypeVector(this.height, this.nbLayers, this.globalWidth*this.nbLayers, MPI.MPI_DOUBLE);
+        this.globalVecType[1] = MPI.TypeCreateResized(vec, 0, 8*this.nbLayers);
+        MPI.TypeCommit(this.globalVecType[1]);
+
+        localvec = MPI.TypeVector(this.height, this.nbLayers, this.width*this.nbLayers, MPI.MPI_DOUBLE);
+        this.localVecType[1] = MPI.TypeCreateResized(localvec, 0, 8*this.nbLayers);
+        MPI.TypeCommit(this.localVecType[1]);
+        
+        // Create types for surface fields
+        vec = MPI.TypeVector(this.height, this.nbSurfaces, this.globalWidth*this.nbSurfaces, MPI.MPI_DOUBLE);
+        this.globalVecType[2] = MPI.TypeCreateResized(vec, 0, 8*this.nbSurfaces);
+        MPI.TypeCommit(this.globalVecType[2]);
+
+        localvec = MPI.TypeVector(this.height, this.nbSurfaces, this.width*this.nbSurfaces, MPI.MPI_DOUBLE);
+        this.localVecType[2] = MPI.TypeCreateResized(localvec, 0, 8*this.nbSurfaces);
+        MPI.TypeCommit(this.localVecType[2]);
+
+        if (this.partitionColumn==0)  // partitionColumn==0 ???
+        {
+            this.colComm_sendcounts = [];
+            this.colComm_senddispls = [];
+            for (var i=0;i<3;i++)
+            {
+                this.colComm_sendcounts[i] = new Int32Array(this.partitionHeight);
+                this.colComm_senddispls[i] = new Int32Array(this.partitionHeight);
+                this.colComm_senddispls[i][0] = 0;
+
+                for (var row=0; row<this.partitionHeight; row++) {
+                    this.colComm_sendcounts[i][row] = this.dispatch_rows_size[row<this.partitionRow-1?0:1]*this.globalWidth;
+                    
+                    switch (i)
+                    {
+                        case 1: this.colComm_sendcounts[i][row] *= this.nbLayers ; break;
+                        case 2: this.colComm_sendcounts[i][row] *= this.nbSurfaces ; break;
+                        default:
+                    }
+                    
+                    if (row > 0)
+                        this.colComm_senddispls[i][row] = this.colComm_senddispls[i][row-1] + this.colComm_sendcounts[i][row-1];
+                }
+            }
+            // Allocate only one buffer, with size maximum of what is needed
+            this.rowDataBuffer = new Float64Array(this.colComm_sendcounts[2][0]);
+        }
+
+        this.rowComm_sendcounts = [];
+        this.rowComm_senddispls = [];
+        this.rowComm_recvcounts = [];
+        for (var i=0;i<3;i++)
+        {
+            this.rowComm_sendcounts[i] = new Int32Array(this.partitionWidth);
+            this.rowComm_senddispls[i] = new Int32Array(this.partitionWidth);
+            this.rowComm_recvcounts[i] =  this.dispatch_cols_size[this.partitionColumn<this.partitionWidth-1?0:1]
+
+            if (this.partitionColumn == 0) {
+                this.rowComm_senddispls[i][0] = 0;
+                for (var col=0; col<this.partitionWidth; col++) {
+                    this.rowComm_sendcounts[i][col] = this.dispatch_cols_size[col<this.partitionWidth-1?0:1];
+                    if (col>0)
+                        this.rowComm_senddispls[i][col] = this.rowComm_senddispls[i][col-1]+this.rowComm_sendcounts[i][col-1];
+                }
+            }
+        }
+        
+        
+        Logger.getLogger().debug(`Global grid ${this.globalWidth}x${this.globalHeight}, Local grid ${this.width}x${this.height}`);
+        Logger.getLogger().debug(`Grid split into ${this.partitionWidth}x${this.partitionHeight} processes`);
+        Logger.getLogger().debug(`Process ${this.worldRank}/${this.worldSize} is at ${this.partitionColumn}x${this.partitionRow}`);
+        Logger.getLogger().debug(`Dispatch ${ncol}x${nrow} (${this.dispatch_cols_size})x(${this.dispatch_rows_size})`);
+        Logger.getLogger().debug(`Col comm send counts ${this.colComm_sendcounts}, Senddispls ${this.colComm_senddispls}`);
+        Logger.getLogger().debug(`Row comm send counts ${this.rowComm_sendcounts}, Senddispls ${this.rowComm_senddispls}`);        
+    }
+    
+    getScatterType(p_variable)
+    {
+        var info = this.getVariableDescription(p_variable);
+        var type = 0;
+        switch (info.verticalPosition)
+        {
+            case VariableDescription.VERTICAL_POSITION_LAYER:
+                type=1;
+                break;
+            case VariableDescription.VERTICAL_POSITION_INTERLAYER:
+                type=2;
+                break;
+            default:
+                0
+        }
+        return type;
+    }
+    
+    scatter(p_name, p_variable)
+    {
+        if (MPI.CommSize(MPI.MPI_COMM_WORLD)==1) return;
+        
+        var scatter_type = this.getScatterType(p_name);
+        Logger.getLogger().debug(`Scattering ${p_name} ${scatter_type}`);
+        
+        if (this.partitionColumn == 0) 
+        {
+            var global_data = (p_variable!=null) ? p_variable.data : null;
+            Logger.getLogger().debug(`Scatter rows global_data(${global_data!=null?global_data.length:0}) counts(${this.colComm_sendcounts[scatter_type]}) displs(${this.colComm_senddispls[scatter_type]})`);
+            Logger.getLogger().debug(`rowDataBuffer.length=${this.rowDataBuffer.length} receive(${this.colComm_sendcounts[scatter_type][this.partitionRow]})`);          
+            MPI.Scatterv(global_data, this.colComm_sendcounts[scatter_type], this.colComm_senddispls[scatter_type], MPI.MPI_DOUBLE,
+                      this.rowDataBuffer, this.colComm_sendcounts[scatter_type][this.partitionRow], MPI.MPI_DOUBLE, 0, this.colComm);
+        }
+        
+        var localVariable = this.getVariable(p_name);
+        
+        var rowptr = (this.partitionColumn == 0) ? this.rowDataBuffer : null;
+
+        Logger.getLogger().debug(`Scatter cols counts(${this.rowComm_sendcounts[scatter_type]}) displs(${this.rowComm_senddispls[scatter_type]})`);
+        Logger.getLogger().debug(`receive(${this.rowComm_recvcounts[scatter_type]})`);
+        MPI.Scatterv(rowptr, this.rowComm_sendcounts[scatter_type], this.rowComm_senddispls[scatter_type], this.globalVecType[scatter_type],
+                      localVariable.data, this.rowComm_recvcounts[scatter_type], this.localVecType[scatter_type], 0, this.rowComm);
+    }
+    
+    gather(p_name, p_variable)
+    {
+        if (MPI.CommSize(MPI.MPI_COMM_WORLD)==1) return;
+
+        var scatter_type = this.getScatterType(p_name);
+        var localVariable = this.getVariable(p_name);
+        Logger.getLogger().debug(`Gathering ${p_name} ${scatter_type}`);
+        
+        // Gather column data
+        var gather_row_data = (this.partitionColumn == 0) ? this.rowDataBuffer : null;
+
+        Logger.getLogger().debug(`Gather cols counts(${this.rowComm_sendcounts[scatter_type]}) displs(${this.rowComm_senddispls[scatter_type]})`);
+        Logger.getLogger().debug(`receive(${this.rowComm_recvcounts[scatter_type]})`);
+    
+        MPI.Gatherv(localVariable.data, this.rowComm_recvcounts[scatter_type], this.localVecType[scatter_type],
+                         gather_row_data, this.rowComm_sendcounts[scatter_type], this.rowComm_senddispls[scatter_type], this.globalVecType[scatter_type], 0, this.rowComm);
+
+        if (this.partitionColumn==0) {
+           
+            var global_data = (p_variable!=null) ? p_variable.data : null;
+
+            Logger.getLogger().debug(`Gather rows global_data(${global_data!=null?global_data.length:0}) counts(${this.colComm_sendcounts[scatter_type]}) displs(${this.colComm_senddispls[scatter_type]})`);
+            Logger.getLogger().debug(`rowDataBuffer.length=${this.rowDataBuffer.length} receive(${this.colComm_sendcounts[scatter_type][this.partitionRow]})`);
+            
+            MPI.Gatherv(gather_row_data, this.colComm_sendcounts[scatter_type][this.partitionRow], MPI.MPI_DOUBLE,
+                         global_data, this.colComm_sendcounts[scatter_type], this.colComm_senddispls[scatter_type], MPI.MPI_DOUBLE, 0, this.colComm);
+        }
+
+    }
 }
 
 
