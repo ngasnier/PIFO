@@ -18,7 +18,6 @@
 import { DataSource } from "../front/DataSource.js";
 import { Scenario } from "../front/Scenario.js";
 import { VariableDescription } from "../modeling/VariableDescription.js";
-import { MPI } from "../util/MPI.js";
 
 /**
  * Traite des données en entrée pour les fournir au format du modèle.
@@ -41,9 +40,6 @@ export class DataProcessor extends Scenario
         this.tasks = []; 
         
         this.currentProcess = 0;
-        
-        if (MPI.CommSize()>1) 
-            throw "cannot run DataProcessor if MPI comm size is greater than 1.";
     }    
 
     /**

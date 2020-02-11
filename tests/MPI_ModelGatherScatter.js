@@ -24,6 +24,7 @@ import { Model } from "../js/modeling/Model.js";
 import { Variable } from "../js/modeling/Variable.js";
 import { VariableDescription } from "../js/modeling/VariableDescription.js";
 import { ConfigManager } from "../js/front/ConfigManager.js";
+import { MPIGridComm } from "../js/util/MPIGridComm.js";
 
 const fs = require('fs');
 const log4js = require('log4js');
@@ -60,7 +61,20 @@ log4js.configure(logconfig);
 
 var manager = new ConfigManager("../", config);
 
-manager.getModel().then((model) => {
+manager.getModel().then((model) => {   
+    // Initialise partition
+    // Note : Needs more "automatic" grid partitioning
+    var comm = new MPIGridComm();
+    comm.globalWidth = model.globalWidth;
+    comm.globalHeight = model.globalHeight;
+    comm.setupMPI();
+    var surfaceType = comm.registerColumnType(1);
+    var layerType = comm.registerColumnType(model.nbLayers);
+    var interLayerType = comm.registerColumnType(model.nbSurfaces);
+    
+    // Normal model setup ~~ obligé de tricher DOH !
+    model._width = comm.width;
+    model._height = comm.height,
     model.setup();
     
     var Z = null;
@@ -75,26 +89,25 @@ manager.getModel().then((model) => {
         fill(Z.data);
         fill(T.data);
         fill(sigmaf.data);
-        model.scatter("Z", Z);
-        model.scatter("T", T);
-        model.scatter("sigmaf", sigmaf);
+        comm.scatter("Z", Z.data, model.getVariable("Z").data, surfaceType);
+        comm.scatter("T", T.data, model.getVariable("T").data, layerType);
+        comm.scatter("sigmaf", sigmaf.data, model.getVariable("sigmaf").data, interLayerType);
     }
     else
     {
-        model.scatter("Z", null);
-        model.scatter("T", null);
-        model.scatter("sigmaf", null);
+        comm.scatter("Z", null, model.getVariable("Z").data, surfaceType);
+        comm.scatter("T", null, model.getVariable("T").data, layerType);
+        comm.scatter("sigmaf", null, model.getVariable("sigmaf").data, interLayerType);
     }
-    
-       
+
     if (world_rank==0)
     {
         var Z_res = Variable.createVariable(1, model.globalWidth, model.globalHeight);
         var T_res = Variable.createVariable(model.nbLayers, model.globalWidth, model.globalHeight);
         var sigmaf_res = Variable.createVariable(model.nbSurfaces, model.globalWidth, model.globalHeight);
-        model.gather("Z", Z_res);
-        model.gather("T", T_res);
-        model.gather("sigmaf", sigmaf_res);
+        comm.gather("Z", model.getVariable("Z").data, Z_res.data, surfaceType);
+        comm.gather("T", model.getVariable("T").data, T_res.data, layerType);
+        comm.gather("sigmaf", model.getVariable("sigmaf").data, sigmaf_res.data, interLayerType);
         var data_ok = true;
         var test = true;
         
@@ -131,9 +144,9 @@ manager.getModel().then((model) => {
     }
     else
     {
-        model.gather("Z", null);
-        model.gather("T", null);
-        model.gather("sigmaf", null);
+        comm.gather("Z", model.getVariable("Z").data, null, surfaceType);
+        comm.gather("T", model.getVariable("T").data, null, layerType);
+        comm.gather("sigmaf", model.getVariable("sigmaf").data, null, interLayerType);
     }
     
     
