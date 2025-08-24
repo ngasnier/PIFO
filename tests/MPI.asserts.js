@@ -15,12 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import { RectangularGrid } from "../js/grid/RectangularGrid.js";
+
 const MPI = require('nodempi');
 
 const { spawn } = require('child_process');
 
 // Utility to exec MPI processes
-spawnCommand = function(cmdline, options = {})
+var spawnCommand = function(cmdline, options = {})
 {
     return new Promise((resolve, reject) => {
         try {
@@ -63,9 +65,21 @@ spawnCommand = function(cmdline, options = {})
 }
 
 // Clean color & trailing end of lines from output command
-cleanOutput = function(str)
+var cleanOutput = function(str)
 {
     return str.trim().replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, "");
+}
+
+// Needed as expect don't work well with typed arrays
+var compareArrays = function(a, b)
+{
+    if (a.length!=b.length) return a.length+" != "+b.length;
+    for (var i=0;i<a.length;i++)
+    {
+        if (a[i]!=b[i]) return a.toString()+" != "+b.toString();
+    }
+        
+    return true;
 }
 
 // Basic test of MPI functionality. 
@@ -132,3 +146,33 @@ test('Model Gather/Scatter', () => {
        expect(cleanOutput(result)).toBe("ok");
    });
 });*/
+
+test('Grid partitioning', () => {
+    var grid = new RectangularGrid();
+    grid.width = 10;
+    grid.height = 5;
+    grid.haloSize = 2;
+    
+    var expected_topHaloIds = [0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16, 17]
+    var ids = grid.getTopHaloIds();    
+    expect(compareArrays(ids, expected_topHaloIds)).toBe(true); 
+    
+    var expected_rightHaloIds = [8, 9, 18, 19, 28, 29];
+    ids = grid.getRightHaloIds();    
+    expect(compareArrays(ids, expected_rightHaloIds)).toBe(true); 
+    
+    var expected_bottomHaloIds = [32, 33, 34, 35, 36, 37, 38, 39, 42, 43, 44, 45, 46, 47, 48, 49];
+    ids = grid.getBottomHaloIds();
+    expect(compareArrays(ids, expected_bottomHaloIds)).toBe(true);
+    
+    var expected_leftHaloIds = [20, 21, 30, 31, 40, 41]
+    ids = grid.getLeftHaloIds();    
+    expect(compareArrays(ids, expected_leftHaloIds)).toBe(true); 
+    
+    var expected_haloIds = expected_topHaloIds
+            .concat(expected_rightHaloIds)
+            .concat(expected_bottomHaloIds)
+            .concat(expected_leftHaloIds);
+    var ids = grid.getHaloIds();
+    expect(compareArrays(ids, expected_haloIds)).toBe(true); 
+});

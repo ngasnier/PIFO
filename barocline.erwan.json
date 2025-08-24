@@ -1,0 +1,861 @@
+{
+    "modules" : {
+        "Model": "modeling/Model.js",
+        "BarotropicCore": "modeling/BarotropicCore.js",
+        "BarotropicSemiImplicitCore": "modeling/BarotropicSemiImplicitCore.js",
+        "BaroclinicHydrostaticCore": "modeling/BaroclinicHydrostaticCore.js",
+        "LatLonDomain": "modeling/LatLonDomain.js",
+        "MercatorProjection": "modeling/MercatorProjection.js",
+        "LeapFrogTimeIntegrator": "modeling/LeapFrogTimeIntegrator.js",
+        "RobertAsselinTimeFilter": "modeling/RobertAsselinTimeFilter.js",
+        "SchumannFilter": "modeling/SchumannFilter.js",
+        "CouplingLimitedAreaBoundaryCondition": "modeling/CouplingLimitedAreaBoundaryCondition.js",
+        "PrecipitationScheme": "modeling/PrecipitationScheme.js",
+        
+        "WGRIBTextFieldDataSource": "front/WGRIBTextFieldDataSource.js",
+        "WGRIBTextFieldDataWriter": "front/WGRIBTextFieldDataWriter.js",
+        
+        "DataProcessor": "processing/DataProcessor.js",
+        "ProjectionComponent": "processing/ProjectionComponent.js",
+        "ArithmeticComponent": "processing/ArithmeticComponent.js",
+        "CoriolisFactorComponent": "processing/CoriolisFactorComponent.js",
+        "ScalingFactorComponent": "processing/ScalingFactorComponent.js",
+        "WorkflowTask": "processing/WorkflowTask.js",
+        "WGRIBInputComponent": "processing/WGRIBInputComponent.js",
+        "WGRIBOutputComponent": "processing/WGRIBOutputComponent.js",
+        "SigmaLevelInterpolationComponent": "processing/SigmaLevelInterpolationComponent.js",
+        "HumidityComponent": "processing/HumidityComponent.js",
+        "MultiDiffusionComponent": "processing/MultiDiffusionComponent.js",
+        
+        "RunScenario": "front/RunScenario.js",
+        "DFIInitScenario": "front/DFIInitScenario.js",
+        "CouplingStep": "front/CouplingStep.js",
+        "HistoryStep": "front/HistoryStep.js",
+        "RecorderStep": "front/RecorderStep.js"
+    },
+    
+    "global": {
+        "gfslevels": [100, 15000, 35000, 50000, 65000, 85000, 92500, 100000],
+        "gfsindices": [1, 150, 350, 500, 650, 850, 925, 1000],
+        
+        "layers": [0.0481350396465511,
+            0.184775644761717,
+            0.3110947031394134,
+            0.4365726975546128,
+            0.5617802104119394,
+            0.6868661597951571,
+            0.8118869790121533,
+            0.9368688226982536],
+        
+        "surfaces": [
+            0.001,
+            0.125875,
+            0.25075,
+            0.375625,
+            0.5005,
+            0.6253749999999999,
+            0.7502499999999999,
+            0.8751249999999998,
+            0.9999999999999998],
+        
+        "inputDomain":{
+            "class": "LatLonDomain",
+            "minLat": -90,
+            "maxLat": 90,
+            "minLon": 0,
+            "maxLon": 359.5,
+            "dlat": 0.5,
+            "dlon": 0.5
+        },
+        
+        "modelDomain": {
+            "class": "MercatorProjection",
+            "width": 111,
+            "height": 72,
+            "horizontalStaggering": "C",
+            "minLat":9,
+            "maxLat":81,
+            "minLon":-60,
+            "maxLon":51
+        },
+        
+        "outputDomain": {
+            "class": "LatLonDomain",
+            "minLat": 9,
+            "maxLat": 81,
+            "minLon": -60,
+            "maxLon": 51,
+            "dlat": 1,
+            "dlon": 1
+        },
+        
+        "gfsdata": {
+            "class": "WGRIBTextFieldDataSource",
+            "baseURL" : "res/run/2018120612",
+            "catalog" : [ 
+                {"name": "ugrd", "description":"", "units":"", "levels": {"ref": "gfslevels"}, "indices": {"ref": "gfsindices"}},
+                {"name": "vgrd", "description":"", "units":"", "levels": {"ref": "gfslevels"}, "indices": {"ref": "gfsindices"}},
+                {"name": "tmp", "description":"", "units":"", "levels": {"ref": "gfslevels"}, "indices": {"ref": "gfsindices"}},
+                {"name": "sfcprs", "description":"", "units":""},
+                {"name": "prmsl", "description":"", "units":""},
+                {"name": "sfchgt", "description":"", "units":""},
+                {"name": "rh", "description":"", "units":"", "levels": {"ref": "gfslevels"}, "indices": {"ref": "gfsindices"}}
+            ]
+        },
+        
+        "inputdata": {
+            "class": "WGRIBTextFieldDataSource", 
+            "baseURL" : "res/test/input" ,
+            "catalog" : [ 
+                {"name": "U", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "V", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "T", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "Z", "description":"", "units":""},
+                {"name": "qv", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "f", "description":"", "units":""},
+                {"name": "m", "description":"", "units":""},
+                {"name": "sfcgeop", "description":"", "units":""}
+            ]
+        },
+
+        "rundata": {
+            "class": "WGRIBTextFieldDataSource", 
+            "baseURL" : "res/test/run" ,
+            "catalog" : [ 
+                {"name": "U", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "V", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "T", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "Z", "description":"", "units":""},
+                {"name": "qv", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "f", "description":"", "units":""},
+                {"name": "m", "description":"", "units":""},
+                {"name": "sfcgeop", "description":"", "units":""}
+            ]
+        },
+        
+        "outputdir" : {
+            "class": "WGRIBTextFieldDataSource", 
+            "baseURL" : "res/test/output",
+            "catalog" : [ 
+                {"name": "U", "description":"", "units":"", "levels": {"ref": "layers"} },
+                {"name": "V", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "T", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "Z", "description":"", "units":""},
+                {"name": "ps", "description":"", "units":""},
+                {"name": "qv", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "f", "description":"", "units":""},
+                {"name": "m", "description":"", "units":""},
+                {"name": "apcp", "description":"", "units":""},
+                {"name": "acsnow", "description":"", "units":""},
+                {"name": "tourbillon", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "phi", "description":"", "units":"", "levels": {"ref": "layers"}},
+                {"name": "sigmaf", "description":"", "units":"", "levels": {"ref": "surfaces"}},
+                {"name": "sfcgeop", "description":"", "units":""},
+                {"name": "levels", "description":"", "units":""}
+            ]            
+        },
+        
+        "pubdir" : {
+            "class": "WGRIBTextFieldDataSource", 
+            "baseURL" : "res/test/pub"
+        }
+    },
+    
+    "model": {
+        "class": "Model",
+
+        "dynamicsCore": {
+            "class": "BaroclinicHydrostaticCore",
+            "diffusionFactor": 0
+        },
+
+        "name": "PIFO",
+
+        "projection": {
+            "ref": "modelDomain"
+        },
+
+        "timeIntegrator" : {
+            "class": "LeapFrogTimeIntegrator"
+        },
+        
+        "__timeFilter" : {
+            "class": "RobertAsselinTimeFilter",
+            "epsilon": 0.428
+        },
+
+        "width": 111,
+        "height": 72,
+        "horizontalStaggering": "C",
+        "global": false,
+        "filterInterval": 1,
+        "verticalStaggering":  "L",
+                
+        "verticalCoords": [
+            0.001,
+            0.0481350396465511,
+            0.125875,
+            0.184775644761717,
+            0.25075,
+            0.3110947031394134,
+            0.375625,
+            0.4365726975546128,
+            0.5005,
+            0.5617802104119394,
+            0.6253749999999999,
+            0.6868661597951571,
+            0.7502499999999999,
+            0.8118869790121533,
+            0.8751249999999998,
+            0.9368688226982536,
+            0.9999999999999998],
+        
+        "__boundaryCondition": {
+            "class": "CouplingLimitedAreaBoundaryCondition",
+            "relaxation": 8
+        },
+        
+        "COMMENTED_OUT___physicsSchemes": [
+            {
+                "class": "PrecipitationScheme"
+            }
+        ],
+
+        "dt": 15
+    },
+    
+    "scenario": {
+        "preprocessor" : {
+            "class": "DataProcessor",
+            
+            "processList": [
+                { "name":"Z", "task" : "z_interpolation", "parameters": [{"name":"source", "value":"prmsl"}, {"name":"variable", "value": "Z"} ]},
+                { "name":"U", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"ugrd"}, {"name": "variable", "value":"U"}]},
+                { "name":"V", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"vgrd"}, {"name":"variable", "value": "V"} ]},
+                { "name":"T", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"tmp"}, {"name":"variable", "value": "T"} ]},
+                { "name":"qv", "task" : "rh_interpolation", "parameters": [{"name":"source", "value":"rh"}, {"name":"variable", "value": "qv"}]},
+                { "name":"sfcgeop", "task" : "phi_interpolation", "parameters": [{"name":"source", "value":"sfchgt"}, {"name":"variable", "value": "sfcgeop"}]},
+                { "name":"f", "task" : "f_generation", "parameters": [{"name":"destination", "value": "f"}] },
+                { "name":"m", "task" : "m_generation", "parameters": [{"name":"destination", "value": "m"}] }
+            ],
+           
+            "tasks": [
+                {
+                    "name":"basic_interpolation",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"gridPosVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"scaleVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"numberTypeVariable"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "variable_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "gfsdata" }
+                        },
+                        {
+                            "name": "pressure_source", 
+                            "class":"WGRIBInputComponent", 
+                            "source" : "prmsl",
+                            "dataSource": { "ref": "gfsdata" }
+                        },
+                        {
+                            "name": "projection_component", 
+                            "class":"ProjectionComponent",
+                            "sourceDomain": { "ref": "inputDomain" },
+                            "projection": { "ref": "modelDomain" }
+                        },
+                        {
+                            "name": "projection_component2", 
+                            "class":"ProjectionComponent",
+                            "sourceDomain": { "ref": "inputDomain" },
+                            "projection": { "ref": "modelDomain" }
+                        },
+                        {
+                            "name": "vertical_component", 
+                            "class":"SigmaLevelInterpolationComponent",
+                            "mode": 0,
+                            "sigmaLevels": { "ref":"layers" },
+                            "pressureLevels": { "ref": "gfslevels" }
+                        },
+                        {
+                            "name": "variable_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "inputdata" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"variable_source", "output":"main", "inputComponent":"projection_component", "input":"main"},
+                        {"outputComponent":"pressure_source", "output":"main", "inputComponent":"projection_component2", "input":"main"},
+                        {"outputComponent":"projection_component", "output":"main", "inputComponent":"vertical_component", "input":"main"},
+                        {"outputComponent":"projection_component2", "output":"main", "inputComponent":"vertical_component", "input":"surface_pressure"},
+                        {"outputComponent":"vertical_component", "output":"main", "inputComponent":"variable_destination", "input":"main"}
+                        
+                    ]
+                },
+                {
+                    "name":"z_interpolation",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"gridPosVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"scaleVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"numberTypeVariable"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "variable_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "gfsdata" }
+                        },
+                        {
+                            "name": "projection_component", 
+                            "class":"ProjectionComponent",
+                            "sourceDomain": { "ref": "inputDomain" },
+                            "projection": { "ref": "modelDomain" }
+                        },
+                        {
+                            "name": "z_to_logz", 
+                            "class":"ArithmeticComponent",
+                            "operation":"log"
+                        },
+                        {
+                            "name": "variable_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "inputdata" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"variable_source", "output":"main", "inputComponent":"projection_component", "input":"main"},
+                        {"outputComponent":"projection_component", "output":"main", "inputComponent":"z_to_logz", "input":"main"},
+                        {"outputComponent":"z_to_logz", "output":"main", "inputComponent":"variable_destination", "input":"main"}
+                    ]
+                },
+                {
+                    "name":"phi_interpolation",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"gridPosVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"scaleVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"numberTypeVariable"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "variable_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "gfsdata" }
+                        },
+                        {
+                            "name": "projection_component", 
+                            "class":"ProjectionComponent",
+                            "sourceDomain": { "ref": "inputDomain" },
+                            "projection": { "ref": "modelDomain" }
+                        },
+                        {
+                            "name": "hgt_to_phi", 
+                            "class":"ArithmeticComponent",
+                            "operation":"*", 
+                            "value":9.8066 
+                        },
+                        {
+                            "name": "enable_disable", 
+                            "class":"ArithmeticComponent",
+                            "operation":"*", 
+                            "value":0 
+                        },
+                        {
+                            "name": "variable_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "inputdata" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"variable_source", "output":"main", "inputComponent":"projection_component", "input":"main"},
+                        {"outputComponent":"projection_component", "output":"main", "inputComponent":"hgt_to_phi", "input":"main"},
+                        {"outputComponent":"hgt_to_phi", "output":"main", "inputComponent":"enable_disable", "input":"main"},
+                        {"outputComponent":"enable_disable", "output":"main", "inputComponent":"variable_destination", "input":"main"}
+                    ]
+                },
+                {
+                    "name":"rh_interpolation",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"gridPosVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"scaleVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"numberTypeVariable"},
+                        {"name":"variable", "bindComponent":"projection_component3", "parameter":"gridPosVariable"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "variable_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "gfsdata" }
+                        },
+                        {
+                            "name": "pressure_source", 
+                            "class":"WGRIBInputComponent", 
+                            "source" : "prmsl",
+                            "dataSource": { "ref": "gfsdata" }
+                        },
+                        {
+                            "name": "tmp_source", 
+                            "class":"WGRIBInputComponent", 
+                            "source" : "tmp",
+                            "dataSource": { "ref": "gfsdata" }
+                        },
+                        
+                        {
+                            "name": "projection_component", 
+                            "class":"ProjectionComponent",
+                            "sourceDomain": { "ref": "inputDomain" },
+                            "projection": { "ref": "modelDomain" }
+                        },
+                        {
+                            "name": "projection_component2", 
+                            "class":"ProjectionComponent",
+                            "sourceDomain": { "ref": "inputDomain" },
+                            "projection": { "ref": "modelDomain" }
+                        },
+                        {
+                            "name": "projection_component3", 
+                            "class":"ProjectionComponent",
+                            "sourceDomain": { "ref": "inputDomain" },
+                            "projection": { "ref": "modelDomain" }
+                        },
+                        
+                        {
+                            "name": "multi1", 
+                            "class":"MultiDiffusionComponent",
+                            "outputList": ["out1", "out2"]
+                        },
+                        
+                        
+                        {
+                            "name": "vertical_component", 
+                            "class":"SigmaLevelInterpolationComponent",
+                            "mode": 0,
+                            "sigmaLevels": { "ref":"layers" },
+                            "pressureLevels": { "ref": "gfslevels" }
+                        },
+                        {
+                            "name": "vertical_component2", 
+                            "class":"SigmaLevelInterpolationComponent",
+                            "mode": 0,
+                            "sigmaLevels": { "ref":"layers" },
+                            "pressureLevels": { "ref": "gfslevels" }
+                        },
+                        
+                        {
+                            "name": "rh_to_qv", 
+                            "class":"HumidityComponent"
+                        },
+                        
+                        {
+                            "name": "variable_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "inputdata" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"variable_source", "output":"main", "inputComponent":"projection_component", "input":"main"},
+                        {"outputComponent":"pressure_source", "output":"main", "inputComponent":"projection_component2", "input":"main"},
+                        {"outputComponent":"tmp_source", "output":"main", "inputComponent":"projection_component3", "input":"main"},
+                        
+                        {"outputComponent":"projection_component", "output":"main", "inputComponent":"vertical_component", "input":"main"},
+                        {"outputComponent":"projection_component2", "output":"main", "inputComponent":"multi1", "input":"main"},
+                        {"outputComponent":"projection_component3", "output":"main", "inputComponent":"vertical_component2", "input":"main"},
+                        {"outputComponent":"multi1", "output":"out1", "inputComponent":"vertical_component", "input":"surface_pressure"},
+                        {"outputComponent":"multi1", "output":"out2", "inputComponent":"vertical_component2", "input":"surface_pressure"},
+                        
+                        {"outputComponent":"vertical_component", "output":"main", "inputComponent":"rh_to_qv", "input":"main"},
+                        {"outputComponent":"vertical_component2", "output":"main", "inputComponent":"rh_to_qv", "input":"temperature"},
+                        
+                        {"outputComponent":"rh_to_qv", "output":"main", "inputComponent":"variable_destination", "input":"main"}
+                        
+                    ]
+                },
+                {
+                    "name":"m_generation",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"destination", "bindComponent":"m_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "m_component", 
+                            "class":"ScalingFactorComponent"
+                        },
+                        {
+                            "name": "m_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "inputdata" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"m_component", "output":"main", "inputComponent":"m_destination", "input":"main"}
+                        
+                    ]
+                },
+                {
+                    "name":"f_generation",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"destination", "bindComponent":"f_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "f_component", 
+                            "class":"CoriolisFactorComponent"
+                        },
+                        {
+                            "name": "f_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "inputdata" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"f_component", "output":"main", "inputComponent":"f_destination", "input":"main"}
+                        
+                    ]
+                }
+            ],
+            
+            "times": [0] 
+        },
+        
+        "init": {
+            "class": "DFIInitScenario",
+            "dataSource": {"ref": "inputdata"},
+
+            "stopTime": 3,
+            
+            "steps": [
+                { 
+                    "class":"CouplingStep",
+                    "dataSource" : {"ref": "inputdata"},
+                    "variables": [
+                        {"name":"U_couplage", "source": "U"},
+                        {"name":"V_couplage", "source": "V"},
+                        {"name":"T_couplage", "source": "T"},
+                        {"name":"Z_couplage", "source": "Z"},
+                        {"name":"qv_couplage", "source": "qv"}
+                    ],
+                    "restrictTimes": [0]
+                },
+                {
+                    "class":"HistoryStep",
+                    "dataSource" : {"ref": "rundata"},
+                    "historyInterval" : 12,
+                    "variables": [
+                        {"name":"U"},
+                        {"name":"V"},
+                        {"name":"T"},
+                        {"name":"Z"},
+                        {"name":"qv"},                        
+                        {"name":"m"},
+                        {"name":"f"},
+                        {"name":"sfcgeop"}
+                    ]
+                }]
+        },
+
+        "postinit": {
+            "class": "DataProcessor",
+            
+            "processList": [
+                { "name":"U", "task" : "copy", "parameters": [{"name":"source", "value":"U"}, {"name": "variable", "value":"U"}]},
+                { "name":"V", "task" : "copy", "parameters": [{"name":"source", "value":"V"}, {"name":"variable", "value": "V"}]},
+                { "name":"T", "task" : "copy", "parameters": [{"name":"source", "value":"T"}, {"name":"variable", "value": "T"} ]},
+                { "name":"Z", "task" : "copy", "parameters": [{"name":"source", "value":"Z"}, {"name":"variable", "value": "Z"}]},
+                { "name":"qv", "task" : "copy", "parameters": [{"name":"source", "value":"qv"}, {"name":"variable", "value": "qv"}]}                
+            ],
+           
+            "tasks": [
+                {
+                    "name":"copy",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "variable_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "inputdata" },
+                            "excludedTimes": [0]
+                        },
+                        {
+                            "name": "variable_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "rundata" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"variable_source", "output":"main", "inputComponent":"variable_destination", "input":"main"}                        
+                    ]
+                }                
+            ]
+        },
+
+        "run": {
+            "class": "RunScenario",
+            "dataSource": {"ref": "rundata"},
+
+            "stopTime": 1,
+            
+            "steps": [
+                
+                {
+                    "class":"HistoryStep",
+                    "dataSource" : {"ref": "outputdir"},
+                    "historyInterval" : 1,
+                    "variables": [
+                        {"name":"U"},
+                        {"name":"V"},
+                        {"name":"T"},
+                        {"name":"Z"},
+                        {"name":"ps"},
+                        {"name":"qv"},
+                        {"name":"phi"},
+                        {"name":"tourbillon"},
+                        {"name":"sigmaf"},
+                        {"name":"m"},
+                        {"name":"f"},
+                        {"name":"apcp"},
+                        {"name":"acsnow"},
+                        {"name": "latitudes"}, 
+                        {"name": "longitudes"}
+                    ]
+                },
+                { 
+                    "class":"RecorderStep",
+                    "outputURL" : "run",
+                    "variables": [
+                        {
+                            "name":"phi", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"divergence", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"U", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"V", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"T", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"Z", 
+                            "points": [
+                                {"x":52, "y":43}, 
+                                {"x":62, "y":14}
+                            ]
+                        },
+                        {
+                            "name":"qv", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"tourbillon", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"Dtilde", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"DtildeDs", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"sigmaf", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"U_tdcy", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"V_tdcy", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"T_tdcy", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"Z_tdcy", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"qv_tdcy", 
+                            "points": [
+                                {"x":52, "y":43, "z": 4}, 
+                                {"x":62, "y":14, "z": 4}
+                            ]
+                        },
+                        {
+                            "name":"ps", 
+                            "points": [
+                                {"x":52, "y":43}, 
+                                {"x":62, "y":14}
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+
+        "postprocessor" : {
+            "class": "DataProcessor",
+            
+            "processList": [
+                { "name":"U", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"U"}, {"name": "variable", "value":"U"}]},
+                { "name":"V", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"V"}, {"name":"variable", "value": "V"}]},
+                { "name":"T", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"T"}, {"name":"variable", "value": "T"} ]},
+                { "name":"ps", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"ps"}, {"name":"variable", "value": "ps"}]},
+                { "name":"qv", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"qv"}, {"name":"variable", "value": "qv"}]},
+                { "name":"phi", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"phi"}, {"name":"variable", "value": "phi"}]},
+                { "name":"f", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"f"}, {"name":"variable", "value": "f"}]},
+                { "name":"tourbillon", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"tourbillon"}, {"name":"variable", "value": "tourbillon"}]},
+                { "name":"sigmaf", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"sigmaf"}, {"name":"variable", "value": "sigmaf"}]},
+                { "name":"apcp", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"apcp"}, {"name":"variable", "value": "apcp"}]},
+                { "name":"acsnow", "task" : "basic_interpolation", "parameters": [{"name":"source", "value":"acsnow"}, {"name":"variable", "value": "acsnow"}]},
+                { "name":"levels", "task" : "copy", "parameters": [{"name":"source", "value":"levels"}, {"name":"variable", "value": "levels"}]}
+            ],
+           
+            "tasks": [
+                {
+                    "name":"basic_interpolation",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"gridPosVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"scaleVariable"},
+                        {"name":"variable", "bindComponent":"projection_component", "parameter":"numberTypeVariable"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "variable_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "outputdir" }
+                        },
+                        {
+                            "name": "projection_component", 
+                            "class":"ProjectionComponent",
+                            "destinationDomain": { "ref": "outputDomain" },
+                            "projection": { "ref": "modelDomain" }
+                        },
+                        {
+                            "name": "variable_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "pubdir" }
+                        },
+                        {
+                            "name": "latitude_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "pubdir" },
+                            "destination": "latitudes"
+                        },
+                        {
+                            "name": "longitude_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "pubdir" },
+                            "destination": "longitudes"
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"variable_source", "output":"main", "inputComponent":"projection_component", "input":"main"},
+                        {"outputComponent":"projection_component", "output":"main", "inputComponent":"variable_destination", "input":"main"},
+                        {"outputComponent":"projection_component", "output":"latitudes", "inputComponent":"latitude_destination", "input":"main"},
+                        {"outputComponent":"projection_component", "output":"longitudes", "inputComponent":"longitude_destination", "input":"main"}
+                    ]
+                },
+                {
+                    "name":"copy",
+                    "class":"WorkflowTask",
+                    "bindParameters": [
+                        {"name":"source", "bindComponent":"variable_source", "parameter":"source"},
+                        {"name":"variable", "bindComponent":"variable_destination", "parameter":"destination"}
+                    ],
+                    "components": [
+                        {
+                            "name": "variable_source", 
+                            "class":"WGRIBInputComponent", 
+                            "dataSource": { "ref": "outputdir" }
+                        },
+                        {
+                            "name": "variable_destination", 
+                            "class":"WGRIBOutputComponent", 
+                            "dataSource": { "ref": "pubdir" }
+                        }
+                    ],
+                    "links": [
+                        {"outputComponent":"variable_source", "output":"main", "inputComponent":"variable_destination", "input":"main"}                        
+                    ]
+                }                
+            ],
+            
+            "times": [0, 1] 
+        }        
+    }
+}

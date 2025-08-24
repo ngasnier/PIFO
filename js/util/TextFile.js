@@ -81,6 +81,7 @@ export class TextFile {
             {
                 const fs = require('fs');
                 const path = require('path');
+
                 return fs.readFileSync(p_url, "utf8");
             }
             else
