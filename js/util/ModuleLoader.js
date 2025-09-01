@@ -64,13 +64,23 @@ export class ModuleLoader {
             var module_path = this.config[p_module].startsWith("/") ? this.config[p_module]: this.searchPath+this.config[p_module];
             if (p_module in this.config)
             {
-                if (typeof module !== 'undefined' && module.exports) 
+                var isNode = false;    
+                if (typeof process === 'object') {
+                    if (typeof process.versions === 'object') {
+                        if (typeof process.versions.node !== 'undefined') {
+                            isNode = true;
+                        }
+                    }
+                }
+
+                if (isNode)
                 {
                     // Node
-                    var esmImport = require('esm')(module);
-                    var loaded_module = esmImport(module_path);
-                    var cls = new loaded_module[p_module];
-                    resolve(cls);
+                    console.log("loading module "+module_path);
+                    (async()=> {
+                        const cls = await import("../../"+module_path);
+                        resolve(new cls[p_module]);
+                    })();
                 }
                 else
                 {

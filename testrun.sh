@@ -85,30 +85,30 @@ output_dir_skewt=$(readlink -f $output_dir_skewt)
 if [ $start_stage -le 1 ] 
 then
     clean $basedir/input
-    node runpifo.js $config preprocessor
+    node pifo.js $config preprocessor
 fi
 
 if [ $start_stage -le 2 ] && [ $end_stage -ge 2 ]
 then
     clean $basedir/run
-    node runpifo.js $config init
+    node pifo.js $config init
 fi
 
 if [ $start_stage -le 3 ] && [ $end_stage -ge 3 ]
 then
-    node runpifo.js $config postinit
+    node pifo.js $config postinit
 fi
 
 if [ $start_stage -le 4 ] && [ $end_stage -ge 4 ]
 then
     clean $basedir/output
-    node runpifo.js $config run
+    node pifo.js $config run
 fi
 
 if [ $start_stage -le 5 ] && [ $end_stage -ge 5 ]
 then
     clean $basedir/pub
-    node runpifo.js $config postprocessor
+    node pifo.js $config postprocessor
 fi
 
 if [ $start_stage -le 6 ] && [ $end_stage -ge 6 ]

@@ -40,7 +40,15 @@ export class TextFile {
     
     async write(p_file, p_data)
     {
-        if (typeof module !== 'undefined' && module.exports) 
+        var isNode = false;    
+                if (typeof process === 'object') {
+                    if (typeof process.versions === 'object') {
+                        if (typeof process.versions.node !== 'undefined') {
+                            isNode = true;
+                        }
+                    }
+                }
+        if (isNode) 
         {
             return await TextFile.writeFile(this.path+p_file, p_data);
         }
@@ -77,10 +85,18 @@ export class TextFile {
     {
         try {
             // Node ou navigateur ?
-            if (typeof module !== 'undefined' && module.exports) 
+            var isNode = false;    
+            if (typeof process === 'object') {
+                if (typeof process.versions === 'object') {
+                    if (typeof process.versions.node !== 'undefined') {
+                        isNode = true;
+                    }
+                }
+            }
+            if (isNode) 
             {
-                const fs = require('fs');
-                const path = require('path');
+                var fs = await import('fs');
+                //var path = await import('path');
                 return fs.readFileSync(p_url, "utf8");
             }
             else
@@ -106,10 +122,17 @@ export class TextFile {
     {
         try
         {            
-            if (typeof module !== 'undefined' && module.exports) 
+            var isNode = false;    
+            if (typeof process === 'object') {
+                if (typeof process.versions === 'object') {
+                    if (typeof process.versions.node !== 'undefined') {
+                        isNode = true;
+                    }
+                }
+            }
+            if (isNode) 
             {
-                var fs = require('fs');
-                var path = require('path');
+                var fs = await import('fs');
                 fs.writeFileSync(p_url, p_data, "");
                 return p_data;
             }

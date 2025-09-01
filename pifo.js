@@ -19,8 +19,8 @@ import { Scenario } from "./js/front/Scenario.js";
 import { ConfigManager } from "./js/front/ConfigManager.js";
 
 // Node.js specific
-var fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 // Environnement de fonctionnement
 var mode = "run";
@@ -50,7 +50,8 @@ else
 console.log("PIFO mode "+mode);
 console.log("config : "+configFile);
 
-config = require(configFile);
+//config = require(configFile);
+config = JSON.parse(fs.readFileSync(configFile).toString());
 
 var classpath = "js/";
 var manager = new ConfigManager(classpath, config);
