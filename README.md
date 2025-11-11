@@ -4,9 +4,7 @@ PIFO stands for "Projet Informatique a Formules Ouvertes" in French.
 
 It is a javascript atmospheric model framework. The project was started initially with the idea to make a web game based on simplified weather physics simulation. It has evolved a lot since then, and has become a project for learning and implementing various modeling techniques, with tools to process input and output data.
 
-One can see the model running at http://www.meteo-blois.fr/pifo/.
-
-The model is developped by Nicolas Gasnier from http://www.meteo-blois.fr
+The model is developped by Nicolas Gasnier from former web site Meteo Blois (http://www.meteo-blois.fr).
 
 ### Licence ###
 
@@ -38,7 +36,7 @@ It is recommended to create a directory structure to store the data at the vario
             ouput   raw output data from the model
             pub     processed & interpolated data ready to be plotted
 
-I provide some example data : http://www.meteo-blois.fr/modeles/res/pifo_example_data.zip
+I provide some example data : https://github.com/ngasnier/PIFO/blob/master/data/pifo_example_data.zip
 
 Then copy the template file barocline.default.json to barocline.json. The file is ready to follow the example with the provided data. A model run consists of the following steps :
 
@@ -58,7 +56,11 @@ Then copy the template file barocline.default.json to barocline.json. The file i
 
 ### Documentation ###
 
-Point your brower to the index.html file to get a starting point for things. To generate code documentation use the `npm run doc` command.  Please note that the project was initially written for my own usage and documented in my own native language. Therefore the doc is mostly written in french. I will make some effort in the future to translate it to english. Additionnal model description is available in french at my site : http://www.meteo-blois.fr/pifo/. 
+Point your brower to the index.html file to get a starting point for things. To generate code documentation use the `npm run doc` command.  Please note that the project was initially written for my own usage and documented in my own native language. Therefore the doc is mostly written in french. I will make some effort in the future to translate it to english. The documentation is available in the repository : 
+https://github.com/ngasnier/PIFO/tree/master/docs
+
+Additionnal model description is available in french : https://github.com/ngasnier/PIFO/blob/master/docs/model/index.html.
+
 
 ### The web interface ###
 
