@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: math/TridiagonalSystem.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: math/TridiagonalSystem.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* 
+ * Copyright (C) 2019 Nicolas Gasnier
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/>.
+ */
+
+/** 
+ * Résolution de systèmes linéaires creux à 3 diagonales symétriques.
+ * 
+ * &lt;p>Ce sont des systèmes de la forma AX=B résultant généralement de la 
+ * discrétisation d'équations de type Helmholtz ou Poisson.&lt;/p>
+ * 
+ * &lt;p>Cet objet est bien plus performant pour résoudre ce type de systèmes 
+ * sur un très grand nombre d'inconnues que d'utiliser des fonctions 
+ * matricielles pures. On ne traite en effet que les coefficients non nuls, 
+ * ce qui évite de nombreux calculs.&lt;/p>.
+ * 
+ * @type type
+ */
+export class TridiagonalSystem {
+    
+}
+
+/**
+ * Résolution du système par la méthode de surrelaxation.
+ * 
+ * @param {type} cx Vecteur des coefficients de la première paire 
+ * de diagonales.
+ * @param {type} xdist Distance de cx à la diagonale de la matrice
+ * @param {type} cy Vecteur des coefficients de la seconde paire de 
+ * diagonales.
+ * @param {type} ydist Distance de cy à la diagonale de la matrice
+ * @param {type} cxy Vecteur des coefficients de la diagonale de la matrice.
+ * @param {type} b Vecteur B de l'équation à résoudre
+ * @param {type} w Coefficient de relaxation, compris entre 1 et 2
+ * @param {type} x Vecteur des inconnues. Les valeurs fournies dans ce
+ * vecteur servent de point de départ pour l'itération.
+ * @param {type} r Vecteur résidu de même dimension que x.
+ * @param {type} epsilon Défaut : 0.000001. Valeur seuil à atteindre pour
+ * la convergence.
+ * @param {type} maxiter Défaut : 1000. Nombre d'itérations maximum avant
+ * d'arrêter l'algorithme. Protection contre les systèmes qui ne
+ * convergent pas.
+ * @returns {int} nombre d'itérations effectuées pour atteindre la 
+ * convergence.
+ */
+TridiagonalSystem.sor = function(cx, xdist, cy, ydist, cxy, b, w, x, r, epsilon=0.000001, maxiter=1000)
+{
+    var i, j;
+    var s, k;
+    var nr;
+    var nb = x.length;
+
+    for (i=0;i&lt;nb;i++) r[i] = 1;
+    nr = nb;
+
+    k=0;
+    while (nr>epsilon &amp;&amp; k&lt;maxiter)
+    {
+        k++;
+        nr = 0;
+        for (i=0;i&lt;nb;i++)
+        {
+            s = 0;
+            if (i-ydist>=0) s += cy[i]*x[i-ydist];
+            if (i-xdist>=0) s += cx[i]*x[i-xdist];
+            if (i+xdist&lt;nb) s += cx[i]*x[i+xdist];
+            if (i+ydist&lt;nb) s += cy[i]*x[i+ydist];
+            x[i] = (1-w)*x[i]+w/cxy[i]*(b[i]-s);
+
+            r[i] = 0;
+            if (i-ydist>=0) r[i]+= cy[i]*x[i-ydist];
+            if (i-xdist>=0) r[i]+= cx[i]*x[i-xdist];
+            r[i] += cxy[i]*x[i]
+            if (i+xdist&lt;nb) r[i]+= cx[i]*x[i+xdist];
+            if (i+ydist&lt;nb) r[i]+= cy[i]*x[i+ydist];
+            r[i] -= b[i];
+            nr += r[i]*r[i];
+        }
+        nr = Math.sqrt(nr);
+    }
+    return k;
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AbsoluteVorticityComponent.html">AbsoluteVorticityComponent</a></li><li><a href="ArithmeticComponent.html">ArithmeticComponent</a></li><li><a href="BaroclinicHydrostaticCore.html">BaroclinicHydrostaticCore</a></li><li><a href="BarotropicCore.html">BarotropicCore</a></li><li><a href="BarotropicSemiImplicitCore.html">BarotropicSemiImplicitCore</a></li><li><a href="BoundaryCondition.html">BoundaryCondition</a></li><li><a href="Component.html">Component</a></li><li><a href="ConfigManager.html">ConfigManager</a></li><li><a href="ConformalProjection.html">ConformalProjection</a></li><li><a href="CoriolisFactorComponent.html">CoriolisFactorComponent</a></li><li><a href="CouplingLimitedAreaBoundaryCondition.html">CouplingLimitedAreaBoundaryCondition</a></li><li><a href="CouplingStep.html">CouplingStep</a></li><li><a href="DataProcessor.html">DataProcessor</a></li><li><a href="DataSource.html">DataSource</a></li><li><a href="DFIInitScenario.html">DFIInitScenario</a></li><li><a href="DynamicsCore.html">DynamicsCore</a></li><li><a href="Earth.html">Earth</a></li><li><a href="FileInfo.html">FileInfo</a></li><li><a href="Grid.html">Grid</a></li><li><a href="HistoryStep.html">HistoryStep</a></li><li><a href="LatLonDomain.html">LatLonDomain</a></li><li><a href="LeapFrogTimeIntegrator.html">LeapFrogTimeIntegrator</a></li><li><a href="Matrix.html">Matrix</a></li><li><a href="MercatorProjection.html">MercatorProjection</a></li><li><a href="Model.html">Model</a></li><li><a href="ModuleLoader.html">ModuleLoader</a></li><li><a href="PhysicsScheme.html">PhysicsScheme</a></li><li><a href="PolarStereographicProjection.html">PolarStereographicProjection</a></li><li><a href="PrecipitationScheme.html">PrecipitationScheme</a></li><li><a href="PRMSLComponent.html">PRMSLComponent</a></li><li><a href="ProjectionComponent.html">ProjectionComponent</a></li><li><a href="RecorderStep.html">RecorderStep</a></li><li><a href="RobertAsselinTimeFilter.html">RobertAsselinTimeFilter</a></li><li><a href="RunScenario.html">RunScenario</a></li><li><a href="ScalingFactorComponent.html">ScalingFactorComponent</a></li><li><a href="Scenario.html">Scenario</a></li><li><a href="SchumannFilter.html">SchumannFilter</a></li><li><a href="SigmaLevelInterpolationComponent.html">SigmaLevelInterpolationComponent</a></li><li><a href="SpatialFilter.html">SpatialFilter</a></li><li><a href="Step.html">Step</a></li><li><a href="Task.html">Task</a></li><li><a href="TextFile.html">TextFile</a></li><li><a href="TimeFilter.html">TimeFilter</a></li><li><a href="TimeIntegrator.html">TimeIntegrator</a></li><li><a href="TridiagonalSystem.html">TridiagonalSystem</a></li><li><a href="Variable.html">Variable</a></li><li><a href="VariableDescription.html">VariableDescription</a></li><li><a href="WGRIBFormat.html">WGRIBFormat</a></li><li><a href="WGRIBOutputComponent.html">WGRIBOutputComponent</a></li><li><a href="WGRIBTextFieldDataSource.html">WGRIBTextFieldDataSource</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BarotropicInterpolator">BarotropicInterpolator</a></li><li><a href="global.html#GeopotentialInterpolator">GeopotentialInterpolator</a></li><li><a href="global.html#HumidityInterpolator">HumidityInterpolator</a></li><li><a href="global.html#OutputInterpolator">OutputInterpolator</a></li><li><a href="global.html#TimeInterpolator">TimeInterpolator</a></li><li><a href="global.html#VerticalInterpolator">VerticalInterpolator</a></li><li><a href="global.html#WGRIBInterpolator">WGRIBInterpolator</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.2</a> on Thu Nov 28 2019 18:08:43 GMT+0100 (heure normale d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,529 @@
+<html>
+    <head>
+        <title>Un modèle météo simplifié en JavaScript – Partie 2 : Le codage</title>
+    </head>
+    <body>
+<h1>Un modèle météo simplifié en JavaScript – Partie 2 : Le codage</h1>
+Nous avons vu dans <a href="partie1.html">la précédente partie la théorie du modèle en eau peu profonde</a>, ainsi que les techniques d'intégration. On va maintenant se lancer dans le code JavaScript.
+<h2>Organisation du programme</h2>
+Notre programme sera constitué de deux grandes parties :
+<ul>
+ 	<li>La partie interface utilisateur, qui sera la page web où l'utilisateur pourra faire fonctionner le modèle et visualiser les données,</li>
+ 	<li>La partie modèle proprement dite, sous forme d'une librairie JavaScript qui contiendra le code de simulation.</li>
+</ul>
+<h3>L'interface utilisateur</h3>
+On ne va pas chercher à faire quelque chose de super joli, on veut aller à l'essentiel. Le code sera basé sur la librairie jQuery. Je ne vais détailler que les parties intéressantes du code, le reste n'étant que de la pure programmation HTML/JavaScript. Vous aurez tout loisir d'afficher le code source de la démo pour l'étudier.
+
+L'interface utilisateur sera constituée des éléments suivants :
+<ul>
+ 	<li>Des boutons Reset, Start et Step. Ils permettront respectivement de remettre le modèle à son état initial (t=0), d'exécuter le premier pas de la simulation en appliquant le schéma d'Euler, et d'exécuter les pas suivants avec le schéma en différences centrales. Comme il s'agit uniquement de tester le modèle, on n'a pas prévu de mode "automatique" où l'exécution se déroule sans avoir à cliquer pour chaque étape.</li>
+ 	<li>Un petit message de statut permettant de savoir où l'on en est.</li>
+ 	<li>Un certain nombre de boutons permettant de choisir la variable du modèle affichée.</li>
+ 	<li>La zone de visualisation. Par défaut, un tableau de chiffres correspondant à la grille du modèle sera affiché sont forme de table HTML. Mais on prévoira une représentation colorée pour le vent et le géopotentiel, plus lisible en terme de représentation. On utilisera là encore des tables HTML pour ne pas se lancer dans des représentations plus complexes. Mais utiliser le canvas HTML5 pour ces représentations pourrait être une amélioration intéressante pour plus tard. Le vent sera représenté par des plages de couleur pour l'intensité, et sa direction approximative par des caractères spéciaux HTML.</li>
+</ul>
+<figure><img class="wp-image-830 size-full" title="Interface du Modèle" src="wp-content/uploads/2018/03/InterfaceModeleEPP.png" alt="Interface du Modèle " width="1248" height="630" /><figcaption>L'interface du Modèle, affichant le champ de vent</figcaption></figure>
+<h3>Le modèle</h3>
+Nous allons implémenter le modèle sous forme d'une classe JavaScript que nous appellerons Atmosphere, dans un fichier js distinct (mb_meteo_epp.js). Voici l'interface publique de la classe, la description est dans les commentaires :
+<pre>var Atmosphere = function ()
+{
+    // **** CONSTANTES TECHNIQUES ****
+    // Types de projection cartégienne. m=1 constant
+    this.PROJ_CARTESIEN = 0;
+    // Type de projection mercator de diamètre terre. m=cos(lat)
+    this.PROJ_MERCATOR = 1;
+    
+    // **** PARAMETRES DU MODELE ****
+    
+    // Type de projection à utiliser pour les équations (détermine m)
+    this.projection = this.PROJ_CARTESIEN;
+    
+    
+    // Pas de grille en degré dans la direction des latitudes.
+    this.dlat = 10;
+    
+    // Pas de grille en degré dans la direction des longitudes.
+    this.dlon = 10;
+    
+    // Pas de grille en X. 1° = 111.11km. Recalculé à partir de dlon.
+    this.dx = 1111110;
+    
+    // Pas de grille en Y. 1° = 111.11km. Recalculé à partir de dlat.
+    this.dy = 1111110;
+
+    // Largeur de grille du domaine
+    this.width=36;    
+    
+    // Hauteur de grille du domaine
+    this.height=36;
+
+    // Latitude du coin haut gauche du domaine.
+    this.nlat = 90;
+    
+    // Latitude du coin bas droite du domaine.
+    this.slat = -80;
+    
+    // Latitude du coin haut gauche du domaine
+    this.wlon = 0;
+    
+    // Longitude du coin bas droite du domaine
+    this.elon = 350;
+    
+    // Pas de temps (attention à la stabilité !)
+    this.dt = 3600;
+      
+    // Largeur de la zone de relaxation pour le couplage.
+    this.relaxation = 2;
+
+    // Combien de temps écoulé depuis le début de simulation
+    this.time = 0;
+
+    // **** VARIABLES DE LA SIMULATION ****
+    
+    // Composantes du vent T
+    this.U = [];    
+    this.V = [];
+    
+    // Geopotentiel pression nulle (=gz où p=0). 
+    this.phi = [];
+    
+    // Initialise le géopotentiel 500hPa 
+    this.setPhi = function(g500) { }
+    
+    // Initialise la composante U du vent 500hPa 
+    this.setU = function(u500) { }
+    
+    // Initialise la composante V du vent 500hPa
+    this.setV = function(v500) { }
+    
+    // Initialise le modèle avec les variables qui ont été fournies préalablement.
+    this.init = function() { }
+    
+    // Démarre le modèle en exécutant le schéma d'Euler.
+    this.start = function() { }
+    
+    // Avance le modèle d'un pas en utilisant le schéma explicite centré.
+    this.step = function() { }
+
+ }
+</pre>
+Pour utiliser la classe, on doit paramétrer de la manière suivante, ce qui est fait dans la page HTML :
+<pre>var atmos = new Atmosphere();
+...
+$(document).ready(function() {
+    atmos.projection = atmos.PROJ_CARTESIEN;
+    atmos.width = 144;
+    atmos.height = 72;
+    atmos.dt = 360; 
+    atmos.dlat = 1;
+    atmos.dlon = 1;
+    atmos.nlat = 80;
+    atmos.slat = atmos.nlat-atmos.height*atmos.dlon;
+    atmos.elon = 40;
+    atmos.wlon = atmos.elon-atmos.width*atmos.dlon;
+...
+}
+</pre>
+La définition du domaine mérite sans doutes quelques précisions :
+<ul>
+ 	<li>La largeur d'un point de grille en degré d'arc (dlat et dlon)</li>
+ 	<li>La largeur et la hauteur en points de grille (width et height)</li>
+ 	<li>Les latitudes extrêmes nord et sud (nlat et slat)</li>
+ 	<li>Les longitudes extrêmes est et ouest (elon et wlon)</li>
+ 	<li>La projection de grille, que l'on choisit cartésienne, mais le programme supporte aussi une projection Mercator. Souvenez-vous, cela définit le facteur d'échelle m dont on a parlé dans la partie théorique. Le cartésien fixe un m constant à 1 en tout point du domaine.</li>
+ 	<li>Les valeurs choisies permettent d'avoir une simulation stable selon le critère CFL. Le pas de temps est de 360 secondes soit 6 minutes, pour la résolution de 1° d'arc que l'on s'est fixée.</li>
+</ul>
+Il faut ensuite fournir au modèle les données U, V et Phi grâce aux fonctions setXXX correspondantes. Les données attendues sont sous forme de tableau à une dimension. Les valeurs de chaque ligne de grille sont simplement concaténées l'une à la suite de l'autre, les latitudes les plus au nord venant en premier. Si la grille fait 100 de large, alors les données de la première ligne vont de l'indice 0 à l'indice 99, puis les données de la deuxième ligne vont de l'indice 100 à 199 et ainsi de suite. On a choisi de passer par des "setters" pour paramétrer ces données car nous devrons appliquer quelques transformations aux données au passage, afin de s'adapter au référentiel utilisé et pour le traitement correct du géopotentiel. Rien de très compliqué, mais je ne vais pas vous noyer pour le moment dans ces explications, je me réserve cela pour plus tard.
+
+Les données étant renseignées, il ne reste plus qu'à appeler init(), puis start(), et enfin step() autant que nécessaire, ce qui est fait par un peu de jQuery sur le code des liens dont le code est ci-dessous. Notez que j'ai cité la totalité du code de ces gestionnaires d'événements, qui font un certain nombre d'autres choses relatives à l'affichage ou le calcul du temps d'exécution de chaque pas de temps à des fins statistiques. Je reviendrais plus tard sur l'appel à la fonction "coupler()" et son rôle, pour le moment considérons que cette fonction ne fait rien de spécial.
+<pre>...
+&lt;script&gt;
+...
+function reset()
+{    
+    if (status!="ready") return;
+    atmos.setPhi(h500[0]);
+    atmos.setU(u500[0]);
+    atmos.setV(v500[0]);
+    atmos.init();
+    
+    totalTime = 0;
+    totalStep = 0;
+    printResult();
+}
+
+function start()
+{
+    if (status!="ready") return;
+    var firstTimestamp = new Date().getTime(); 
+    coupler();
+    atmos.start();
+    var secondTimestamp = new Date().getTime();
+    lastExecTime = secondTimestamp - firstTimestamp; 
+    totalStep++;
+    totalTime+=lastExecTime;
+}
+
+function step()
+{
+    if (status!="ready") return;
+    var firstTimestamp = new Date().getTime(); 
+    coupler();
+    atmos.step();
+    var secondTimestamp = new Date().getTime();
+    lastExecTime = secondTimestamp - firstTimestamp;
+    totalStep++;
+    totalTime+=lastExecTime;
+}
+&lt;/script&gt;
+...
+&lt;a href="#" onclick="reset(); return false;"&gt;[Reset]&lt;/a&gt; - 
+&lt;a href="#" onclick="start(); printResult(); return false;"&gt;[Start]&lt;/a&gt; - 
+&lt;a href="#" onclick="step(); printResult(); return false;"&gt;[Step]&lt;/a&gt; | 
+&lt;span id="statistics"&gt;&lt;/span&gt;
+...</pre>
+<h2>Préparation et chargement des données</h2>
+Vu le peu d'exigences en terme de champs de données, n'importe quel modèle accessible en open data peut faire l'affaire pour initialiser notre simulation, on pourrait même partir des réanalyses du NCEP. Pour l'implémentation, j'avais le GFS 0.5° sous la main, c'est donc lui qui me servira. A partir des datasets téléchargés, il suffit d'extraire les champs souhaités au format texte à l'aide de l'utilitaire <a href="http://www.cpc.ncep.noaa.gov/products/wesley/wgrib2/">wgrib2 du NWS</a>. Voici un petit exemple de script Bash permettant d'extraire le vent et le géopotentiel pour nos 24 heures de simulation. Notez que pour initialiser le modèle, seul les champs à t=00 sont requis, mais ici je prends de l'avance pour un peu plus tard, vous verrez pourquoi. On obtient au final un fichier par champ et par échéance.
+<pre>#!/bin/sh
+for valid in "000" "003" "006" "009" "012" "015" "018" "021" "024"
+do
+    for hgt in "500"
+    do
+        wgrib2 gfs.t00z.pgrb2.0p50.f$valid -s | grep HGT:$hgt | wgrib2 -i gfs.t00z.pgrb2.0p50.f$valid -text hgt_$hgt"_"$valid.txt
+        wgrib2 gfs.t00z.pgrb2.0p50.f$valid -s | grep UGRD:$hgt | wgrib2 -i gfs.t00z.pgrb2.0p50.f$valid -text ugrd_$hgt"_"$valid.txt
+        wgrib2 gfs.t00z.pgrb2.0p50.f$valid -s | grep VGRD:$hgt | wgrib2 -i gfs.t00z.pgrb2.0p50.f$valid -text vgrd_$hgt"_"$valid.txt
+    done
+done</pre>
+Les fichiers texte sont ensuite chargés en mémoire via la méthode AJAX au chargement de la page, après constitution d'une liste des champs requis. Les tableaux h500, u500 et v500 contiendront une entrées pour les données de chaque échéance.
+<pre>var h500 = [];
+var u500 = [];
+var v500 = [];
+
+var valids = ["000", "003", "006", "012", "015", "018", "021", "024"];
+var reslist = [];
+var status = "loading";
+$(document).ready(function() {
+
+....
+    for (i=0;i&lt;valids.length;i++) { 
+        reslist.push("hgt_500_"+valids[i]+".txt"); 
+        reslist.push("ugrd_500_"+valids[i]+".txt"); 
+        reslist.push("vgrd_500_"+valids[i]+".txt"); 
+    } 
+    printLoadingStatus(); 
+    $.ajax({ url : "res/run/"+scenario+"/"+reslist[0], 
+        dataType: "text", 
+        success : onFieldDownload }); 
+}); 
+
+
+function onFieldDownload(data) { 
+    var f = reslist[0].substring(0,1); 
+    switch (f) { 
+        case "h": h500[h500.length]=[]; 
+            loadField(h500[h500.length-1], data); 
+            break; 
+        case "u": u500[u500.length]=[]; 
+            loadField(u500[u500.length-1], data); 
+            break; 
+        case "v": v500[v500.length]=[]; 
+            loadField(v500[v500.length-1], data); 
+            break; 
+    } 
+    reslist.shift(); 
+    if (reslist.length&gt;0)
+    {
+        printLoadingStatus();
+        $.ajax({
+          url : "res/run/"+scenario+"/"+reslist[0],
+          dataType: "text",
+          success : onFieldDownload
+       });
+    }
+    else
+    {
+        $(statistics).html("Prêt");
+        status = "ready";
+        reset();
+    }
+}
+
+function printLoadingStatus()
+{
+    $(statistics).html("Chargement "+reslist[0]);
+}
+</pre>
+La fonction loadField() est un peu particulière, et son code est un peu compliqué. En effet, GFS est un modèle global, qui contient plus de données que le domaine que l'on veut utiliser, qui plus est en résolution supérieure. On doit donc prendre une donnée sur deux pour atteindre la résolution de 1°. Pour ne rien simplifier, notre domaine est à cheval sur le méridien de Greenwich, qui correspond aux limites horizontales de la grille de GFS : pour constituer notre grille, on doit aller piocher les données à l'est et à l'ouest du méridien, qui sont à deux endroits différents. Et dernier point, mais là c'est la faute à mes choix techniques, j'ai voulu travailler avec une grille orientée dans le sens d'affichage "informatique", cad avec les points les plus au nord en haut. Ce qui oblige encore à un parcours inversé dans la grille de GFS. Voici le code et ses calculs d'indices affreux :
+<pre>function loadField(f, data)
+{
+    var lines = data.split('\n');
+    var width = 720;
+    var height = 361;
+    lines.shift();
+    
+    // Ce qui est à droite de greenwich
+    var greenwich = Math.floor(-atmos.wlon/atmos.dlon);
+    var ystep = 2*atmos.dlat;
+    var ystart = Math.floor((90-atmos.nlat)*2);
+    var yend = Math.floor((90-atmos.slat)*2);
+    var xstep = 2*atmos.dlon;
+    var xstart = 0;
+    var xend = 2*atmos.elon;
+    var i = greenwich;
+    for (var y = ystart ; y&lt;yend ; y+=xstep)
+    {
+        for (var x = xstart ; x&lt;xend ; x+=xstep)
+        {
+            f[i] = Number(lines[x+(360-y)*width]);
+            i++;
+        }
+        i += greenwich;
+    }
+    
+    // Ce qui est à gauche de greenwich
+    var xstart = width-Math.floor((-atmos.wlon*2));
+    var xend = 720;
+    i = 0;
+    for (var y = ystart ; y&lt;yend ; y+=ystep)
+    {
+        for (var x = xstart ; x&lt;xend ; x+=xstep)
+        {
+            f[i] = Number(lines[x+(360-y)*width]);
+            i++;
+        }
+        i += atmos.width-greenwich;
+    }
+}
+</pre>
+<h2>Le coeur du modèle</h2>
+On va maintenant aborder la partie intéressante : la simulation proprement dite. Si vous avez bien suivi la partie théorique, vous verrez que ça ne présente pas une si grande difficulté.
+<h3>Opérateurs de calculs</h3>
+Commençons par définir quelques opérateurs de calcul dont nous aurons besoin.  Tout d'abord le produit et la somme de deux champs, point à point. Ces deux opérations, qui stockent le résultat dans une variable résultat passée en paramètre, ne présentent pas de grande difficulté :
+<pre>this.product = function(x, y, res)
+{
+    for(var i=0;i&lt;this.width*this.height;i++)
+    {
+        res[i] = x[i]*y[i];
+    }
+}
+
+this.sum = function(x, y, res)
+{
+    for(var i=0;i&lt;this.width*this.height;i++)
+    {
+         res[i] = x[i]+y[i];
+    }
+}
+</pre>
+Le coeur du modèle repose ensuite sur les calculs de dérivée. Nous aurons besoin de pouvoir calculer des dérivées spatiales selon l'axe x et selon l'axe y. Il s'agit tout simplement des formules que nous avions données dans la partie théorique. Remarquez que ces dérivées ne peuvent être calculées aux frontières du domaine, car sinon les indices seraient en dehors du tableau. Cela signifie que nous ne pourrons pas calculer d'évolution du modèle pour les indices de tableau situés aux limites. Cela posera évidemment des problèmes à mesure que l'on avancera dans la simulation, mais nous verrons comment fixer cela. Voici le code de calcul des dérivées spaciales :
+<pre>this.d_dx = function(f, res)
+{
+    for (var y=1;y&lt;this.height-1;y++)
+    {
+        for(var x=1;x&lt;this.width-1;x++)
+        {
+            var i = x+y*this.width;
+            res[i] = (f[i+1]-f[i-1])/(2*this.dx*this.m[i]);
+        }
+    }
+}
+    
+this.d_dy = function(f, res)
+{
+    for (var y=1;y&lt;this.height-1;y++)
+    {
+        for(var x=1;x&lt;this.width-1;x++)
+        {
+            var i = x+y*this.width;
+            res[i] = (f[i-this.width]-f[i+this.width])/(2*this.dy);
+        }           
+    }
+}</pre>
+<h3>Initialisation</h3>
+L'initialisation du modèle sert avant tout à allouer les variables intermédiaires dont nous aurons besoin, et calculer quelques tables de lookup. Javascript ne dispose pas d'instruction permettant d'allouer un tableau, les éléments sont créés au moment de leur première affectation. Pour ne pas avoir de problèmes ou d'erreurs d'exécution, nous devrons initialiser chaque élément de chaque tableau avec une valeur par défaut. Les principales variables à initialiser sont :
+<ul>
+ 	<li>On calcule une valeur pour dx et dy en fonction de la résolution en degrés du modèle.</li>
+ 	<li>U_t, V_t, phi_t qui sont les valeurs à T-1 des variables du modèle pour le schéma explicite centré. On les initialise ici aux mêmes valeurs que U, V et phi à t=0, mais c'est plus par convenance que par réelle nécessité - on aurait pu tout aussi bien les mettre à zéro.</li>
+ 	<li>Le paramètre de coriolis f=2Ωsin(lat), qui est une simple table de lookup pour ne pas avoir à recalculer le sinus à chaque fois. Ca fait partie des optimisations faciles.</li>
+ 	<li>Le facteur d'échelle m, qui vaut 1 pour les projections cartésiennes et cos(lat) pour Mercator. On a prévu que m puisse être fourni par l'utilisateur de la classe pour toute autre type de projection ayant une projection cartographique simple.</li>
+ 	<li>On initialise les variables K et tourbillon représentant les termes d'énergie et de tourbillon intervenant dans les équations du modèle. On commence par allouer le tableau, puis on appelle les fonctions permettant de calculer leurs valeurs. Normalement ces termes devraient être calculés au début de chaque itération du modèle. Vu que je souhaite pouvoir débugger les valeurs à chaque étape, il est préférable d'avoir ces valeurs avant de commencer. J'ai avancé leur calcul en fin des fonctions init(), start() et step() pour que la valeur correspondant à l'état actuel du modèle soit disponible à l'affichage immédiatement après le calcul. Au final, ça ne change rien au résultat : c'est juste plus pratique pour moi comme cela.</li>
+ 	<li>On procède également à l'initialisation d'une table de paramètre pour le couplage du modèle. J'en reparlerais ultérieurement.</li>
+ 	<li>Notez l'appel à une fonction de calcul de diagnostics. Ce sont des calculs de vérification de la cohérence du modèle, sur la conservation de certaines valeurs physiques. J'en reparlerais plus tard, ce n'est pas indispensable pour la simulation.</li>
+ 	<li>Le reste des variables initialisées sont des variables temporaires, contenant des produits intermédiaires ou des résultats de calculs utilisés pour certaines opérations.</li>
+</ul>
+<pre>this.init = function()
+{
+    var lat = this.nlat*(Math.PI/180);
+    this.dx = 111.1 * this.dlon * 1000;
+    this.dy = 111.1 * this.dlat * 1000;
+    this.time = 0;
+    for (var y=0;y&lt;this.height;y++)
+    {
+        for(var x=0;x&lt;this.width;x++)
+        {
+            var i = x+y*this.width;
+            var h = 0;
+
+            // Paramètre de coriolis et facteur d'échelle en fonction de la latitude
+            this.f[i] = 2 * this.omega * Math.sin(lat);
+            switch (this.projection)
+            {
+                case this.PROJ_CARTESIEN:
+                    this.m[i] = 1;
+                    break;
+                case this.PROJ_MERCATOR:
+                    this.m[i] = Math.cos(lat);
+                    break;
+                default:
+                    //supposé fourni par l'appelant
+                    //this.m[i] = 1;
+            }
+
+            // Initialisation du couplage
+            if (y==0 || y==this.height-1 || x==0 || x==this.width-1)
+            {
+                this.alpha[i] = 1.0;
+            }
+            else if (y&lt;1+this.relaxation||y&gt;=this.height-this.relaxation-1
+                    ||x&lt;1+this.relaxation||x&gt;=this.width-this.relaxation-1)
+            {
+                var xd = 0;
+                var yd = 0;
+
+                if (x&lt;1+this.relaxation) xd = this.relaxation-x+1;
+                else if (x&gt;=this.width-this.relaxation-1) 
+                    xd = x-this.width+this.relaxation+2;
+                if (y&lt;1+this.relaxation) yd = this.relaxation-y+1;
+                else if (y&gt;=this.height-this.relaxation-1) 
+                    yd = y-this.height+this.relaxation+2;
+
+                if (xd&lt;yd) xd = yd;
+                //else if (xd&lt;yd) xd = yd;
+
+                this.alpha[i] = (xd/(this.relaxation+1));
+            }
+            else 
+            {
+                this.alpha[i] = 0.0;
+            }
+
+            // Creation des tableaux
+            this.K[i] = 0;
+            this.tourbillon[i] = 0;                
+            this.U_t[i] = this.U[i];
+            this.V_t[i] = this.V[i];
+            this.phi_t[i] = this.phi[i];
+            this.dU_dx[i] = 0;
+            this.dV_dy[i] = 0;
+            this.phi_U[i] = 0;
+            this.phi_V[i] = 0;
+            this.phi_K[i] = 0;
+            this.dx_phi_K[i] = 0;
+            this.dy_phi_K[i] = 0;
+            this.dx_phi_U[i] = 0;
+            this.dy_phi_V[i] = 0;
+        }
+
+        lat -= this.dlat*(Math.PI/180);
+    }
+
+    this.calcEnergy();
+    this.calcTourbillon();
+    this.calcDiagnostics();        
+}
+</pre>
+<h3>Calcul de l'énergie et du tourbillon</h3>
+Le calcul de ces termes ne présente pas de difficulté particulière, il suffit d'appliquer les formules que nous avons données en chaque point de grille, en utilisant les opérateurs que nous avons définis précédemment.
+<pre>this.calcEnergy = function()
+{
+    for(var i=0;i&lt;this.width*this.height;i++)
+    {
+        this.K[i] = this.m[i]*this.m[i]*(this.U[i]*this.U[i]+this.V[i]*this.V[i])/2;
+    }
+}
+
+this.calcTourbillon = function()
+{
+    this.d_dy(this.U, this.dU_dy);
+    this.d_dx(this.V, this.dV_dx);
+    for(var i=0;i&lt;this.width*this.height;i++)
+    {
+        this.tourbillon[i] = this.m[i]*this.m[i]*(this.dV_dx[i]-this.dU_dy[i]);
+    }
+}
+
+</pre>
+<h3>Le schéma d'Euler</h3>
+Le schéma d'Euler, qui sert uniquement au premier pas de temps, n'est pas particulièrement compliqué à implémenter. Il se trouve dans la fonction start(). On commence par calculer des variables intermédiaires correspondant aux dérivées, produits et sommes de champs dont nous aurons besoin pour les calculs. Puis nous calculons trois termes A, B, C correspondant aux dérivées temporelles du vent et du géopotentiel, en suivant les formules données par les équations du modèle. Il suffit ensuite d'appliquer la formule de calcul du schéma pour obtenir les nouvelles valeurs de U, V et phi. Le reste consiste à échanger la valeur actuelle avec la nouvelle valeur,  pour le schéma explicite centré. Et on calcule les nouvelles valeurs de l'énergie, du tourbillon et des diagnostics.
+<pre>this.start = function()
+{              
+    // Formules intermédiaires et dérivées 
+    this.product(this.U, this.phi, this.phi_U);
+    this.d_dx(this.phi_U, this.dx_phi_U);
+    this.product(this.V, this.phi, this.phi_V);
+    this.d_dy(this.phi_V, this.dy_phi_V);
+
+    this.sum(this.K, this.phi, this.phi_K);
+    this.d_dx(this.phi_K, this.dx_phi_K);
+    this.d_dy(this.phi_K, this.dy_phi_K);
+
+    // Schema d'Euler pour le premier pas de temps
+    for (var y=1;y&lt;this.height-1;y++)
+    {
+        for(var x=1;x&lt;this.width-1;x++)
+        {
+            var i = x+y*this.width;
+            var A = (this.tourbillon[i] + this.f[i])*this.V[i]-this.dx_phi_K[i];
+            var B = -(this.tourbillon[i] + this.f[i])*this.U[i]-this.dy_phi_K[i];
+            var C = -this.m[i]*this.m[i]*(this.dx_phi_U[i]+this.dy_phi_V[i]);
+
+            this.U_t[i] = this.U[i] + this.dt*A;
+            this.V_t[i] = this.V[i] + this.dt*B;
+            this.phi_t[i] = this.phi[i] + this.dt*C;
+        }
+    }
+
+...
+
+    var tmp = this.U_t; this.U_t = this.U; this.U = tmp;
+    tmp = this.V_t; this.V_t = this.V; this.V = tmp;
+    tmp = this.phi_t; this.phi_t = this.phi; this.phi = tmp;
+
+    this.calcEnergy();
+    this.calcTourbillon();
+    this.calcDiagnostics();
+
+    this.time += this.dt;
+}</pre>
+<h3>Le schéma explicite centré</h3>
+L'avance par le schéma saute-mouton n'est pas plus compliquée que le schéma d'Euler, en fait le code est tellement similaire que seule change la formule de calcul. Pour ne pas surcharger cet article, je ne répéterais donc pas les parties identiques. En fait, j'aurais même pu faire une économie d'écriture au niveau du programme en factorisant du code, mais quand j'ai développé le modèle ce n'étais pas ma priorité, et maintenant j'avoue que j'ai la flemme de le faire #honte. Le code est dans la fonction step() :
+<pre>this.step = function()
+{
+    // Formules intermédiaires et dérivées 
+...
+    // Schema différences centrales
+    for (var y=1;y&lt;this.height-1;y++)
+    {
+        for(var x=1;x&lt;this.width-1;x++)
+        {
+            var i = x+y*this.width;
+            var A = (this.tourbillon[i] + this.f[i])*this.V[i]-this.dx_phi_K[i]; 
+            var B = -(this.tourbillon[i] + this.f[i])*this.U[i]-this.dy_phi_K[i];
+            var C = -this.m[i]*this.m[i]*(this.dx_phi_U[i]+this.dy_phi_V[i]);
+
+            this.U_t[i] = this.U_t[i] + 2*this.dt*A;
+            this.V_t[i] = this.V_t[i] + 2*this.dt*B;
+            this.phi_t[i] = this.phi_t[i] + 2*this.dt*C;
+        }
+    }
+
+...
+}
+</pre>
+<h2>C'est tout pour aujourd'hui</h2>
+On a fini de passer en revue l'essentiel du code du modèle. A ce stade, on peut déjà faire une simulation. Vous avez vu qu'il reste encore des choses que j'ai omises ici, et qui font partie des techniques de modélisation. Je ne pensais pas faire de troisième partie, mais comme cet article est finalement horriblement long, cela est devenu nécessaire pour aborder ces quelques points. Mais au fait, vous lisez ceci ? Vous avez survécu ! Bravo ! Avouez que j'ai été sympa aussi, je vous ai épargné le récit des longues séances de debug, de mise au point, d'incompréhensions et d'arrachages de cheveux en tous genres quand rien ne marchait.
+
+
+<a href="partie3.html">Vers la partie 3 : démo en ligne et améliorations.</a>
+
+    </body>
+</html>

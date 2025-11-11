@@ -1,0 +1,153 @@
+<html>
+    <head>
+        <title>Un modèle météo simplifié en JavaScript – Partie 3 : Finalisation et améliorations</title>
+    </head>
+    <body>
+<h1>Un modèle météo simplifié en JavaScript – Partie 3 : Finalisation et améliorations</h1>
+
+Voici le dernier article de cette série concernant l'implémentation du modèle météo barotrope, ou modèle en eau peu profonde, en JavaScript. Il nous restait à aborder quelques problématiques et concepts afin d'arriver à une version pleinement fonctionnelle. Nous allons aujourd'hui finaliser l'application.
+<h2>Filtrage</h2>
+Si on lance le modèle tel que programmé dans l'épisode précédent, la simulation fonctionne, mais on s'aperçoit rapidement que les champs deviennent très bruités. Et si on laisse tourner la simulation plus longtemps, on voit apparaître des sortes de vagues de 2 mailles de large, voire des zones où le vent devient localement très fort, et qui provoque un creusement ou une élévation brutale du géopotentiel. C'est un phénomène lié au traitement numérique des équations en grille A qui créé des ondes stationnaires. Ceci, cumulé aux défauts du traitement numérique des équations, peut rendre la simulation instable et créer des infinis si on laisse tourner le modèle suffisamment longtemps. De toute façon ceci rend les champs assez inexploitables.
+
+<figure><img class="wp-image-868" title="Simulation sans filtrage" src="wp-content/uploads/2018/03/effet-sans-filtrage.png" alt="Simulation sans filtrage" width="626" height="478" /><figcaption>Apparitions d'ondes et d'instabilités locales au bout de 18h de simulation environ.</figcaption></figure>
+
+Il existe une solution pour éliminer ce problème : il faut filtrer les champs. On remarque que ces ondes "parasites" ont une longueur d'onde de deux fois la taille de notre maille - ce qui est d'ailleurs démontrable mathématiquement. Il nous faut donc les supprimer à l'aide d'un filtre qui élimine correctement cette longueur d'onde sans trop altérer le reste. Nous utiliseront un filtre appelé filtre de Shuman qui est très efficace. Il s'agit d'une moyenne pondérée de 3 points de grille, appliquée en deux temps, horizontalement puis verticalement. Ce filtre est à appliquer après chaque itération de l'intégration sur chaque champ, donc dans les fonctions start() et step(). Le plus simple pour comprendre le fonctionnement est de regarder le code du filtre :
+<pre>this.filtreMoyenneX = function(a, v, res)
+{
+    for (var y=0;y&lt;this.height;y++)
+    {
+        var i = y*this.width;
+        res[i] = a[i];
+        for(var x=1;x&lt;this.width-1;x++)
+        {
+            var i = x+y*this.width;
+            res[i] = a[i]*(1-v)+(a[i+1]+a[i-1])*v/2;
+        }
+        i = this.width-1+y*this.width;
+        res[i] = a[i];
+    }
+}
+    
+this.filtreMoyenneY = function(a, v, res)
+{
+    for (var x=0;x&lt;this.width;x++)
+    {
+        var i = x+this.width*(this.height-1);
+        res[x] = a[x];
+        res[i] = a[i];
+    }
+    for (var y=1;y&lt;this.height-1;y++)
+    {
+        var i = y*this.width;
+        res[i] = a[i];
+        for(var x=1;x&lt;this.width-1;x++)
+        {
+            var i = x+y*this.width;
+            res[i] = a[i]*(1-v)+(a[i+this.width]+a[i-this.width])*v/2;
+        }
+        i = this.width-1+y*this.width;
+        res[i] = a[i];
+    }
+}
+    
+this.filtre = function (a)
+{
+    var tmp = [];
+    this.filtreMoyenneX(a, 0.5, tmp);
+    this.filtreMoyenneX(tmp, -0.5, a);
+    
+    this.filtreMoyenneY(a, 0.5, tmp);
+    this.filtreMoyenneY(tmp, 0.5, a);
+}</pre>
+Le filtrage a l'inconvénient de nécessiter un peu de calculs supplémentaires, mais cela reste gérable. Au niveau du résultat, on constate que cela lisse un peu les champs sans trop altérer les grandes structures. A la résolution où l'on travaille, on voit rapidement que les dorsales ou thalwegs un peu faibles vont se combler plus rapidement. Mais les problèmes d'instabilités locales sont réglés.
+
+<figure><img class="wp-image-867" title="Simulation avec filtrage" src="wp-content/uploads/2018/03/effet-avec-filtrage.png" alt="Simulation avec filtrage" width="626" height="478" /><figcaption> Avec filtrage, le problème est résolu mais les champs se trouvent beaucoup plus lissés.</figcaption></figure>
+<h2>Le problème des conditions aux limites</h2>
+Nous travaillons sur une aire limitée. Cela signifie qu'aux bord du domaine, nous ne pouvons pas faire évoluer les champs. On peut se contenter de fixer leurs valeurs, et considérer qu'elles n'évoluent pas au cours de la simulation, mais on limite de fait l'échéance de prévision que l'on peut atteindre. Il est souvent plus intéressant de coupler des modèles qui travaillent à aire limitée avec des modèles globaux, comme on fait pour calculer les modèles WRF ou AROME à partir des données de GFS et ARPEGE respectivement.
+
+La technique est très simple. On définit une zone de relaxation autour de l'aire de travail, qui fait un certain nombre de mailles de largeur. Cette zone sert de transition entre les données du modèle global et celles de notre modèle. On positionne dessus un coefficient alpha, qui vaut 1 sur le bord, et qui diminue progressivement pour atteindre zéro au centre. A la fin de chaque étape de calcul, on fait un mixage entre les valeurs calculées et les valeurs imposées à l'aide de ce coefficient, la résultante devenant les valeurs de nos champs. Un bout de code et une illustration valent mieux qu'un long discours.
+
+<figure><img class="wp-image-870 size-full" title="Couplage du domaine avec un modèle extérieur." src="wp-content/uploads/2018/03/zone-de-relaxation.png" alt="Couplage du domaine avec un modèle extérieur." width="606" height="431" /><figcaption>Couplage du domaine avec un modèle extérieur.</figcaption></figure>
+
+Dans la classe Atmosphere, on prévoit la méthode couple() qui fait ce travail de "mixage" :
+<pre>this.couple = function(x, c)
+{
+    for (var i=0;i&lt;this.height*this.width;i++)
+    {
+        x[i] = (1-this.alpha[i])*x[i] + this.alpha[i]*c[i];
+    }
+}
+</pre>
+A la fin de chaque étape de calcul on ajoute les appels nécessaires. On utilise des variables dédiées pour stocker les valeurs imposées (suffixées par "_couplage"). Ces valeurs sont fixées par l'utilisateur de la classe.
+<pre>if (this.relaxation&gt;0)
+{
+    this.couple(this.U_t, this.U_couplage);
+    this.couple(this.V_t, this.V_couplage);
+    this.couple(this.phi_t, this.phi_couplage);
+}</pre>
+Dans la page du modèle, on aura au préalable chargé des valeurs de couplage pour différentes échéances de temps. Je vous passe les détails, ce qui nous intéresse c'est la manière dont nous fixons les valeurs imposées. C'est le rôle de la fonction coupler(), appelée à chaque itération du modèle. On commence par rechercher dans notre liste d'échéances l'intervalle de temps où l'on se trouve. On boucle, en testant le temps depuis le début de la simulation, jusqu'à trouver notre bonheur, notre liste étant triée. Une fois trouvé l'intervalle, on procède à une interpolation linéaire entre les valeurs fixées aux deux temps correspondants. C'est le rôle de la fonction coupler(). Ensuite, on utilise les fonctions setter pour imposer les valeurs calculées au modèle.
+<pre>function interpoler(a, b, t1, t2, t, res)
+{
+    var coef = (t-t1)/(t2-t1);
+    for (var i=0;i&lt;atmos.width*atmos.height;i++)
+    {
+        res[i] = (1-coef)*a[i]+coef*b[i];
+    }
+}
+
+function coupler()
+{
+    var t;
+    var tprec=Number(valids[0])*3600;
+    for (var i=1;i&lt;valids.length;i++)
+    {
+        t = Number(valids[i])*3600;
+        if (atmos.time&gt;=tprec &amp;&amp; atmos.time&lt;t)
+        {
+            interpoler(h500[i-1], h500[i], tprec, t, atmos.time, h500_couplage);
+            interpoler(u500[i-1], u500[i], tprec, t, atmos.time, u500_couplage);
+            interpoler(v500[i-1], v500[i], tprec, t, atmos.time, v500_couplage);
+            atmos.setPhiCouplage(h500_couplage);
+            atmos.setUCouplage(u500_couplage);
+            atmos.setVCouplage(v500_couplage);
+            return;
+        }
+        tprec = t;
+    }
+}
+</pre>
+Dans la classe Atmosphere, j'ai prévu une variable "relaxation" qui sert à paramétrer la largeur de la zone de relaxation en nombre de points de grille. La valeur doit être fixée avant l'appel à init() pour que l'on puisse initialiser les valeurs de alpha en tout point de la grille. Je vous laisse le soin d'aller voir la section de code correspondant dans la démo, n'étant que de la recette de cuisine il n'est pas intéressant de le reproduire ici. Dans la démo, nous utilisons une zone de relaxation de 4.
+<h2>Réalisme de la simulation</h2>
+Le but du modèle barotrope est de simuler l'évolution du géopotentiel du sommet de l'atmosphère, limite à partir de laquelle on considère la pression comme nulle. Or, le niveau 500hPa ne correspond pas réellement au sommet, puisqu'il y a encore de la pression au-dessus. Si l'on simule en l'état, on obtient des comportements pas vraiment désirables, comme le fait que les ondes de hauts et bas géopotentiels vont se propager d'est en ouest, ce qui n'est pas réaliste.
+
+Il faut donc ramener le problème à un équivalent "eau peu profonde" conforme aux hypothèses sous-jacente à la modélisation. Pour cela, l'auteur Jean Coiffier préconise de simuler non pas directement le géopotentiel Phi=gz du 500Hpa, mais Phi=gz - 40000. Cela revient grossièrement à diminuer la couche simulée de 4000 mètres, on suppose que cette valeur a été choisie soigneusement pour assurer le meilleur ajustement possible. Et on comprends dès lors le nom du modèle : on veut simuler une couche fine. La simulation sera faite sur ce géopotentiel "adapté", et pour afficher le résultat, il faudra bien entendu refaire le calcul inverse. La fonction setter setPhi() de la classe Atmosphere se charge de faire la conversion préalable. Le vent quand à lui reste inchangé, on utilise bien le vent à 500hPa.
+<h2>Les invariants du modèle</h2>
+Les équations d'un système physique doivent toujours conserver un certain nombre de grandeurs physiques. En général, l'énergie en fait partie. C'est le cas pour le modèle atmosphérique, en plus de trois autres grandeurs : le tourbillon total, la masse, et l'enstropie. Dans la classe Atmosphere, ces invariants sont systématiquement calculés après chaque itération du modèle par la fonction calcDiagnostics(), et ils peuvent être ensuite affichés.
+<pre>this.calcDiagnostics = function()
+{
+    this.total_masse = 0;
+    this.total_energie = 0;
+    this.total_tourbillon = 0;
+    this.total_enstropie = 0;
+    for(var i=0;i&lt;this.width*this.height;i++)
+    {
+        var v = ((this.tourbillon[i]+this.f[i])/this.phi[i]);
+        this.total_masse += this.phi[i]*this.dx*this.dy/(this.m[i]*this.m[i]);
+        this.total_energie += this.phi[i]*(this.phi[i]/2+this.K[i])*this.dx*this.dy/(this.m[i]*this.m[i]);
+        this.total_tourbillon += this.phi[i]*v*this.dx*this.dy/(this.m[i]*this.m[i]);            
+        this.total_enstropie += (this.phi[i]/2)*v*v*this.dx*this.dy/(this.m[i]*this.m[i]);
+    }
+    this.total_masse *= this.rho/this.g;
+    this.total_energie *= this.rho/this.g;
+    this.total_tourbillon *= this.rho/this.g;
+    this.total_enstropie *= this.rho/this.g;
+}
+</pre>
+En théorie, ces calculs ne doivent pas changer de valeur quel que soit le moment de la simulation. Dans la pratique, le traitement numérique des équations ne permet pas toujours de les conserver exactement. Selon le schéma d'intégration utilisé, la conservation est plus ou moins heureuse pour certains d'entre eux. Plus le schéma et le type de grille utilisés sont sophistiqués, plus on peut garantir leur préservation, qui est en quelque sorte un indicateur de la qualité de simulation. Dans notre cas, notre schéma étant le plus simple, il n'est pas le mieux loti de ce côté. D'autant que le couplage que nous réalisons vient un peu brouiller les pistes. Vous pourrez toujours vous amuser à surveiller ces valeurs - j'ai prévu ce qu'il faut dans l'interface, mais vous constaterez qu'elles ne sont pas constantes à cause de cela. J'ai toutefois vérifié qu'en l'absence de couplage, les valeurs étaient quasi-constantes ce qui prouve que mon modèle fonctionne au niveau attendu.
+
+<h2>Conclusion</h2>
+Nous voici au terme d'un bon morceau de code ! C'est ce que l'on peut faire de plus basique comme modèle atmosphérique de prévision. Notre implémentation et nos choix de traitement numérique sont les plus simples existants. Que faire maintenant ? On peut tout d'abord essayer d'améliorer le traitement numérique, en utilisant d'autres types de grilles, et/ou  d'autres schémas d'intégration plus sophistiqués. Cela pourrait faire l'objet de futurs articles, je ne sais pas encore si je vais me lancer dans ce projet. C'est intéressant pour apprendre, mais cela sort de l'objectif initial. L'étape suivante, c'est de perfectionner la simulation en prenant en compte les couches d'atmosphère et la température. Pour cela, il faut changer de type de modèle : on parle alors de modèle barocline. C'est un projet qui m'occupe depuis un moment déjà, le modèle est programmé mais le fonctionnement n'est pas stable. J'espère trouver le problème et pouvoir vous en parler prochainement. 
+
+
+    </body>
+</html>

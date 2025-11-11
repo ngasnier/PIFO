@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: modeling/BarotropicCore.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: modeling/BarotropicCore.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* 
+ * Copyright (C) 2019 Nicolas GASNIER (http://www.meteo-blois.fr/contact/)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/>.
+ */
+
+import { DynamicsCore } from "./DynamicsCore.js";
+import { Model } from "./Model.js"
+import { VariableDescription } from "./VariableDescription.js"
+
+/**
+ * Coeur dynamique barotrope, calcul explicite.
+ * @type type
+ */
+export class BarotropicCore extends DynamicsCore
+{
+    /**
+     * 
+     * @returns {undefined}
+     */
+    constructor() 
+    {
+        super();
+    }
+    
+    /**
+     * Renvoie les variables requises pour la partie dynamique
+     * @returns {Array}
+     */
+    getVariablesDescriptions()
+    {
+        return [
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PRONOSTIC, name:"U", description:"U component of wind", units:"m.s^-1", offsetx:1, offsety:0, scale:true, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_U_VECTOR}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PRONOSTIC, name:"V", description:"V component of wind", units:"m.s^-1", offsetx:0, offsety:1, scale:true, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE, number:VariableDescription.NUMBER_TYPE_V_VECTOR}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PRONOSTIC, name:"phi", description:"geopotential of the top of the model layer", units:"m^2.s^-1", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"U_tdcy", description:"U tendency", units:"", offsetx:1, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"V_tdcy", description:"V tendency", units:"", offsetx:0, offsety:1, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"phi_tdcy", description:"geopotential tendency", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_DIAGNOSTIC, name:"K", description:"kinetic energy", units:"J", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_DIAGNOSTIC, name:"tourbillon", description:"absolute vorticity potential", units: "S^-1", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PARAMETER, name:"f", description:"coriolis factor", units:"", offsetx:1, offsety:1, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_PARAMETER, name:"m", description:"scaling factor", units: "", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE})
+        ];
+    }
+    
+    /**
+     * Initialisation des variables
+     * @returns {undefined}
+     */
+    setup()
+    {
+        super.setup();
+    }
+    
+    /**
+     * Calcule la tendance de la composante V du vent
+     * @returns {undefined}
+     */    
+    calcU_tdcy()
+    {
+        if (this._model.horizontalStaggering=="C") 
+        {
+            var xi = 0;
+            var v = 0;
+            var kphi=0;
+            var i;
+            for (var y=1;y&lt;this._model.height-1;y++)
+            {
+                for(var x=1;x&lt;this._model.width-1;x++)
+                {
+                    i = x+y*this._model.width;
+
+                    xi = 0.5*(this._model.tourbillon.data[i]+this._model.f.data[i]+this._model.tourbillon.data[i-this._model.width]+this._model.f.data[i-this._model.width]);
+
+                    v = (this._model.V.data[i]+this._model.V.data[i+1]+this._model.V.data[i-this._model.width]+this._model.V.data[i+1-this._model.width])/4;
+
+                    kphi = (this._model.K.data[i+1]+this._model.phi.data[i+1]-(this._model.K.data[i]+this._model.phi.data[i]))/this._model.dx;
+
+                    this._model.U_tdcy.data[i] = xi*v - kphi;
+
+                    // Discretisation alternative
+                    /*xi = 0.5*(this._model.tourbillon[i]+this._model.tourbillon[i-this._model.width]);
+                    v = ((this._model.phi[i]+this._model.phi[i+this._model.width])*this._model.V[i]
+                            +(this._model.phi[i+1]+this._model.phi[i+1+this._model.width])*this._model.V[i+1]
+                            +(this._model.phi[i]+this._model.phi[i-this._model.width])*this._model.V[i-this._model.width]
+                            +(this._model.phi[i+1]+this._model.phi[i+1-this._model.width])*this._model.V[i+1-this._model.width])/8;
+                    kphi = (this._model.K[i+1]+this._model.phi[i+1]-(this._model.K[i]+this._model.phi[i]))/this._model.dx;
+                    this._model.U_tdcy[i] = xi*v - kphi;*/
+                }
+            }
+        } 
+        else
+        {
+            var c1, c2, c3, c4;
+            var kphi=0;
+            var i;
+            for (var y=1;y&lt;this._model.height-1;y++)
+            {
+                for(var x=1;x&lt;this._model.width-1;x++)
+                {
+                    i = x+y*this._model.width;
+
+                    c1 = this._model.K.data[i+1];
+                    c2 = this._model.phi.data[i+1];
+                    c3 = this._model.K.data[i-1];
+                    c4 = this._model.phi.data[i-1];
+
+                    kphi = (c1+c2-c3-c4)/(2*this._model.dx);
+
+                    this._model.U_tdcy.data[i] = (this._model.tourbillon.data[i]+this._model.f.data[i])*this._model.V.data[i] - kphi;
+                }
+            }
+        }
+    }
+
+    /**
+     * Calcule la tendence de la composante V du vent
+     */
+    calcV_tdcy()
+    {
+        if (this._model.horizontalStaggering=="C") 
+        {
+            var xi = 0;
+            var u = 0;
+            var kphi=0;
+            var i;
+            for (var y=1;y&lt;this._model.height-1;y++)
+            {
+                for(var x=1;x&lt;this._model.width-1;x++)
+                {
+                    i = x+y*this._model.width;
+
+                    xi = 0.5*(this._model.tourbillon.data[i-1]+this._model.f.data[i-1]+this._model.tourbillon.data[i]+this._model.f.data[i]);
+
+                    u = (this._model.U.data[i-1]+this._model.U.data[i]+this._model.U.data[i-1+this._model.width]+this._model.U.data[i+this._model.width])/4;
+
+                    kphi = (this._model.K.data[i]+this._model.phi.data[i]-(this._model.K.data[i+this._model.width]+this._model.phi.data[i+this._model.width]))/this._model.dy;
+
+                    this._model.V_tdcy.data[i] = -xi*u - kphi;
+
+                    // Discretisation alternative
+                    /*xi = 0.5*(this._model.tourbillon[i-1]+this._model.tourbillon[i]);
+
+                    u = ((this._model.phi[i]+this._model.phi[i-1])*this._model.U[i-1]
+                            +(this._model.phi[i]+this._model.phi[i+1])*this._model.U[i]
+                            +(this._model.phi[i-1+this._model.width]+this._model.phi[i+this._model.width])*this._model.U[i-1+this._model.width]
+                            +(this._model.phi[i+this._model.width]+this._model.phi[i+1+this._model.width])*this._model.U[i+this._model.width])/8;
+
+                    kphi = (this._model.K[i]+this._model.phi[i]-(this._model.K[i+this._model.width]+this._model.phi[i+this._model.width]))/this._model.dy;
+
+                    this._model.V_tdcy[i] = -xi*u - kphi;*/
+                }
+            }
+        }
+        else
+        {
+            var c1, c2, c3, c4;
+            var kphi=0;
+            var i;
+            for (var y=1;y&lt;this._model.height-1;y++)
+            {
+                for(var x=1;x&lt;this._model.width-1;x++)
+                {
+                    i = x+y*this._model.width;
+
+                    c1 = this._model.K.data[i-this._model.width];
+                    c2 = this._model.phi.data[i-this._model.width];
+                    c3 = this._model.K.data[i+this._model.width];
+                    c4 = this._model.phi.data[i+this._model.width];
+
+                    kphi = (c1+c2-c3-c4)/(2*this._model.dy);
+
+                    this._model.V_tdcy.data[i] = -(this._model.tourbillon.data[i]+this._model.f.data[i])*this._model.U.data[i] - kphi;
+                }
+            }
+        }
+    }
+
+    /**
+     * Calcule la tendance du géopotentiel
+     * @returns {undefined}
+     */
+    calcphi_tdcy()
+    {
+        if (this._model.horizontalStaggering=="C") 
+        {
+            var m = 0
+            var i;
+            var d = 0;
+            for (var y=1;y&lt;this._model.height-1;y++)
+            {
+                for(var x=1;x&lt;this._model.width-1;x++)
+                {
+                    i = x+y*this._model.width;
+
+                    m = this._model.m.data[i];
+
+                    d = this._model.phi_tdcy.data[i] = -(m*m)*(
+                        ((this._model.phi.data[i]+this._model.phi.data[i+1])*this._model.U.data[i] - (this._model.phi.data[i-1]+this._model.phi.data[i])*this._model.U.data[i-1])*0.5/this._model.dx
+                       + 
+                        ((this._model.phi.data[i-this._model.width]+this._model.phi.data[i])*this._model.V.data[i-this._model.width] - (this._model.phi.data[i]+this._model.phi.data[i+this._model.width])*this._model.V.data[i])*0.5/this._model.dy
+                       );
+
+                    this._model.phi_tdcy.data[i] = d;
+                }
+            }
+        }
+        else
+        {
+            var m = 0
+            var xi = 0;
+            var u = 0;
+            var a1, a2, a3, a4;
+            var b1, b2, b3, b4;
+            var i;
+            for (var y=1;y&lt;this._model.height-1;y++)
+            {
+                for(var x=1;x&lt;this._model.width-1;x++)
+                {
+                    i = x+y*this._model.width;
+
+                    m = this._model.m.data[i];
+
+                    this._model.phi_tdcy.data[i] = -(m*m)*(
+                            (this._model.phi.data[i+1]*this._model.U.data[i+1] - this._model.phi.data[i-1]*this._model.U.data[i-1])/(this._model.dx*2)
+                            +(this._model.phi.data[i-this._model.width]*this._model.V.data[i-this._model.width] - this._model.phi.data[i+this._model.width]*this._model.V.data[i+this._model.width])/(this._model.dy*2)
+                        );
+                }
+            }
+        }
+    }
+
+    /**
+     * Calcule l'énergie
+     * @returns {undefined}
+     */
+    calcK()
+    {
+        if (this._model.horizontalStaggering==Model.HS_GRID_C) 
+        {
+            var i = 0;
+            var u1 = 0, u2 = 0;
+            var v1 = 0, v2 = 0;
+            for (var y=1;y&lt;this._model.height-1;y++)
+            {
+                for(var x=1;x&lt;this._model.width-1;x++)
+                {
+                    i = x+y*this._model.width;
+                    u1 = this._model.U.data[i-1];
+                    u2 = this._model.U.data[i];
+                    v1 = this._model.V.data[i];
+                    v2 = this._model.V.data[i-this._model.width]
+                    this._model.K.data[i] = this._model.m.data[i]*this._model.m.data[i]*(
+                            0.5*(u1*u1 + u2*u2)
+                            +0.5*(v1*v1 + v2*v2)
+                        )/2;
+                }
+            }
+        }
+        else
+        {
+            var i = 0;
+            var u1 = 0;
+            var v1 = 0;
+            for (var y=1;y&lt;this._model.height-1;y++)
+            {
+                for(var x=1;x&lt;this._model.width-1;x++)
+                {
+                    i = x+y*this._model.width;
+                    u1 = this._model.U.data[i];
+                    v1 = this._model.V.data[i];
+                    this._model.K.data[i] = this._model.m.data[i]*this._model.m.data[i]*0.5*(u1*u1+v1*v1);
+                }
+            }                
+        }
+    }
+
+    /**
+     * Calcule le tourbillon absolu potentiel
+     * @returns {undefined}
+     */
+    calctourbillon()
+    {
+        if (this._model.horizontalStaggering=="C") 
+        {
+            var i = 0;
+            var m1=0, m2=0, m3=0, m4=0;
+            var u1 = 0, u2 = 0;
+            var v1 = 0, v2 = 0;
+
+            for (var y=1;y&lt;this._model.height-1;y++)
+            {
+                for(var x=1;x&lt;this._model.width-1;x++)
+                {
+                    i = x+y*this._model.width;
+                    m1 = this._model.m.data[i+this._model.width];
+                    m2 = this._model.m.data[i+1+this._model.width];
+                    m3 = this._model.m.data[i];
+                    m4 = this._model.m.data[i+1];
+
+                    this._model.tourbillon.data[i] = (
+                            0.25*(m1*m1+m2*m2+m3*m3+m4*m4)
+                            *(
+                                 (this._model.V.data[i+1]-this._model.V.data[i])/this._model.dx - (this._model.U.data[i]-this._model.U.data[i+this._model.width])/this._model.dy
+                             )
+                        );
+                    // Discretisation alternative
+/*                        this._model.tourbillon[i] = (
+                            0.25*(m1*m1+m2*m2+m3*m3+m4*m4)
+                            *(
+                                 (this._model.V[i+1]-this._model.V[i])/this._model.dx - (this._model.U[i]-this._model.U[i+this._model.width])/this._model.dy
+                             )+this._model.f[i]
+                        )/(0.25*(this._model.phi[i]+this._model.phi[i+1]+this._model.phi[i+this._model.width]+this._model.phi[i+this._model.width+1]));*/
+                }
+            }
+        }
+        else
+        {
+            var i = 0;
+            var m1 = 0;
+            var u1 = 0, u2 = 0;
+            var v1 = 0, v2 = 0;
+
+            for (var y=1;y&lt;this._model.height-1;y++)
+            {
+                for(var x=1;x&lt;this._model.width-1;x++)
+                {
+                    i = x+y*this._model.width;
+
+                    m1 = this._model.m.data[i];
+
+                    u1 = this._model.U.data[i-this._model.width];
+                    u2 = this._model.U.data[i+this._model.width];
+
+                    v1 = this._model.V.data[i+1];
+                    v2 = this._model.V.data[i-1];
+
+                    this._model.tourbillon.data[i] = m1*m1
+                            *((v1-v2)/(2*this._model.dx)
+                              - (u1-u2)/(2*this._model.dy)
+                             );
+                }
+            }
+        }
+    }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AbsoluteVorticityComponent.html">AbsoluteVorticityComponent</a></li><li><a href="ArithmeticComponent.html">ArithmeticComponent</a></li><li><a href="BaroclinicHydrostaticCore.html">BaroclinicHydrostaticCore</a></li><li><a href="BarotropicCore.html">BarotropicCore</a></li><li><a href="BarotropicSemiImplicitCore.html">BarotropicSemiImplicitCore</a></li><li><a href="BoundaryCondition.html">BoundaryCondition</a></li><li><a href="Component.html">Component</a></li><li><a href="ConfigManager.html">ConfigManager</a></li><li><a href="ConformalProjection.html">ConformalProjection</a></li><li><a href="CoriolisFactorComponent.html">CoriolisFactorComponent</a></li><li><a href="CouplingLimitedAreaBoundaryCondition.html">CouplingLimitedAreaBoundaryCondition</a></li><li><a href="CouplingStep.html">CouplingStep</a></li><li><a href="DataProcessor.html">DataProcessor</a></li><li><a href="DataSource.html">DataSource</a></li><li><a href="DFIInitScenario.html">DFIInitScenario</a></li><li><a href="DynamicsCore.html">DynamicsCore</a></li><li><a href="Earth.html">Earth</a></li><li><a href="FileInfo.html">FileInfo</a></li><li><a href="Grid.html">Grid</a></li><li><a href="HistoryStep.html">HistoryStep</a></li><li><a href="LatLonDomain.html">LatLonDomain</a></li><li><a href="LeapFrogTimeIntegrator.html">LeapFrogTimeIntegrator</a></li><li><a href="Matrix.html">Matrix</a></li><li><a href="MercatorProjection.html">MercatorProjection</a></li><li><a href="Model.html">Model</a></li><li><a href="ModuleLoader.html">ModuleLoader</a></li><li><a href="PhysicsScheme.html">PhysicsScheme</a></li><li><a href="PolarStereographicProjection.html">PolarStereographicProjection</a></li><li><a href="PrecipitationScheme.html">PrecipitationScheme</a></li><li><a href="PRMSLComponent.html">PRMSLComponent</a></li><li><a href="ProjectionComponent.html">ProjectionComponent</a></li><li><a href="RecorderStep.html">RecorderStep</a></li><li><a href="RobertAsselinTimeFilter.html">RobertAsselinTimeFilter</a></li><li><a href="RunScenario.html">RunScenario</a></li><li><a href="ScalingFactorComponent.html">ScalingFactorComponent</a></li><li><a href="Scenario.html">Scenario</a></li><li><a href="SchumannFilter.html">SchumannFilter</a></li><li><a href="SigmaLevelInterpolationComponent.html">SigmaLevelInterpolationComponent</a></li><li><a href="SpatialFilter.html">SpatialFilter</a></li><li><a href="Step.html">Step</a></li><li><a href="Task.html">Task</a></li><li><a href="TextFile.html">TextFile</a></li><li><a href="TimeFilter.html">TimeFilter</a></li><li><a href="TimeIntegrator.html">TimeIntegrator</a></li><li><a href="TridiagonalSystem.html">TridiagonalSystem</a></li><li><a href="Variable.html">Variable</a></li><li><a href="VariableDescription.html">VariableDescription</a></li><li><a href="WGRIBFormat.html">WGRIBFormat</a></li><li><a href="WGRIBOutputComponent.html">WGRIBOutputComponent</a></li><li><a href="WGRIBTextFieldDataSource.html">WGRIBTextFieldDataSource</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BarotropicInterpolator">BarotropicInterpolator</a></li><li><a href="global.html#GeopotentialInterpolator">GeopotentialInterpolator</a></li><li><a href="global.html#HumidityInterpolator">HumidityInterpolator</a></li><li><a href="global.html#OutputInterpolator">OutputInterpolator</a></li><li><a href="global.html#TimeInterpolator">TimeInterpolator</a></li><li><a href="global.html#VerticalInterpolator">VerticalInterpolator</a></li><li><a href="global.html#WGRIBInterpolator">WGRIBInterpolator</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.2</a> on Thu Nov 28 2019 18:08:43 GMT+0100 (heure normale d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

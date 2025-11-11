@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Class: Scenario</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Class: Scenario</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>Scenario<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h2>
+        
+            <div class="class-description">Définition de base d'un scenario.
+
+<p>Un scénario est un objet chargé et géré par le frontal enligne de commande
+ou le navigateur. Il est en charge de gérer le contenu et le déroulement 
+d'une simulation ou de traitements de données.</p>
+
+<p>Le frontal appelle la méthode start() du scenario, puis tant que le 
+statut est STATE_RUN, la méthode step() sera appelée. Le scenario est 
+ensuite responsable de gérer son statut et de la passer à STATE_END quand
+nécessaire. La méthode step() appelle automatiquement finish(). </p>
+
+<p>L'implémentateur de scénario ne devra pas directement implémenter la 
+méthode step(), il viendra plutôt greffer son code dans les méthodes
+stepBegin(), stepDo() et stepEnd(). Nb : toutes les méthodes sont
+asynchrones pour permettre une utilisation aisée d'opérations de type I/O.</p>
+
+<p>Il est possible d'ajouter un certain nombre d'objets "suiveurs" qui 
+effectueront des opérations à chaque étape appelés "Steps". Il est également
+possible de greffer des méthode listener onStepXXX() pour suivre l'exécution.
+</p>
+
+<p>Le déroulement complet d'une étape est le suivant :
+<ol>
+<li>Evènement onStepBegin</li>
+<li>Etape stepBegin des steps</li>
+<li>Etape stepBegin du scénario</li>
+<li>Evènement onStepDo</li>
+<li>Etap stepDo des steps</li>
+<li>Etape stepDo du scénario</li>
+<li>Evènement onStepDone</li>
+<li>Etape stepEnd des steps</li>
+<li>Etape stepEnd du scénario</li>
+<li>Evènement onStepEnd</li>
+<li>Si le statut est différent de STATE_RUN alors finish()</li>
+</ol>
+</p></div>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+    
+    <h2>Constructor</h2>
+    
+
+    
+    <h4 class="name" id="Scenario"><span class="type-signature"></span>new Scenario<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line64">line 64</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">undefined</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Classes</h3>
+
+        <dl>
+            <dt><a href="Scenario.html">Scenario</a></dt>
+            <dd></dd>
+        </dl>
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id=".STATE_END"><span class="type-signature">(static) </span>STATE_END<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Etat terminé
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line384">line 384</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".STATE_RUN"><span class="type-signature">(static) </span>STATE_RUN<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Etat initialisé
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line379">line 379</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".STATE_START"><span class="type-signature">(static) </span>STATE_START<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Etat de départ non initialisé
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line374">line 374</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="model"><span class="type-signature"></span>model<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Modèle traité par le scénario.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line262">line 262</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="model"><span class="type-signature"></span>model<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Modèle traité par le scénario.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line252">line 252</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="status"><span class="type-signature"></span>status<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Statut du scénario.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line243">line 243</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="steps"><span class="type-signature"></span>steps<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Liste d'objets steps à appeler à chaque itération
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line90">line 90</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="finish"><span class="type-signature">(async) </span>finish<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Termine le scenario.
+
+<p>C'est le placeholder pour libérer les ressources.</p>
+
+<p>Cette fonction peut être appelée de deux façon :</p>
+<ul>
+ <li>soit manuellement avant la fin d'un run</li>
+ <li>soit automatiquement par step() si un changement de statut
+ est détecté à la fin de l'itération.</li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line130">line 130</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">undefined</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="onMessage"><span class="type-signature"></span>onMessage<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Gestionnaire d'évènement message. 
+
+<p>Le scénario peut ainsi émettre un log ou un message de statut 
+qui peut être affiché à l'écranpar l'UI ou tracé dans un fichier.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line74">line 74</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="onStepBegin"><span class="type-signature"></span>onStepBegin<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Evènement appelé en début d'itération avant stepBegin.
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line77">line 77</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="onStepDo"><span class="type-signature"></span>onStepDo<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Evènement appelé en début d'itération après stepBegin, 
+mais avant stepDo.
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line81">line 81</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="onStepDone"><span class="type-signature"></span>onStepDone<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Evènement appelé après stepDo, mais avant stepEnd.
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line84">line 84</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="onStepEnd"><span class="type-signature"></span>onStepEnd<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Evènement appelé en fin d'itération après tout le reste.
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line87">line 87</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="runStepsFinish"><span class="type-signature">(async) </span>runStepsFinish<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="Scenario.html">Scenario</a>}</span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line354">line 354</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="Scenario.html">Scenario</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="sendMessage"><span class="type-signature"></span>sendMessage<span class="signature">(msg)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Cette fonction permet d'envoyer un message à l'appelant
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>msg</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">type</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line272">line 272</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">undefined</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="start"><span class="type-signature">(async) </span>start<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Démarre le scénario.
+
+<p>Le scénario initialise ses objets et fait toutes ses opérations
+et traitements d'entrée-sorties non bloquants.</p>
+
+<p>Le scénario modifie son statut STATE_RUN ou STATE_END.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line103">line 103</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    promesse du scénario lui-même.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">undefined</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="step"><span class="type-signature">(async) </span>step<span class="signature">()</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Itération du scénario. 
+
+<p>Les itérations peuvent être appelées tant que le scenario est en statut
+STATE_RUN.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line150">line 150</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="stepBegin"><span class="type-signature">(async) </span>stepBegin<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Opération effectuée au début de l'itération.
+
+<p>Cette méthode est le placeholder permettant aux classes dérivées de 
+réaliser les opérations d'initialisation avant le calcul proprement dit.</p>
+
+<p>N'effectue rien par défaut.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line189">line 189</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">undefined</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="stepDo"><span class="type-signature">(async) </span>stepDo<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Opération de calcul de l'itération.
+
+<p>C'est le calcul du modèle proprement dit.</p>
+
+<p>N'effectue rien par défaut.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line208">line 208</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">undefined</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="stepEnd"><span class="type-signature">(async) </span>stepEnd<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Opération effectue à la fin de l'itération.
+
+<p>Cette méthode est le placeholder permettant aux classes dérivées de
+faire leurs opérations de nettoyage ou d'historisation post-calcul.</p>
+
+<p>N'effectue rien par défaut.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="front_Scenario.js.html">front/Scenario.js</a>, <a href="front_Scenario.js.html#line228">line 228</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">undefined</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AbsoluteVorticityComponent.html">AbsoluteVorticityComponent</a></li><li><a href="ArithmeticComponent.html">ArithmeticComponent</a></li><li><a href="BaroclinicHydrostaticCore.html">BaroclinicHydrostaticCore</a></li><li><a href="BarotropicCore.html">BarotropicCore</a></li><li><a href="BarotropicSemiImplicitCore.html">BarotropicSemiImplicitCore</a></li><li><a href="BoundaryCondition.html">BoundaryCondition</a></li><li><a href="Component.html">Component</a></li><li><a href="ConfigManager.html">ConfigManager</a></li><li><a href="ConformalProjection.html">ConformalProjection</a></li><li><a href="CoriolisFactorComponent.html">CoriolisFactorComponent</a></li><li><a href="CouplingLimitedAreaBoundaryCondition.html">CouplingLimitedAreaBoundaryCondition</a></li><li><a href="CouplingStep.html">CouplingStep</a></li><li><a href="DataProcessor.html">DataProcessor</a></li><li><a href="DataSource.html">DataSource</a></li><li><a href="DFIInitScenario.html">DFIInitScenario</a></li><li><a href="DynamicsCore.html">DynamicsCore</a></li><li><a href="Earth.html">Earth</a></li><li><a href="FileInfo.html">FileInfo</a></li><li><a href="Grid.html">Grid</a></li><li><a href="HistoryStep.html">HistoryStep</a></li><li><a href="LatLonDomain.html">LatLonDomain</a></li><li><a href="LeapFrogTimeIntegrator.html">LeapFrogTimeIntegrator</a></li><li><a href="Matrix.html">Matrix</a></li><li><a href="MercatorProjection.html">MercatorProjection</a></li><li><a href="Model.html">Model</a></li><li><a href="ModuleLoader.html">ModuleLoader</a></li><li><a href="PhysicsScheme.html">PhysicsScheme</a></li><li><a href="PolarStereographicProjection.html">PolarStereographicProjection</a></li><li><a href="PrecipitationScheme.html">PrecipitationScheme</a></li><li><a href="PRMSLComponent.html">PRMSLComponent</a></li><li><a href="ProjectionComponent.html">ProjectionComponent</a></li><li><a href="RecorderStep.html">RecorderStep</a></li><li><a href="RobertAsselinTimeFilter.html">RobertAsselinTimeFilter</a></li><li><a href="RunScenario.html">RunScenario</a></li><li><a href="ScalingFactorComponent.html">ScalingFactorComponent</a></li><li><a href="Scenario.html">Scenario</a></li><li><a href="SchumannFilter.html">SchumannFilter</a></li><li><a href="SigmaLevelInterpolationComponent.html">SigmaLevelInterpolationComponent</a></li><li><a href="SpatialFilter.html">SpatialFilter</a></li><li><a href="Step.html">Step</a></li><li><a href="Task.html">Task</a></li><li><a href="TextFile.html">TextFile</a></li><li><a href="TimeFilter.html">TimeFilter</a></li><li><a href="TimeIntegrator.html">TimeIntegrator</a></li><li><a href="TridiagonalSystem.html">TridiagonalSystem</a></li><li><a href="Variable.html">Variable</a></li><li><a href="VariableDescription.html">VariableDescription</a></li><li><a href="WGRIBFormat.html">WGRIBFormat</a></li><li><a href="WGRIBOutputComponent.html">WGRIBOutputComponent</a></li><li><a href="WGRIBTextFieldDataSource.html">WGRIBTextFieldDataSource</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BarotropicInterpolator">BarotropicInterpolator</a></li><li><a href="global.html#GeopotentialInterpolator">GeopotentialInterpolator</a></li><li><a href="global.html#HumidityInterpolator">HumidityInterpolator</a></li><li><a href="global.html#OutputInterpolator">OutputInterpolator</a></li><li><a href="global.html#TimeInterpolator">TimeInterpolator</a></li><li><a href="global.html#VerticalInterpolator">VerticalInterpolator</a></li><li><a href="global.html#WGRIBInterpolator">WGRIBInterpolator</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.2</a> on Thu Nov 28 2019 18:08:43 GMT+0100 (heure normale d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

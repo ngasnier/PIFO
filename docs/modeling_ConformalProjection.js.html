@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: modeling/ConformalProjection.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: modeling/ConformalProjection.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* 
+ * Copyright (C) 2019 Nicolas GASNIER (http://www.meteo-blois.fr/contact/)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/>.
+ */
+
+import { VariableDescription } from "./VariableDescription.js"
+import { Grid } from "./Grid.js"
+import { Variable } from "./Variable.js"
+
+/**
+ * Interface représentant une projection conforme.
+ * @type type
+ */
+export class ConformalProjection  {
+    /**
+     * Constructeur générique
+     * @returns {undefined}
+     */
+    constructor()
+    {
+        this.xmin = 0;
+        this.xmax = 0;
+        this.ymin = 0;
+        this.ymax = 0;
+        this.cyclic = false;
+        this.regrid = "bilinear";
+    }
+   
+    /**
+     * Sphere vers plan
+     * @param {type} lat en degré
+     * @param {lon} lon en degré
+     * @returns {Number} [x, y]
+     */
+    latLonToXY(lat, lon)
+    {
+        return [lat, lon];
+    }
+    
+    /**
+     * Plan vers sphere
+     * @param {type} x
+     * @param {type} y 
+     * @returns {Number} [lat, lon]
+     */
+    xyToLatLon(x, y)
+    {
+        return [x, y];
+    }
+
+    /**
+     * Facteur d'échelle à la position demandée
+     * @param {type} lat
+     * @param {type} lon
+     * @returns {Number} toujours 1 par défaut
+     */
+    scaleFactor(lat, lon)
+    {
+        return 1;
+    }
+    
+    /**
+     * Déclinaison des vecteurs 
+     * @param {type} lat
+     * @param {type} lon
+     * @returns {Number} toujours zero par défaut
+     */
+    declination(lat, lon)
+    {
+        return 0;
+    }
+
+    /**
+     * Interpole une grille lat lon vers le domaine
+     * @param {LatLonDomain} latLonParams paramètres de la grille lat/lon d'entrée
+     * @param {array} data données d'entrée
+     * @param {array} domain variable qui reçoit les données en sortie
+     * @param {integer} offsetx offset du point en 1/2 dx dans la cellule (0 ou 1)
+     * @param {integer} offsety offset du point en 1/2 dy dans la cellule (0 ou 1)
+     * @param {boolean} scale indique si la variable doit être divisée par 
+     * le facteur d'échelle (défaut false)
+     * @param {string} fieldType indique le type de variable : s scalaire, 
+     * u composante u vectorielle, v composante v vectorielle
+     * @param {array} data2 seconde composante du vecteur pour calculer la 
+     * déclinaison. Si fieldType=u alors doit correspondre à v, et inversement.
+     * Supposée positionnée au même point.
+     * @returns {undefined}
+     */
+    interpLatLonGridToDomain(latLonParams, data, output, offsetx, offsety, scale=false, fieldType=VariableDescription.NUMBER_TYPE_SCALAR, data2=null)
+    {
+        var lons = latLonParams.getLongitudes(0, 0);
+        var lats = latLonParams.getLatitudes(0, 0);
+       
+        var lats_out = Variable.createVariable(1, this.width, this.height);
+        var lons_out = Variable.createVariable(1, this.width, this.height);
+        this.calcLatitudesLongitudes(offsetx, offsety, lats_out, lons_out);
+
+        var grid = new Grid();
+        if (this.regrid=="bicubic")
+            grid.bicubicRegrid(lons, lats, data.data, latLonParams.cyclic, lons_out.data, lats_out.data, output.data);
+        else
+            grid.bilinearRegrid(lons, lats, data.data, latLonParams.cyclic, lons_out.data, lats_out.data, output.data);
+
+        var data2_regrid = Variable.createVariable(1, this.width, this.height);
+        var scale_factor = 1;
+        if (data2!=null)
+        {
+            if (this.regrid=="bicubic")
+                grid.bicubicRegrid(lons, lats, data2.data, latLonParams.cyclic, lons_out.data, lats_out.data, data2_regrid.data);
+            else
+                grid.bilinearRegrid(lons, lats, data2.data, latLonParams.cyclic, lons_out.data, lats_out.data, data2_regrid.data);            
+        }
+        if (scale)
+        {
+            var lats_scale = Variable.createVariable(1, this.width, this.height);
+            var lons_scale = Variable.createVariable(1, this.width, this.height);
+            this.calcLatitudesLongitudes(0, 0, lats_scale, lons_scale);            
+            for (var i=0;i&lt;output.data.length;i++)
+            {
+                scale_factor = this.scaleFactor(lats_scale.data[i], lons_scale.data[i]);
+                output.data[i] = output.data[i]/scale_factor;
+                if (data2!=null)
+                {
+                    data2_regrid.data[i] = data2_regrid.data[i]/scale_factor;
+                }
+            }
+        }
+        
+        if (data2!=null)
+        {
+            var declinations = this.getDeclinations(lats_out, lons_out);
+            switch (fieldType)
+            {
+                case VariableDescription.NUMBER_TYPE_U_VECTOR:
+                    for (var i=0;i&lt;output.data.length;i++)
+                    {
+                        output.data[i] = output.data[i]*Math.cos(declinations.data[i])+data2_regrid.data[i]*Math.sin(declinations.data[i]);
+                    }
+                    break;
+                case VariableDescription.NUMBER_TYPE_V_VECTOR:
+                    for (var i=0;i&lt;output.length;i++)
+                    {
+                        output.data[i] = -data2_regrid.data[i]*Math.sin(declinations.data[i])+output.data[i]*Math.cos(declinations.data[i]);
+                    }
+                    break;
+            }
+        }
+    }
+    
+    /**
+     * Interpole les données du domaine vers une grille latitudes longitudes.
+     * @param {type} latLonParams paramètres de la grille lat/lon d'entrée
+     * @param {type} data_in données d'entrée
+     * @param {type} data_out variable qui reçoit les données en sortie
+     * @param {type} offsetx offset du point en 1/2 dx dans la cellule (0 ou 1)
+     * @param {type} offsety offset du point en 1/2 dy dans la cellule (0 ou 1)
+     * @param {type} scale indique si la variable doit être divisée par le facteur d'échelle (défaut false)
+     * @param {type} fieldType indique le type de variable : s scalaire, u composante u vectorielle, v composante v vectorielle
+     * @param {type} data2 la seconde composante du vecteur (u ou v) pour le 
+     * calcul de la déclinaison. Supposée positionnée au même point.
+     * @returns {undefined}
+     */
+    interpDomainToLatLon(latLonParams, data_in, data_out, offsetx, offsety, scale=false, fieldType=VariableDescription.NUMBER_TYPE_SCALAR, data2=null, offsetx2=0, offsety2=0)
+    {
+        var grid = new Grid();
+
+        var x_coords = this.getXCoords(offsetx, offsety);
+        var y_coords = this.getYCoords(offsetx, offsety);
+
+        var lats_out = Variable.createVariable(1, latLonParams.width, latLonParams.height);
+        var lons_out = Variable.createVariable(1, latLonParams.width, latLonParams.height);
+        latLonParams.calcLatitudesLongitudes(0, 0, lats_out, lons_out);
+
+        var x_out = Variable.createVariable(1, this.width, this.height);
+        var y_out = Variable.createVariable(1, this.width, this.height);
+        for (var i=0;i&lt;lats_out.data.length;i++)
+        {
+            [x_out.data[i], y_out.data[i]] = this.latLonToXY(lats_out.data[i], lons_out.data[i]);
+        }
+
+        // Ne pas modifier les variables d'origine
+        var input = Variable.clone(data_in);
+        var data2_in = (data2!=null?Variable.clone(data2):null);
+        
+        // Scale avant de regrid, plus simple à faire dans la grille d'origine
+        var scale_factor = 1;
+        if (scale)
+        {
+            var lats_scale = Variable.createVariable(1, latLonParams.width, latLonParams.height);
+            var lons_scale = Variable.createVariable(1, latLonParams.width, latLonParams.height);
+            this.calcLatitudesLongitudes(0, 0, lats_scale, lons_scale);
+            for (var i=0;i&lt;input.data.length;i++)
+            {
+                scale_factor = this.scaleFactor(lats_scale.data[i], lons_scale.data[i]);
+                input.data[i] = input.data[i]*scale_factor;
+                if (data2!=null)
+                {
+                    data2_in.data[i] = data2_in.data[i]*scale_factor;
+                }
+            }
+        }       
+
+        // Annule la déclinaison dans la grille d'origine
+        if (data2!=null)
+        {
+            if (offsetx2!=offsetx &amp;&amp; offsety2!=offsety)
+            {
+                var lats2 = Variable.createVariable(1, this.width, this.height);
+                var lons2 = Variable.createVariable(1, this.width, this.height);
+                this.calcLatitudesLongitudes(offsetx2, offsety2, lats2, lons2);
+                /*var x_coords2 = this.getXCoords(offsetx2, offsety2);
+                var y_coords2 = this.getYCoords(offsetx2, offsety2);*/
+                var x_coords2 = Variable.createVariable(1, this.width, this.height);
+                var y_coords2 = Variable.createVariable(1, this.width, this.height);
+                for (var i=0;i&lt;lats_out.data.length;i++)
+                {
+                    [x_coords2.data[i], y_coords2.data[i]] = this.latLonToXY(lats2.data[i], lons2.data[i]);
+                }
+                var data2_out = Variable.createVariable(1, this.width, this.height);
+                if (this.regrid=="bicubic")
+                    grid.bicubicRegrid(x_coords2, y_coords2, data2_in.data, this.cyclic, x_coords2.data, y_coords2.data, data2_out.data);
+                else
+                    grid.bilinearRegrid(x_coords2, y_coords2, data2_in.data, this.cyclic, x_coords2.data, y_coords2.data, data2_out.data);
+                data2_in = data2_out;
+            }
+
+            var lats = Variable.createVariable(1, this.width, this.height);
+            var lons = Variable.createVariable(1, this.width, this.height);
+            this.calcLatitudesLongitudes(offsetx, offsety, lats, lons);
+            
+            var declinations = this.getDeclinations(lats, lons);
+            switch (fieldType)
+            {
+                case VariableDescription.NUMBER_TYPE_U_VECTOR:
+                    for (var i=0;i&lt;input.length;i++)
+                    {
+                        input.data[i] = input.data[i]*Math.cos(-declinations.data[i])+data2_in.data[i]*Math.sin(-declinations.data[i]);
+                    }
+                    break;
+                case VariableDescription.NUMBER_TYPE_V_VECTOR:
+                    for (var i=0;i&lt;input.length;i++)
+                    {
+                        input.data[i] = -data2_in.data[i]*Math.sin(-declinations.data[i])+input.data[i]*Math.cos(-declinations.data[i]);
+                    }
+                    break;
+            }
+        }
+    
+        // On peut maintenant regrid le champ
+        if (this.regrid=="bicubic")
+            grid.bicubicRegrid(x_coords, y_coords, input.data, this.cyclic, x_out.data, y_out.data, data_out.data);
+        else
+            grid.bilinearRegrid(x_coords, y_coords, input.data, this.cyclic, x_out.data, y_out.data, data_out.data);
+    }
+
+    /**
+     * Donne la taille de grille du domaine projeté
+     * @returns {undefined} tableau [dx, dy]
+     */
+    getMeshSize()
+    {
+        return [(this.xmax-this.xmin)/this.width, (this.ymax-this.ymin)/this.height];
+    }
+    
+    /**
+     * Calcule les points du domaine en coordonnées naturelles.
+     * @param {type} offsetx
+     * @param {type} offsety
+     * @param {type} lats_out
+     * @param {type} lons_out
+     * @returns {undefined}
+     */
+    calcLatitudesLongitudes(xoffset, yoffset, latitudes, longitudes)
+    {
+        var a = [this.xmin, this.ymin];
+        var b = [this.xmax, this.ymax];
+        var [dx, dy] = this.getMeshSize();
+
+        var yplan = b[1]-dy*yoffset*0.5;
+        var xplan = a[0];
+        var i = 0, j=0;
+        var lat, lon;
+        for (j=0;j&lt;this.height;j++)
+        {
+            xplan = a[0]+dx*xoffset*0.5;
+            for(i=0;i&lt;this.width;i++)
+            {
+                [lat, lon] = this.xyToLatLon(xplan, yplan);
+                latitudes.set2(i,j,lat);
+                longitudes.set2(i,j,lon);
+                xplan += dx;
+            }
+            yplan -= dy;
+        }        
+    }
+    
+    getXCoords(offsetx, offsety)
+    {
+        var [dx, dy] = this.getMeshSize();
+        var xcoords = [];
+        var x = this.xmin+0.5*offsetx*dx;
+        for (var i=0;i&lt;this.width;i++)
+        {
+            xcoords[i] = x;
+            x+=dx;
+        }
+        return xcoords;
+    }
+    
+    getYCoords(offsetx, offsety)
+    {
+        var [dx, dy] = this.getMeshSize();
+        var ycoords = [];
+        var y = this.ymax-0.5*offsety*dy;
+        for (var i=0;i&lt;this.height;i++)
+        {
+            ycoords[i] = y;
+            y-=dy;
+        }     
+        return ycoords;
+    }
+    
+    /**
+     * Calcule le facteur d'échelle pour les points demandés
+     * @param {type} latitudes
+     * @param {type} longitudes
+     * @param {type} m
+     * @returns {undefined}
+     */
+    getScaleFactors(latitudes, longitudes, m=null)
+    {
+        var m_out = m;
+        if (m_out==null) m_out=Variable.createVariable(1, this.width, this.height);
+        for (var i=0;i&lt;latitudes.data.length;i++)
+            m_out.data[i] = this.scaleFactor(latitudes.data[i], longitudes.data[i]);
+        return m_out;
+    }
+    
+    /**
+     * 
+     * @param {type} latitudes
+     * @param {type} longitudes
+     * @param {type} rot
+     * @returns {undefined}
+     */
+    getDeclinations(latitudes, longitudes, dec=null)
+    {
+        var dec_out = dec;
+        if (dec_out==null) dec_out=Variable.createVariable(1, this.width, this.height);
+        for (var i=0;i&lt;latitudes.data.length;i++)
+            dec_out.data[i] = this.declination(latitudes.data[i], longitudes.data[i]);
+        return dec_out;
+    }
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AbsoluteVorticityComponent.html">AbsoluteVorticityComponent</a></li><li><a href="ArithmeticComponent.html">ArithmeticComponent</a></li><li><a href="BaroclinicHydrostaticCore.html">BaroclinicHydrostaticCore</a></li><li><a href="BarotropicCore.html">BarotropicCore</a></li><li><a href="BarotropicSemiImplicitCore.html">BarotropicSemiImplicitCore</a></li><li><a href="BoundaryCondition.html">BoundaryCondition</a></li><li><a href="Component.html">Component</a></li><li><a href="ConfigManager.html">ConfigManager</a></li><li><a href="ConformalProjection.html">ConformalProjection</a></li><li><a href="CoriolisFactorComponent.html">CoriolisFactorComponent</a></li><li><a href="CouplingLimitedAreaBoundaryCondition.html">CouplingLimitedAreaBoundaryCondition</a></li><li><a href="CouplingStep.html">CouplingStep</a></li><li><a href="DataProcessor.html">DataProcessor</a></li><li><a href="DataSource.html">DataSource</a></li><li><a href="DFIInitScenario.html">DFIInitScenario</a></li><li><a href="DynamicsCore.html">DynamicsCore</a></li><li><a href="Earth.html">Earth</a></li><li><a href="FileInfo.html">FileInfo</a></li><li><a href="Grid.html">Grid</a></li><li><a href="HistoryStep.html">HistoryStep</a></li><li><a href="LatLonDomain.html">LatLonDomain</a></li><li><a href="LeapFrogTimeIntegrator.html">LeapFrogTimeIntegrator</a></li><li><a href="Matrix.html">Matrix</a></li><li><a href="MercatorProjection.html">MercatorProjection</a></li><li><a href="Model.html">Model</a></li><li><a href="ModuleLoader.html">ModuleLoader</a></li><li><a href="PhysicsScheme.html">PhysicsScheme</a></li><li><a href="PolarStereographicProjection.html">PolarStereographicProjection</a></li><li><a href="PrecipitationScheme.html">PrecipitationScheme</a></li><li><a href="PRMSLComponent.html">PRMSLComponent</a></li><li><a href="ProjectionComponent.html">ProjectionComponent</a></li><li><a href="RecorderStep.html">RecorderStep</a></li><li><a href="RobertAsselinTimeFilter.html">RobertAsselinTimeFilter</a></li><li><a href="RunScenario.html">RunScenario</a></li><li><a href="ScalingFactorComponent.html">ScalingFactorComponent</a></li><li><a href="Scenario.html">Scenario</a></li><li><a href="SchumannFilter.html">SchumannFilter</a></li><li><a href="SigmaLevelInterpolationComponent.html">SigmaLevelInterpolationComponent</a></li><li><a href="SpatialFilter.html">SpatialFilter</a></li><li><a href="Step.html">Step</a></li><li><a href="Task.html">Task</a></li><li><a href="TextFile.html">TextFile</a></li><li><a href="TimeFilter.html">TimeFilter</a></li><li><a href="TimeIntegrator.html">TimeIntegrator</a></li><li><a href="TridiagonalSystem.html">TridiagonalSystem</a></li><li><a href="Variable.html">Variable</a></li><li><a href="VariableDescription.html">VariableDescription</a></li><li><a href="WGRIBFormat.html">WGRIBFormat</a></li><li><a href="WGRIBOutputComponent.html">WGRIBOutputComponent</a></li><li><a href="WGRIBTextFieldDataSource.html">WGRIBTextFieldDataSource</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BarotropicInterpolator">BarotropicInterpolator</a></li><li><a href="global.html#GeopotentialInterpolator">GeopotentialInterpolator</a></li><li><a href="global.html#HumidityInterpolator">HumidityInterpolator</a></li><li><a href="global.html#OutputInterpolator">OutputInterpolator</a></li><li><a href="global.html#TimeInterpolator">TimeInterpolator</a></li><li><a href="global.html#VerticalInterpolator">VerticalInterpolator</a></li><li><a href="global.html#WGRIBInterpolator">WGRIBInterpolator</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.2</a> on Thu Nov 28 2019 18:08:43 GMT+0100 (heure normale d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

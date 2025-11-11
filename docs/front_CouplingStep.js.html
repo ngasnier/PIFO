@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: front/CouplingStep.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: front/CouplingStep.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* 
+ * Copyright (C) 2019 Nicolas GASNIER (http://www.meteo-blois.fr/contact/)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/>.
+ */
+
+import { Step } from "./Step.js";
+import { DataSource } from "./DataSource.js";
+import { Variable } from "../modeling/Variable.js";
+
+/**
+ * Fournit au modèle des variables de couplage interpolées temporellement.
+ * 
+ * &lt;p>L'objet utilise la dimension temporelle des variables pour déterminer
+ * les données à charger en fonction de la propriété time du modèle. Une
+ * interpolation linéaire des données est appliquée entre deux points 
+ * temporels.&lt;/p>
+ * 
+ * &lt;p>Paramètres :
+ * &lt;ul>
+ * &lt;li>dataSource : une référence de DataSource.&lt;/li>
+ * &lt;li>variables : un tableau de mappage de variables sous la forme : 
+ *   &lt;code>{name:"variable", source:"nom_dans_DataSource"}&lt;/code>&lt;/li>
+ * &lt;/ul>
+ * &lt;/p>
+ * @type type
+ */
+export class CouplingStep extends Step
+{
+    /**
+     * 
+     * @returns {undefined}
+     */
+    constructor()
+    {
+        super();
+        this.variables = [];
+        this.times = [];
+        this.dataSource = null;
+        this.t1 = -1;
+        this.t2 = -1;
+        this.vt1 = null;
+        this.vt2 = null;
+        this.restrictTimes = [];
+    }
+    
+    /**
+     * 
+     * @returns {undefined}
+     */
+    async init()
+    {
+        try
+        {
+            if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_READ);
+
+            this.times = this.dataSource.times.slice();
+            
+            // supprime les temps non désirés
+            if (this.restrictTimes.length>0)
+            {
+                var i=0;
+                while (i&lt;this.times.length)
+                {
+                    var idx = this.restrictTimes.indexOf(this.times[i]);
+                    if (idx&lt;0)
+                    {
+                        this.times.splice(i, 1);
+                    }
+                    else
+                    {
+                       i++;
+                    }
+                }
+            }
+            
+            for (var i in this.times) this.times[i] *= 3600;
+            
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    /**
+     * 
+     * @returns {undefined}
+     */
+    async stepFinish()
+    {
+        try
+        {
+            if (this.dataSource.isOpen()) await this.dataSource.close();
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    /**
+     * 
+     * @param {type} p_model
+     * @returns {undefined}
+     */
+    async stepBegin(p_model)
+    {
+        return this;
+    }
+    
+    /**
+     * 
+     * @param {type} p_model
+     * @returns {undefined}
+     */
+    async stepDo(p_model)
+    {
+        try
+        {
+            // S'assure qu'on a les champs requis en mémoire
+            var t = p_model.time;
+            var [t1, t2] = this.getTimeIndex(t);
+            if (t1>this.t1)
+            {
+                if (t1==this.t2)
+                {
+                    this.vt1=this.vt2;
+                }
+                else
+                {
+                    this.vt1 = await this.loadFields(this.times[t1]);
+                }
+                this.vt2 = await this.loadFields(this.times[t2]);
+            } 
+            else if (t1&lt;this.t1)
+            {
+                if (t2==this.t1)
+                {
+                    this.vt2 = this.vt1;
+                }
+                else
+                {
+                    this.vt2 = await this.loadFields(this.times[t2]);
+                }
+                this.vt1 = await this.loadFields(this.times[t1]);
+            }
+            this.t1 = t1;
+            this.t2 = t2;
+            
+            // Interpolation des valeurs
+            for (var i in this.variables)
+            {
+                var v = this.variables[i];
+                this.interp(this.vt1[v.name], this.vt2[v.name], this.times[this.t1], this.times[this.t2], t, p_model.getVariable(v.name));
+            }
+            
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    /**
+     * 
+     * @param {type} p_model
+     * @returns {undefined}
+     */
+    async stepEnd(p_model)
+    {
+        return this;
+    }
+    
+    interp(v1, v2, t1, t2, time, res)
+    {
+        var t;
+        var tprec = this.times[0];
+        if (t1!=t2)
+        {
+            this.linint(v1, v2, t1, t2, time, res);
+        }
+        else
+        {
+            Variable.copy(v1, res);
+        }
+    }
+    
+    getTimeIndex(time)
+    {
+        var tprec = this.times[0];
+        if (this.times.length>1)
+        {
+            for (var i = 1; i &lt; this.times.length; i++)
+            {
+                if ( time >= tprec &amp;&amp; time &lt; this.times[i])
+                {
+                    return [i-1, i];
+                }
+                tprec = this.times[i];
+            }
+            return [this.times.length-1, this.times.length-1];
+        }
+        else
+        {
+            return [0, 0];
+        }
+    }
+    
+    linint(a, b, t1, t2, t, res)
+    {
+        var i, j, k;        
+        var coef = (t - t1) / (t2 - t1);
+        var width = a.width;
+        var height = a.height;
+        var nbLevels = a.nbLevels;
+        if (nbLevels>1)
+        {    
+            for (k=0;k&lt;nbLevels;k++)
+            {
+                for (j=0;j&lt;height;j++)
+                {
+                    for (i=0;i&lt;width;i++)
+                    {
+                        res.set3(i,j,k, (1 - coef) * a.get3(i,j,k) + coef * b.get3(i,j,k));
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (j=0;j&lt;height;j++)
+            {
+                for (i=0;i&lt;width;i++)
+                {
+                    res.set2(i,j, (1 - coef) * a.get2(i,j) + coef * b.get2(i,j));
+                }
+            }
+        }
+    }
+
+    async loadFields(time)
+    {
+        try
+        {
+            var fields = [];
+            this.sendMessage(`coupling fields needed for time ${time} (${time/3600}h)`);
+            if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_READ);
+            for (var i in this.variables)
+            {
+                var v = this.variables[i];
+                this.sendMessage(`loading coupling field ${v.name} ${time/3600}`);
+                fields[v.name] = await this.dataSource.getField(v.source, time/3600);
+            }
+            return fields;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AbsoluteVorticityComponent.html">AbsoluteVorticityComponent</a></li><li><a href="ArithmeticComponent.html">ArithmeticComponent</a></li><li><a href="BaroclinicHydrostaticCore.html">BaroclinicHydrostaticCore</a></li><li><a href="BarotropicCore.html">BarotropicCore</a></li><li><a href="BarotropicSemiImplicitCore.html">BarotropicSemiImplicitCore</a></li><li><a href="BoundaryCondition.html">BoundaryCondition</a></li><li><a href="Component.html">Component</a></li><li><a href="ConfigManager.html">ConfigManager</a></li><li><a href="ConformalProjection.html">ConformalProjection</a></li><li><a href="CoriolisFactorComponent.html">CoriolisFactorComponent</a></li><li><a href="CouplingLimitedAreaBoundaryCondition.html">CouplingLimitedAreaBoundaryCondition</a></li><li><a href="CouplingStep.html">CouplingStep</a></li><li><a href="DataProcessor.html">DataProcessor</a></li><li><a href="DataSource.html">DataSource</a></li><li><a href="DFIInitScenario.html">DFIInitScenario</a></li><li><a href="DynamicsCore.html">DynamicsCore</a></li><li><a href="Earth.html">Earth</a></li><li><a href="FileInfo.html">FileInfo</a></li><li><a href="Grid.html">Grid</a></li><li><a href="HistoryStep.html">HistoryStep</a></li><li><a href="LatLonDomain.html">LatLonDomain</a></li><li><a href="LeapFrogTimeIntegrator.html">LeapFrogTimeIntegrator</a></li><li><a href="Matrix.html">Matrix</a></li><li><a href="MercatorProjection.html">MercatorProjection</a></li><li><a href="Model.html">Model</a></li><li><a href="ModuleLoader.html">ModuleLoader</a></li><li><a href="PhysicsScheme.html">PhysicsScheme</a></li><li><a href="PolarStereographicProjection.html">PolarStereographicProjection</a></li><li><a href="PrecipitationScheme.html">PrecipitationScheme</a></li><li><a href="PRMSLComponent.html">PRMSLComponent</a></li><li><a href="ProjectionComponent.html">ProjectionComponent</a></li><li><a href="RecorderStep.html">RecorderStep</a></li><li><a href="RobertAsselinTimeFilter.html">RobertAsselinTimeFilter</a></li><li><a href="RunScenario.html">RunScenario</a></li><li><a href="ScalingFactorComponent.html">ScalingFactorComponent</a></li><li><a href="Scenario.html">Scenario</a></li><li><a href="SchumannFilter.html">SchumannFilter</a></li><li><a href="SigmaLevelInterpolationComponent.html">SigmaLevelInterpolationComponent</a></li><li><a href="SpatialFilter.html">SpatialFilter</a></li><li><a href="Step.html">Step</a></li><li><a href="Task.html">Task</a></li><li><a href="TextFile.html">TextFile</a></li><li><a href="TimeFilter.html">TimeFilter</a></li><li><a href="TimeIntegrator.html">TimeIntegrator</a></li><li><a href="TridiagonalSystem.html">TridiagonalSystem</a></li><li><a href="Variable.html">Variable</a></li><li><a href="VariableDescription.html">VariableDescription</a></li><li><a href="WGRIBFormat.html">WGRIBFormat</a></li><li><a href="WGRIBOutputComponent.html">WGRIBOutputComponent</a></li><li><a href="WGRIBTextFieldDataSource.html">WGRIBTextFieldDataSource</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BarotropicInterpolator">BarotropicInterpolator</a></li><li><a href="global.html#GeopotentialInterpolator">GeopotentialInterpolator</a></li><li><a href="global.html#HumidityInterpolator">HumidityInterpolator</a></li><li><a href="global.html#OutputInterpolator">OutputInterpolator</a></li><li><a href="global.html#TimeInterpolator">TimeInterpolator</a></li><li><a href="global.html#VerticalInterpolator">VerticalInterpolator</a></li><li><a href="global.html#WGRIBInterpolator">WGRIBInterpolator</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.2</a> on Thu Nov 28 2019 18:08:43 GMT+0100 (heure normale d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

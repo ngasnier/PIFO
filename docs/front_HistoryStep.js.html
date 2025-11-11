@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: front/HistoryStep.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: front/HistoryStep.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* 
+ * Copyright (C) 2019 Nicolas GASNIER (http://www.meteo-blois.fr/contact/)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/>.
+ */
+
+import { Step } from "./Step.js";
+import { DataSource } from "./DataSource.js";
+import { Variable } from "../modeling/Variable.js";
+
+/**
+ * Gère l'historisation des variables du modèle à intervalle régulier.
+ * 
+ * &lt;p>Paramères : 
+ * &lt;ul>
+ * &lt;li>dataSource: référence vers la DataSource où devront être écrites les 
+ * données.&lt;/li>
+ * &lt;li>historyInterval: intervalle d'écriture des données en heures. Les données
+ * sont écrites à partir de t=0.
+ * &lt;li>variables : tableau de nom des variables à historiser sous forme
+ * &lt;code>{name:"variable"}&lt;/code>
+ * &lt;/li>
+ * &lt;/ul>
+ * &lt;/p>
+ * @type type
+ */
+export class HistoryStep extends Step
+{
+    /**
+     * 
+     * @returns {undefined}
+     */
+    constructor()
+    {
+        super();
+        this.variables = [];
+        this.dataSource = null;
+        this.historyIntervall = 3;
+        
+        this.nextHistory = 0;
+        this.precHistory = "";
+        this.historyInfo = "";
+    }
+    
+    async init(p_model)
+    {
+        try
+        {
+            if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_WRITE);
+            
+            this.nextHistory = 0;
+            //this.nextHistory = 3600*this.historyInterval;
+            
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+
+    async stepFinish(p_model)
+    {
+        try
+        {
+            // Pour historiser T=0 sur les scénario d'init
+            if (p_model.time==0)
+            {
+                await this.doHistory(p_model);
+            }
+            if (this.dataSource.isOpen()) await this.dataSource.close();
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    async stepBegin(p_model)
+    {
+        try
+        {
+            // Pour historiser T=0
+            if (p_model.time>=this.nextHistory)
+            {
+                await this.doHistory(p_model);
+            }
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    async stepDo(p_model)
+    {
+        try
+        {            
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    async stepEnd(p_model)
+    {
+        try
+        {
+            if (p_model.time>=this.nextHistory)
+            {
+                await this.doHistory(p_model);
+            }
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    async doHistory(p_model)
+    {
+        try
+        {
+            this.sendMessage(`history time ${p_model.time}`);
+            var hours = Math.floor(p_model.time/3600);
+
+            if (!this.dataSource.isOpen()) await this.dataSource.open(DataSource.MODE_WRITE);
+
+            this.dataSource.name = p_model.name;
+            this.dataSource.initDate = p_model.startDate;
+            this.dataSource.addTime(hours);
+
+            for (var i in this.variables)
+            {
+                var v = this.variables[i];
+                this.sendMessage(`writing field ${v.name} ${hours}`);
+                await this.dataSource.writeField(v.name, hours, p_model.getVariable(v.name));
+            }
+
+            await this.dataSource.writeField("levels", hours, p_model.verticalCoords);
+
+            this.nextHistory += this.historyInterval*3600;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AbsoluteVorticityComponent.html">AbsoluteVorticityComponent</a></li><li><a href="ArithmeticComponent.html">ArithmeticComponent</a></li><li><a href="BaroclinicHydrostaticCore.html">BaroclinicHydrostaticCore</a></li><li><a href="BarotropicCore.html">BarotropicCore</a></li><li><a href="BarotropicSemiImplicitCore.html">BarotropicSemiImplicitCore</a></li><li><a href="BoundaryCondition.html">BoundaryCondition</a></li><li><a href="Component.html">Component</a></li><li><a href="ConfigManager.html">ConfigManager</a></li><li><a href="ConformalProjection.html">ConformalProjection</a></li><li><a href="CoriolisFactorComponent.html">CoriolisFactorComponent</a></li><li><a href="CouplingLimitedAreaBoundaryCondition.html">CouplingLimitedAreaBoundaryCondition</a></li><li><a href="CouplingStep.html">CouplingStep</a></li><li><a href="DataProcessor.html">DataProcessor</a></li><li><a href="DataSource.html">DataSource</a></li><li><a href="DFIInitScenario.html">DFIInitScenario</a></li><li><a href="DynamicsCore.html">DynamicsCore</a></li><li><a href="Earth.html">Earth</a></li><li><a href="FileInfo.html">FileInfo</a></li><li><a href="Grid.html">Grid</a></li><li><a href="HistoryStep.html">HistoryStep</a></li><li><a href="LatLonDomain.html">LatLonDomain</a></li><li><a href="LeapFrogTimeIntegrator.html">LeapFrogTimeIntegrator</a></li><li><a href="Matrix.html">Matrix</a></li><li><a href="MercatorProjection.html">MercatorProjection</a></li><li><a href="Model.html">Model</a></li><li><a href="ModuleLoader.html">ModuleLoader</a></li><li><a href="PhysicsScheme.html">PhysicsScheme</a></li><li><a href="PolarStereographicProjection.html">PolarStereographicProjection</a></li><li><a href="PrecipitationScheme.html">PrecipitationScheme</a></li><li><a href="PRMSLComponent.html">PRMSLComponent</a></li><li><a href="ProjectionComponent.html">ProjectionComponent</a></li><li><a href="RecorderStep.html">RecorderStep</a></li><li><a href="RobertAsselinTimeFilter.html">RobertAsselinTimeFilter</a></li><li><a href="RunScenario.html">RunScenario</a></li><li><a href="ScalingFactorComponent.html">ScalingFactorComponent</a></li><li><a href="Scenario.html">Scenario</a></li><li><a href="SchumannFilter.html">SchumannFilter</a></li><li><a href="SigmaLevelInterpolationComponent.html">SigmaLevelInterpolationComponent</a></li><li><a href="SpatialFilter.html">SpatialFilter</a></li><li><a href="Step.html">Step</a></li><li><a href="Task.html">Task</a></li><li><a href="TextFile.html">TextFile</a></li><li><a href="TimeFilter.html">TimeFilter</a></li><li><a href="TimeIntegrator.html">TimeIntegrator</a></li><li><a href="TridiagonalSystem.html">TridiagonalSystem</a></li><li><a href="Variable.html">Variable</a></li><li><a href="VariableDescription.html">VariableDescription</a></li><li><a href="WGRIBFormat.html">WGRIBFormat</a></li><li><a href="WGRIBOutputComponent.html">WGRIBOutputComponent</a></li><li><a href="WGRIBTextFieldDataSource.html">WGRIBTextFieldDataSource</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BarotropicInterpolator">BarotropicInterpolator</a></li><li><a href="global.html#GeopotentialInterpolator">GeopotentialInterpolator</a></li><li><a href="global.html#HumidityInterpolator">HumidityInterpolator</a></li><li><a href="global.html#OutputInterpolator">OutputInterpolator</a></li><li><a href="global.html#TimeInterpolator">TimeInterpolator</a></li><li><a href="global.html#VerticalInterpolator">VerticalInterpolator</a></li><li><a href="global.html#WGRIBInterpolator">WGRIBInterpolator</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.2</a> on Thu Nov 28 2019 18:08:43 GMT+0100 (heure normale d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

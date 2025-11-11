@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: front/Scenario.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: front/Scenario.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* 
+ * Copyright (C) 2019 Nicolas GASNIER (http://www.meteo-blois.fr/contact/)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/>.
+ */
+
+import { Model } from "../modeling/Model.js";
+
+/**
+ * Définition de base d'un scenario.
+ * 
+ * &lt;p>Un scénario est un objet chargé et géré par le frontal enligne de commande
+ * ou le navigateur. Il est en charge de gérer le contenu et le déroulement 
+ * d'une simulation ou de traitements de données.&lt;/p>
+ * 
+ * &lt;p>Le frontal appelle la méthode start() du scenario, puis tant que le 
+ * statut est STATE_RUN, la méthode step() sera appelée. Le scenario est 
+ * ensuite responsable de gérer son statut et de la passer à STATE_END quand
+ * nécessaire. La méthode step() appelle automatiquement finish(). &lt;/p>
+ * 
+ * &lt;p>L'implémentateur de scénario ne devra pas directement implémenter la 
+ * méthode step(), il viendra plutôt greffer son code dans les méthodes
+ * stepBegin(), stepDo() et stepEnd(). Nb : toutes les méthodes sont
+ * asynchrones pour permettre une utilisation aisée d'opérations de type I/O.&lt;/p>
+ * 
+ * &lt;p>Il est possible d'ajouter un certain nombre d'objets "suiveurs" qui 
+ * effectueront des opérations à chaque étape appelés "Steps". Il est également
+ * possible de greffer des méthode listener onStepXXX() pour suivre l'exécution.
+ * &lt;/p>
+ * 
+ * &lt;p>Le déroulement complet d'une étape est le suivant :
+ * &lt;ol>
+ * &lt;li>Evènement onStepBegin&lt;/li>
+ * &lt;li>Etape stepBegin des steps&lt;/li>
+ * &lt;li>Etape stepBegin du scénario&lt;/li>
+ * &lt;li>Evènement onStepDo&lt;/li>
+ * &lt;li>Etap stepDo des steps&lt;/li>
+ * &lt;li>Etape stepDo du scénario&lt;/li>
+ * &lt;li>Evènement onStepDone&lt;/li>
+ * &lt;li>Etape stepEnd des steps&lt;/li>
+ * &lt;li>Etape stepEnd du scénario&lt;/li>
+ * &lt;li>Evènement onStepEnd&lt;/li>
+ * &lt;li>Si le statut est différent de STATE_RUN alors finish()&lt;/li>
+ * &lt;/ol>
+ * &lt;/p>
+ * @returns {Scenario}
+ */
+export class Scenario {
+    /**
+     * 
+     * @returns {undefined}
+     */
+    constructor()
+    {
+        this._model = null;
+        this._status = Scenario.STATE_START;
+        
+        /** Gestionnaire d'évènement message. 
+         * 
+         * &lt;p>Le scénario peut ainsi émettre un log ou un message de statut 
+         * qui peut être affiché à l'écranpar l'UI ou tracé dans un fichier.&lt;/p> 
+         */
+        this.onMessage = function(msg) {};
+        
+        /** Evènement appelé en début d'itération avant stepBegin. */
+        this.onStepBegin = function () {};
+
+        /** Evènement appelé en début d'itération après stepBegin, 
+         * mais avant stepDo.*/
+        this.onStepDo = function () {};
+              
+        /** Evènement appelé après stepDo, mais avant stepEnd.*/
+        this.onStepDone = function () {};
+        
+        /** Evènement appelé en fin d'itération après tout le reste. */
+        this.onStepEnd = function() {};
+        
+        /** Liste d'objets steps à appeler à chaque itération */
+        this.steps = [];
+    }
+
+    /**
+     * Démarre le scénario.
+     * 
+     * &lt;p>Le scénario initialise ses objets et fait toutes ses opérations
+     * et traitements d'entrée-sorties non bloquants.&lt;/p>
+     * 
+     * &lt;p>Le scénario modifie son statut STATE_RUN ou STATE_END.&lt;/p>
+     * 
+     * @returns {undefined} promesse du scénario lui-même.
+     */
+    async start()
+    {
+        try
+        {
+            this.registerStepsMessages();
+            await this.runStepsInit();
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    /**
+     * Termine le scenario.
+     * 
+     * &lt;p>C'est le placeholder pour libérer les ressources.&lt;/p>
+     * 
+     * &lt;p>Cette fonction peut être appelée de deux façon :&lt;/p>
+     * &lt;ul>
+     *  &lt;li>soit manuellement avant la fin d'un run&lt;/li>
+     *  &lt;li>soit automatiquement par step() si un changement de statut
+     *  est détecté à la fin de l'itération.&lt;/li>
+     * &lt;/ul>
+     * @returns {undefined}
+     */
+    async finish()
+    {
+        try
+        {
+            await this.runStepsFinish();
+            this._status = Scenario.STATE_END;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+
+    /**
+     * Itération du scénario. 
+     * 
+     * &lt;p>Les itérations peuvent être appelées tant que le scenario est en statut
+     * STATE_RUN.&lt;/p>
+     * @returns {Boolean}
+     */
+    async step()
+    {
+        if (this.status!=Scenario.STATE_RUN) throw "Modèle non initialisé";
+       
+        try
+        {
+            if (this.onStepBegin!=null) this.onStepBegin();
+            await this.runStepsBegin();
+            await this.stepBegin();
+
+            if (this.onStepDo!=null) this.onStepDo();
+            await this.runStepsDo();
+            await this.stepDo();
+
+            if (this.onStepDone!=null) this.onStepDone();
+
+            await this.runStepsEnd();
+            await this.stepEnd();
+            if (this.onStepEnd!=null) this.onStepEnd();
+            
+            if (this.status!=Scenario.STATE_RUN) await this.finish();
+            
+            return this;
+        }
+        catch (e)
+        {
+            throw e
+        }
+    }
+    
+    /**
+     * Opération effectuée au début de l'itération.
+     * 
+     * &lt;p>Cette méthode est le placeholder permettant aux classes dérivées de 
+     * réaliser les opérations d'initialisation avant le calcul proprement dit.&lt;/p>
+     * 
+     * &lt;p>N'effectue rien par défaut.&lt;/p>
+     * @returns {undefined}
+     */
+    async stepBegin()
+    {
+        try {
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    /**
+     * Opération de calcul de l'itération.
+     * 
+     * &lt;p>C'est le calcul du modèle proprement dit.&lt;/p>
+     * 
+     * &lt;p>N'effectue rien par défaut.&lt;/p>
+     * @returns {undefined}
+     */
+    async stepDo()
+    {
+        try {
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    /**
+     * Opération effectue à la fin de l'itération.
+     * 
+     * &lt;p>Cette méthode est le placeholder permettant aux classes dérivées de
+     * faire leurs opérations de nettoyage ou d'historisation post-calcul.&lt;/p>
+     * 
+     * &lt;p>N'effectue rien par défaut.&lt;/p>
+     * @returns {undefined}
+     */
+    async stepEnd()
+    {
+        try {
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+
+    /**
+     * Statut du scénario.
+     * @returns {String|Scenario.STATE_START|Scenario.STATE_RUN|Scenario.STATE_END}
+     */
+    get status()
+    {
+        return this._status;
+    }    
+
+    /**
+     * Modèle traité par le scénario.
+     * @returns {@param;Scenario.set model:p_model}
+     */
+    get model()
+    {
+        return this._model;
+    }
+
+    /**
+     * Modèle traité par le scénario.
+     * @param {type} p_model
+     * @returns {undefined}
+     */
+    set model(p_model)
+    {
+        this._model = p_model;
+    }
+    
+    /**
+     * Cette fonction permet d'envoyer un message à l'appelant
+     * @param {type} msg
+     * @returns {undefined}
+     */
+    sendMessage(msg)
+    {
+        if (this.onMessage!=null) this.onMessage(msg);
+    }
+
+    registerStepsMessages()
+    {
+        for (var i in this.steps)
+        {
+            this.steps[i].onMessage = this.onMessage;
+        }
+    }
+
+    
+    async runStepsInit()
+    {
+        try
+        {
+            for (var i in this.steps)
+            {
+                await this.steps[i].init(this.model);
+            }
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    async runStepsBegin()
+    {
+        try
+        {
+            for (var i in this.steps)
+            {
+                await this.steps[i].stepBegin(this.model);
+            }
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    async runStepsDo()
+    {
+        try
+        {
+            for (var i in this.steps)
+            {
+                await this.steps[i].stepDo(this.model);
+            }
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    async runStepsEnd()
+    {
+        try
+        {
+            for (var i in this.steps)
+            {
+                await this.steps[i].stepEnd(this.model);
+            }
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+
+    /**
+     * 
+     * @returns {Scenario}
+     */
+    async runStepsFinish()
+    {
+        try
+        {
+            for (var i in this.steps)
+            {
+                await this.steps[i].stepFinish(this.model);
+            }
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+}
+
+/**
+ * Etat de départ non initialisé
+ */
+Scenario.STATE_START = "Start";
+
+/**
+ * Etat initialisé
+ */
+Scenario.STATE_RUN = "Run";
+
+/**
+ * Etat terminé
+ */
+Scenario.STATE_END = "End";
+
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AbsoluteVorticityComponent.html">AbsoluteVorticityComponent</a></li><li><a href="ArithmeticComponent.html">ArithmeticComponent</a></li><li><a href="BaroclinicHydrostaticCore.html">BaroclinicHydrostaticCore</a></li><li><a href="BarotropicCore.html">BarotropicCore</a></li><li><a href="BarotropicSemiImplicitCore.html">BarotropicSemiImplicitCore</a></li><li><a href="BoundaryCondition.html">BoundaryCondition</a></li><li><a href="Component.html">Component</a></li><li><a href="ConfigManager.html">ConfigManager</a></li><li><a href="ConformalProjection.html">ConformalProjection</a></li><li><a href="CoriolisFactorComponent.html">CoriolisFactorComponent</a></li><li><a href="CouplingLimitedAreaBoundaryCondition.html">CouplingLimitedAreaBoundaryCondition</a></li><li><a href="CouplingStep.html">CouplingStep</a></li><li><a href="DataProcessor.html">DataProcessor</a></li><li><a href="DataSource.html">DataSource</a></li><li><a href="DFIInitScenario.html">DFIInitScenario</a></li><li><a href="DynamicsCore.html">DynamicsCore</a></li><li><a href="Earth.html">Earth</a></li><li><a href="FileInfo.html">FileInfo</a></li><li><a href="Grid.html">Grid</a></li><li><a href="HistoryStep.html">HistoryStep</a></li><li><a href="LatLonDomain.html">LatLonDomain</a></li><li><a href="LeapFrogTimeIntegrator.html">LeapFrogTimeIntegrator</a></li><li><a href="Matrix.html">Matrix</a></li><li><a href="MercatorProjection.html">MercatorProjection</a></li><li><a href="Model.html">Model</a></li><li><a href="ModuleLoader.html">ModuleLoader</a></li><li><a href="PhysicsScheme.html">PhysicsScheme</a></li><li><a href="PolarStereographicProjection.html">PolarStereographicProjection</a></li><li><a href="PrecipitationScheme.html">PrecipitationScheme</a></li><li><a href="PRMSLComponent.html">PRMSLComponent</a></li><li><a href="ProjectionComponent.html">ProjectionComponent</a></li><li><a href="RecorderStep.html">RecorderStep</a></li><li><a href="RobertAsselinTimeFilter.html">RobertAsselinTimeFilter</a></li><li><a href="RunScenario.html">RunScenario</a></li><li><a href="ScalingFactorComponent.html">ScalingFactorComponent</a></li><li><a href="Scenario.html">Scenario</a></li><li><a href="SchumannFilter.html">SchumannFilter</a></li><li><a href="SigmaLevelInterpolationComponent.html">SigmaLevelInterpolationComponent</a></li><li><a href="SpatialFilter.html">SpatialFilter</a></li><li><a href="Step.html">Step</a></li><li><a href="Task.html">Task</a></li><li><a href="TextFile.html">TextFile</a></li><li><a href="TimeFilter.html">TimeFilter</a></li><li><a href="TimeIntegrator.html">TimeIntegrator</a></li><li><a href="TridiagonalSystem.html">TridiagonalSystem</a></li><li><a href="Variable.html">Variable</a></li><li><a href="VariableDescription.html">VariableDescription</a></li><li><a href="WGRIBFormat.html">WGRIBFormat</a></li><li><a href="WGRIBOutputComponent.html">WGRIBOutputComponent</a></li><li><a href="WGRIBTextFieldDataSource.html">WGRIBTextFieldDataSource</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BarotropicInterpolator">BarotropicInterpolator</a></li><li><a href="global.html#GeopotentialInterpolator">GeopotentialInterpolator</a></li><li><a href="global.html#HumidityInterpolator">HumidityInterpolator</a></li><li><a href="global.html#OutputInterpolator">OutputInterpolator</a></li><li><a href="global.html#TimeInterpolator">TimeInterpolator</a></li><li><a href="global.html#VerticalInterpolator">VerticalInterpolator</a></li><li><a href="global.html#WGRIBInterpolator">WGRIBInterpolator</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.2</a> on Thu Nov 28 2019 18:08:43 GMT+0100 (heure normale d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

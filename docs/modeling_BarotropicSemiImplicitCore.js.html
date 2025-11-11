@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: modeling/BarotropicSemiImplicitCore.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: modeling/BarotropicSemiImplicitCore.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* 
+ * Copyright (C) 2019 Nicolas GASNIER (http://www.meteo-blois.fr/contact/)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/>.
+ */
+
+import { DynamicsCore } from "./DynamicsCore.js";
+import { BarotropicCore } from "./BarotropicCore.js";
+import { Model } from "./Model.js"
+import { Variable } from "./Variable.js"
+import { VariableDescription } from "./VariableDescription.js"
+import { TridiagonalSystem } from "../math/TridiagonalSystem.js"
+
+/**
+ * Coeur dynamique barotrope, résolution semi-implicite.
+ * @type type
+ */
+export class BarotropicSemiImplicitCore extends BarotropicCore
+{
+    constructor() 
+    {
+        super();
+        this.si_phi_star = 15000;
+    }
+    
+    getVariablesDescriptions()
+    {
+        var vars = super.getVariablesDescriptions();
+        
+        return vars.concat([
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"divergence", description:"divergence at time T", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"divergence_t", description:"divergence at time T-1", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"si_cx", description:"lateral coefficient of Hemlholz matrix", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"si_cy", description:"vertical coefficient of Hemlholz matrix", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"si_xy", description:"diagonal coefficient of Hemlholz matrix", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"si_phi_b", description:"vector of Hemlholz system", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"si_residu", description:"residual of Hemlholz system", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"phi_trans", description:"transcient value for phi", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"div_tmp", description:"temp variable for divergence calculations", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE}),
+            Object.assign(new VariableDescription(), {category: VariableDescription.CAT_INTERNAL, name:"tmp_var", description:"temp variable for various calculations", units:"", offsetx:0, offsety:0, verticalPosition:VariableDescription.VERTICAL_POSITION_SURFACE})
+            
+        ]);
+    }
+    
+    setup()
+    {
+        super.setup();
+    }
+    
+    solveBegin()
+    {
+        // Premier pas de temps
+        if (this._model.time==0) {
+            Variable.copy(this._model.phi, this._model.phi_trans);
+            this.calcDivergence(this._model.U, this._model.V, this._model.divergence);
+            Variable.copy(this._model.divergence, this._model.divergence_t);
+            
+            //this.si_phi_star = Variable.mean(this._model.phi);
+        }
+
+        // Tant qu'on connait encore phi(t-dt), calcule le terme d'ajustement 
+        // transitoire 2phi(t)+phi(t-dt) pour calculer les transcients U et V
+        this.calcDivergence(this._model.U, this._model.V, this._model.divergence);
+        Variable.mulConst(this._model.phi_t, -1, this._model.phi_trans); // -phi(t-dt)
+        Variable.a_bc(this._model.phi_trans, this._model.phi, 2, this._model.phi_trans); // 2*phi(t)-phit(t-dt)
+    }
+    
+    solveEnd()
+    {
+        // *** Calcul des transcients 
+        this.calcDx(this._model.phi_trans, this._model.tmp_var);
+        Variable.a_bc(this._model.U_t, this._model.tmp_var, this._model.dt, this._model.U_t);
+
+        this.calcDy(this._model.phi_trans, this._model.tmp_var);
+        Variable.a_bc(this._model.V_t, this._model.tmp_var, this._model.dt, this._model.V_t);
+
+        // Terme de divergence
+        Variable.mulConst(this._model.divergence_t, -1, this._model.div_tmp);
+        Variable.a_bc(this._model.div_tmp, this._model.divergence, 2, this._model.div_tmp);
+        Variable.mul(this._model.m, this._model.div_tmp, this._model.div_tmp); // * m^2 
+        Variable.mul(this._model.m, this._model.div_tmp, this._model.div_tmp);                
+        Variable.a_bc(this._model.phi_t, this._model.div_tmp, this._model.dt*this.si_phi_star, this._model.phi_trans);
+
+        // *** Résolution de l'équation de helmholtz
+        this.calcDivergence(this._model.U_t, this._model.V_t, this._model.div_tmp); 
+        this.initPhiAMatrix();
+        this.initPhiBVector();
+        
+        Variable.copy(this._model.phi, this._model.phi_t);
+        
+        console.log("convergence : "+TridiagonalSystem.sor(this._model.si_cx.data, 1, this._model.si_cy.data, this._model.width, this._model.si_xy.data, this._model.si_phi_b.data, 1.4, this._model.phi_t.data, this._model.si_residu.data, 0.000001, 1000));
+
+        // *** Calcul du vent et du géopotentiel final
+        this.calcDx(this._model.phi_t, this._model.tmp_var);
+        Variable.a_bc(this._model.U_t, this._model.tmp_var, -this._model.dt, this._model.U_t);
+        this.calcDy(this._model.phi_t, this._model.tmp_var);
+        Variable.a_bc(this._model.V_t, this._model.tmp_var, -this._model.dt, this._model.V_t);
+        
+        var tmp = this._model.divergence_t; this._model.divergence_t = this._model.divergence; this._model.divergence = tmp;
+    }
+    
+    calcDivergence(u, v, res)
+    {
+        var i = this._model.width+1;
+        for (var y=1;y&lt;this._model.height-1;y++)
+        {
+            for(var x=1;x&lt;this._model.width-1;x++,i++)
+            {
+                res[i] = (u[i]-u[i-1])/this._model.dx+(v[i-this._model.width]-v[i])/this._model.dy;
+            }
+            i+=2;
+        }
+    }
+      
+    initPhiAMatrix()
+    {
+        var i = 0;
+        var cx, cy;
+        for (var y=0;y&lt;this._model.height;y++)
+        {
+            for(var x=0;x&lt;this._model.width;x++,i++)
+            {
+                cx = -this._model.m.data[i]*this._model.m.data[i]*this._model.dt*this._model.dt*this.si_phi_star/(this._model.dx*this._model.dx);
+                cy = -this._model.m.data[i]*this._model.m.data[i]*this._model.dt*this._model.dt*this.si_phi_star/(this._model.dy*this._model.dy);
+
+                if (x>0 &amp;&amp; x&lt;this._model.width-1 &amp;&amp; y>0 &amp;&amp; y&lt;this._model.height-1)
+                {
+                    this._model.si_xy.data[i] = 2*this._model.m.data[i]*this._model.m.data[i]*this._model.dt*this._model.dt*this.si_phi_star*(1/(this._model.dx*this._model.dx)+1/(this._model.dy*this._model.dy))+1; 
+                    this._model.si_cx.data[i] = cx;
+                    this._model.si_cy.data[i] = cy;
+                }
+                else
+                {
+                    // Conditions aux limites
+                    this._model.si_xy.data[i] = 1;
+                    this._model.si_cx.data[i] = 0;
+                    this._model.si_cy.data[i] = 0;
+                }
+            }
+        }
+    }
+        
+    initPhiBVector()
+    {
+        var i = 0;
+        var cx, cy;
+        for (var y=0;y&lt;this._model.height;y++)
+        {
+            for(var x=0;x&lt;this._model.width;x++,i++)
+            {
+                // tmp_var contient la divergence de U et V transitoires
+                if (x>0 &amp;&amp; x&lt;this._model.width-1 &amp;&amp; y>0 &amp;&amp; y&lt;this._model.height-1)
+                    this._model.si_phi_b.data[i] = this._model.phi_trans.data[i]-this._model.m.data[i]*this._model.m.data[i]*this._model.dt*this._model.div_tmp.data[i];
+                else
+                    // Conditions aux limites
+                    this._model.si_phi_b.data[i] = this._model.phi.data[i];
+            }
+        }
+    }
+
+    calcDx(f, res)
+    {
+        var i = this._model.width+1;
+        for (var y=1;y&lt;this._model.height-1;y++)
+        {
+            for(var x=1;x&lt;this._model.width-1;x++,i++)
+            {
+                res.data[i] = (f.data[i+1]-f.data[i])/this._model.dx;
+            }
+            i+=2;
+        }
+    }
+
+    calcDy(f, res)
+    {
+        var i = this._model.width+1;
+        for (var y=1;y&lt;this._model.height-1;y++)
+        {
+            for(var x=1;x&lt;this._model.width-1;x++,i++)
+            {
+                res.data[i] = (f.data[i]-f.data[i+this._model.width])/this._model.dy;
+            }
+            i+=2;
+        }
+    }
+
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AbsoluteVorticityComponent.html">AbsoluteVorticityComponent</a></li><li><a href="ArithmeticComponent.html">ArithmeticComponent</a></li><li><a href="BaroclinicHydrostaticCore.html">BaroclinicHydrostaticCore</a></li><li><a href="BarotropicCore.html">BarotropicCore</a></li><li><a href="BarotropicSemiImplicitCore.html">BarotropicSemiImplicitCore</a></li><li><a href="BoundaryCondition.html">BoundaryCondition</a></li><li><a href="Component.html">Component</a></li><li><a href="ConfigManager.html">ConfigManager</a></li><li><a href="ConformalProjection.html">ConformalProjection</a></li><li><a href="CoriolisFactorComponent.html">CoriolisFactorComponent</a></li><li><a href="CouplingLimitedAreaBoundaryCondition.html">CouplingLimitedAreaBoundaryCondition</a></li><li><a href="CouplingStep.html">CouplingStep</a></li><li><a href="DataProcessor.html">DataProcessor</a></li><li><a href="DataSource.html">DataSource</a></li><li><a href="DFIInitScenario.html">DFIInitScenario</a></li><li><a href="DynamicsCore.html">DynamicsCore</a></li><li><a href="Earth.html">Earth</a></li><li><a href="FileInfo.html">FileInfo</a></li><li><a href="Grid.html">Grid</a></li><li><a href="HistoryStep.html">HistoryStep</a></li><li><a href="LatLonDomain.html">LatLonDomain</a></li><li><a href="LeapFrogTimeIntegrator.html">LeapFrogTimeIntegrator</a></li><li><a href="Matrix.html">Matrix</a></li><li><a href="MercatorProjection.html">MercatorProjection</a></li><li><a href="Model.html">Model</a></li><li><a href="ModuleLoader.html">ModuleLoader</a></li><li><a href="PhysicsScheme.html">PhysicsScheme</a></li><li><a href="PolarStereographicProjection.html">PolarStereographicProjection</a></li><li><a href="PrecipitationScheme.html">PrecipitationScheme</a></li><li><a href="PRMSLComponent.html">PRMSLComponent</a></li><li><a href="ProjectionComponent.html">ProjectionComponent</a></li><li><a href="RecorderStep.html">RecorderStep</a></li><li><a href="RobertAsselinTimeFilter.html">RobertAsselinTimeFilter</a></li><li><a href="RunScenario.html">RunScenario</a></li><li><a href="ScalingFactorComponent.html">ScalingFactorComponent</a></li><li><a href="Scenario.html">Scenario</a></li><li><a href="SchumannFilter.html">SchumannFilter</a></li><li><a href="SigmaLevelInterpolationComponent.html">SigmaLevelInterpolationComponent</a></li><li><a href="SpatialFilter.html">SpatialFilter</a></li><li><a href="Step.html">Step</a></li><li><a href="Task.html">Task</a></li><li><a href="TextFile.html">TextFile</a></li><li><a href="TimeFilter.html">TimeFilter</a></li><li><a href="TimeIntegrator.html">TimeIntegrator</a></li><li><a href="TridiagonalSystem.html">TridiagonalSystem</a></li><li><a href="Variable.html">Variable</a></li><li><a href="VariableDescription.html">VariableDescription</a></li><li><a href="WGRIBFormat.html">WGRIBFormat</a></li><li><a href="WGRIBOutputComponent.html">WGRIBOutputComponent</a></li><li><a href="WGRIBTextFieldDataSource.html">WGRIBTextFieldDataSource</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BarotropicInterpolator">BarotropicInterpolator</a></li><li><a href="global.html#GeopotentialInterpolator">GeopotentialInterpolator</a></li><li><a href="global.html#HumidityInterpolator">HumidityInterpolator</a></li><li><a href="global.html#OutputInterpolator">OutputInterpolator</a></li><li><a href="global.html#TimeInterpolator">TimeInterpolator</a></li><li><a href="global.html#VerticalInterpolator">VerticalInterpolator</a></li><li><a href="global.html#WGRIBInterpolator">WGRIBInterpolator</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.2</a> on Thu Nov 28 2019 18:08:43 GMT+0100 (heure normale d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

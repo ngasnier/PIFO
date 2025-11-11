@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: front/Preprocessor.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: front/Preprocessor.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* 
+ * Copyright (C) 2019 Nicolas GASNIER (http://www.meteo-blois.fr/contact/)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/>.
+ */
+
+import { DataSource } from "./DataSource.js";
+import { Scenario } from "./Scenario.js";
+import { VariableDescription } from "../modeling/VariableDescription.js";
+
+/**
+ * Traite des données en entrée pour les fournir au format du modèle.
+ * @type type
+ */
+export class Preprocessor extends Scenario
+{
+    /**
+     * 
+     * @returns {undefined}
+     */
+    constructor() 
+    {
+        super();
+        this._dataSource = null;
+        this._dataWriter = null;
+    }    
+    
+    /**
+     * La source de données pour les variables d'entrée.
+     */
+    get dataSource()
+    {
+        return this._dataSource;
+    }
+    
+    /**
+     * La source de données pour les variables d'entrée.
+     */
+    set dataSource(p_dataSource)
+    {
+        this._dataSource = p_dataSource;
+    }
+    
+    /**
+     * La source de données pour les variables de sortie.
+     * @returns {undefined}
+     */
+    get dataWriter()
+    {
+        return this._dataWriter;
+    }
+    
+    /**
+     * La source de données pour les variables de sortie.
+     * @param {type} p_dataWriter
+     * @returns {undefined}
+     */
+    set dataWriter(p_dataWriter)
+    {
+        this._dataWriter = p_dataWriter;
+    }
+    
+    /**
+     * Lance le traitement de preprocess en mode asynchrone
+     * @returns {undefined}
+     */
+    async start()
+    {
+        try {
+            await super.start();
+            
+            this.model.init();
+
+            await this._dataSource.open(DataSource.MODE_READ);
+            await this._dataWriter.open(DataSource.MODE_WRITE);
+            
+            // Passage des informations temporelles...           
+            this._dataWriter.initDate = this._dataSource.initDate;
+            
+            var model_vars = this._model.getVariablesDescriptions();
+            var data_var;
+
+            for (var t=0;t&lt;this.times.length;t++)
+            {
+                var time = this.times[t];
+                
+                for (var i=0;i&lt;model_vars.length;i++)
+                {
+                    var v = model_vars[i];
+                    if (v.category==VariableDescription.CAT_PRONOSTIC || v.category==VariableDescription.CAT_PARAMETER)
+                    {
+                        // Informations de traitement de la variable
+                        var output_var = this.getOutputVariable(v.name);
+                        if (output_var==null) throw `variable ${v.name} has no processus for output.`;
+                        
+                        // Processus par lequel traiter cette variable
+                        var process = this.getProcessus(output_var.processus);
+                        if (process==null) throw `processus ${output_var.processus} not defined.`;
+                        
+                        // Obtenir les données
+                        if ("source" in output_var) data_var = await this._dataSource.getField(output_var.source, time);
+                        else data_var = null;
+
+                        // Chainage des transformations du processus
+                        var result_var = data_var;
+                        for (var p in process.transformations)
+                        {
+                            var trans_name = process.transformations[p];
+                            var trans = this.getTransformation(trans_name);
+                            if (trans==null) throw `transformation ${trans_name} not defined.`;
+                            result_var = trans.transform(v, result_var);
+                        }
+                        
+                        // Ecriture des fichiers
+                        this.dataWriter.addTime(time);
+                        await this.dataWriter.writeField(v.name, time, result_var);
+                    }
+                }
+            }
+            
+            this._status = Scenario.STATE_END;
+                    
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }        
+    }
+    
+    /**
+     * 
+     * @returns {undefined}
+     */
+    async finish()
+    {
+        try
+        {
+            if (this._dataSource.isOpen()) await this._dataSource.close();
+            if (this._dataWriter.isOpen()) await this._dataWriter.close();
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+       
+    /**
+     * 
+     * @param {type} p_trans
+     * @returns {Preprocessor.transformations}
+     */
+    getTransformation(p_trans)
+    {
+        for (var i in this.transformations)
+        {
+            if (this.transformations[i].name == p_trans)
+            {
+                this.transformations[i].model = this.model;
+                return this.transformations[i];
+            }
+        }
+    }
+    
+    /**
+     * 
+     * @param {type} p_field
+     * @returns {undefined}
+     */
+    getProcessus(p_process)
+    {
+        for (var i in this.processus)
+        {
+            if (this.processus[i].name == p_process)
+            {
+                return this.processus[i];
+            }
+        }
+    }
+    
+    /**
+     * 
+     * @returns {undefined}
+     */
+    getOutputVariable(p_field)
+    {
+        for (var i in this.output)
+        {
+            if (this.output[i].variable == p_field)
+            {
+                return this.output[i];
+            }
+        }
+    }
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ArithmeticTransformation.html">ArithmeticTransformation</a></li><li><a href="BarotropicCore_BarotropicCore.html">BarotropicCore</a></li><li><a href="BoundaryCondition.html">BoundaryCondition</a></li><li><a href="ConfigManager.html">ConfigManager</a></li><li><a href="ConformalProjection.html">ConformalProjection</a></li><li><a href="CoriolisFactorTransformation.html">CoriolisFactorTransformation</a></li><li><a href="CouplingLimitedAreaBoundaryCondition.html">CouplingLimitedAreaBoundaryCondition</a></li><li><a href="CouplingStep.html">CouplingStep</a></li><li><a href="DataSource.html">DataSource</a></li><li><a href="DataTransformation.html">DataTransformation</a></li><li><a href="DynamicsCore.html">DynamicsCore</a></li><li><a href="FileInfo.html">FileInfo</a></li><li><a href="HistoryStep.html">HistoryStep</a></li><li><a href="LeapFrogTimeIntegrator.html">LeapFrogTimeIntegrator</a></li><li><a href="MercatorProjection.html">MercatorProjection</a></li><li><a href="Model.html">Model</a></li><li><a href="ModuleLoader.html">ModuleLoader</a></li><li><a href="Preprocessor.html">Preprocessor</a></li><li><a href="ProjectionTransformation.html">ProjectionTransformation</a></li><li><a href="RobertAsselinTimeFilter.html">RobertAsselinTimeFilter</a></li><li><a href="RunScenario.html">RunScenario</a></li><li><a href="ScalingFactorTransformation.html">ScalingFactorTransformation</a></li><li><a href="Scenario.html">Scenario</a></li><li><a href="SchumannFilter_SchumannFilter.html">SchumannFilter</a></li><li><a href="Step.html">Step</a></li><li><a href="TextFile.html">TextFile</a></li><li><a href="TimeFilter.html">TimeFilter</a></li><li><a href="TimeIntegrator.html">TimeIntegrator</a></li><li><a href="Variable.html">Variable</a></li><li><a href="VariableDescription.html">VariableDescription</a></li><li><a href="WGRIBFormat.html">WGRIBFormat</a></li><li><a href="WGRIBTextFieldDataSource.html">WGRIBTextFieldDataSource</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BaroclinicModel">BaroclinicModel</a></li><li><a href="global.html#BarotropicInterpolator">BarotropicInterpolator</a></li><li><a href="global.html#BarotropicModel">BarotropicModel</a></li><li><a href="global.html#GeopotentialInterpolator">GeopotentialInterpolator</a></li><li><a href="global.html#HumidityInterpolator">HumidityInterpolator</a></li><li><a href="global.html#HydrostaticLeapFrogDynamicsCore">HydrostaticLeapFrogDynamicsCore</a></li><li><a href="global.html#HydrostaticLeapFrogDynamicsCore_CP">HydrostaticLeapFrogDynamicsCore_CP</a></li><li><a href="global.html#interpLatLonGridToDomain">interpLatLonGridToDomain</a></li><li><a href="global.html#latLonToXY">latLonToXY</a></li><li><a href="global.html#OutputInterpolator">OutputInterpolator</a></li><li><a href="global.html#scaleFactor">scaleFactor</a></li><li><a href="global.html#TimeInterpolator">TimeInterpolator</a></li><li><a href="global.html#VerticalInterpolator">VerticalInterpolator</a></li><li><a href="global.html#WGRIBInterpolator">WGRIBInterpolator</a></li><li><a href="global.html#xyToLatLon">xyToLatLon</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Mar 05 2019 09:04:28 GMT+0100 (heure normale d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

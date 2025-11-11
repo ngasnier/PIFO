@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: util/VerticalInterpolator.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: util/VerticalInterpolator.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* 
+Copyright (C) 2018 Nicolas GASNIER (http://www.meteo-blois.fr/contact/)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see &lt;http://www.gnu.org/licenses/>.
+*/
+
+
+/**
+ * Interpole les valeurs de z500 pour le modèle et inversement.
+ * @returns {undefined}
+ */
+export var VerticalInterpolator = function ()
+{  
+    this.inputLevels = [];
+    
+    this.sigmaLevels = [];
+    
+    this.surfacePressure = [];
+}
+
+VerticalInterpolator.prototype.interp = function(vin, vout)
+{
+    var i = 0;
+    var p = 0;
+    var pa, pb;
+    var found = false;
+    for (var k=0;k&lt;this.sigmaLevels.length;k++)
+    {
+        for(var i=0;i&lt;vout[k].length;i++)
+        {
+            p = this.sigmaLevels[k] * this.surfacePressure[i];
+
+            found = false;
+            for (var l=1;l&lt;this.inputLevels.length;l++)
+            {
+                pa = this.inputLevels[l-1];
+                pb = this.inputLevels[l];
+                if (p>=pa &amp;&amp; p&lt;pb)
+                {                               
+                    vout[k][i] = vin[l-1][i]+(p-pa)*(vin[l][i]-vin[l-1][i])/(pb-pa);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                if (p&lt;this.inputLevels[0])
+                    vout[k][i] = vin[0][i];
+                else
+                    vout[k][i] = vin[this.inputLevels.length-1][i];
+            }
+        }
+    }
+}
+
+VerticalInterpolator.prototype.modelToPressureLevel = function(vin, pressure, vout)
+{
+    var s, geop, sa, sb;
+    var found = false;
+    for(var i=0;i&lt;vout.length;i++)
+    {
+        s = pressure / this.surfacePressure[i];
+        geop = 0;
+        found = false;
+        for (var z=1;z&lt;vin.length;z++)
+        {
+            sa = this.sigmaLevels[z-1];
+            sb = this.sigmaLevels[z];
+            if (s>=sa &amp;&amp; s&lt;sb)
+            {
+                geop = vin[z-1][i]+(s-sa)*(vin[z][i]-vin[z-1][i])/(sb-sa);
+                found=true;
+                break;
+            }
+        }
+        if (!found)
+        {
+            if (s&lt;=this.sigmaLevels[0])
+                geop = vin[0][i];
+            else
+                geop = vin[vin.length-1][i];
+        }
+        vout[i] = geop;
+    }
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ArithmeticTransformation.html">ArithmeticTransformation</a></li><li><a href="BarotropicCore_BarotropicCore.html">BarotropicCore</a></li><li><a href="BoundaryCondition.html">BoundaryCondition</a></li><li><a href="ConfigManager.html">ConfigManager</a></li><li><a href="ConformalProjection.html">ConformalProjection</a></li><li><a href="CoriolisFactorTransformation.html">CoriolisFactorTransformation</a></li><li><a href="CouplingLimitedAreaBoundaryCondition.html">CouplingLimitedAreaBoundaryCondition</a></li><li><a href="CouplingStep.html">CouplingStep</a></li><li><a href="DataSource.html">DataSource</a></li><li><a href="DataTransformation.html">DataTransformation</a></li><li><a href="DynamicsCore.html">DynamicsCore</a></li><li><a href="FileInfo.html">FileInfo</a></li><li><a href="HistoryStep.html">HistoryStep</a></li><li><a href="LeapFrogTimeIntegrator.html">LeapFrogTimeIntegrator</a></li><li><a href="MercatorProjection.html">MercatorProjection</a></li><li><a href="Model.html">Model</a></li><li><a href="ModuleLoader.html">ModuleLoader</a></li><li><a href="Preprocessor.html">Preprocessor</a></li><li><a href="ProjectionTransformation.html">ProjectionTransformation</a></li><li><a href="RobertAsselinTimeFilter.html">RobertAsselinTimeFilter</a></li><li><a href="RunScenario.html">RunScenario</a></li><li><a href="ScalingFactorTransformation.html">ScalingFactorTransformation</a></li><li><a href="Scenario.html">Scenario</a></li><li><a href="SchumannFilter_SchumannFilter.html">SchumannFilter</a></li><li><a href="Step.html">Step</a></li><li><a href="TextFile.html">TextFile</a></li><li><a href="TimeFilter.html">TimeFilter</a></li><li><a href="TimeIntegrator.html">TimeIntegrator</a></li><li><a href="Variable.html">Variable</a></li><li><a href="VariableDescription.html">VariableDescription</a></li><li><a href="WGRIBFormat.html">WGRIBFormat</a></li><li><a href="WGRIBTextFieldDataSource.html">WGRIBTextFieldDataSource</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BaroclinicModel">BaroclinicModel</a></li><li><a href="global.html#BarotropicInterpolator">BarotropicInterpolator</a></li><li><a href="global.html#BarotropicModel">BarotropicModel</a></li><li><a href="global.html#GeopotentialInterpolator">GeopotentialInterpolator</a></li><li><a href="global.html#HumidityInterpolator">HumidityInterpolator</a></li><li><a href="global.html#HydrostaticLeapFrogDynamicsCore">HydrostaticLeapFrogDynamicsCore</a></li><li><a href="global.html#HydrostaticLeapFrogDynamicsCore_CP">HydrostaticLeapFrogDynamicsCore_CP</a></li><li><a href="global.html#interpLatLonGridToDomain">interpLatLonGridToDomain</a></li><li><a href="global.html#latLonToXY">latLonToXY</a></li><li><a href="global.html#OutputInterpolator">OutputInterpolator</a></li><li><a href="global.html#scaleFactor">scaleFactor</a></li><li><a href="global.html#TimeInterpolator">TimeInterpolator</a></li><li><a href="global.html#VerticalInterpolator">VerticalInterpolator</a></li><li><a href="global.html#WGRIBInterpolator">WGRIBInterpolator</a></li><li><a href="global.html#xyToLatLon">xyToLatLon</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Mar 05 2019 09:04:28 GMT+0100 (heure normale d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

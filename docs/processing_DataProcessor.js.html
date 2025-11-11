@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: processing/DataProcessor.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: processing/DataProcessor.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* 
+ * Copyright (C) 2019 Nicolas GASNIER (http://www.meteo-blois.fr/contact/)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/>.
+ */
+
+import { DataSource } from "../front/DataSource.js";
+import { Scenario } from "../front/Scenario.js";
+import { VariableDescription } from "../modeling/VariableDescription.js";
+
+const MPI = require('nodempi');
+
+/**
+ * Traite des données en entrée pour les fournir au format du modèle.
+ * @type type
+ */
+export class DataProcessor extends Scenario
+{
+    /**
+     * 
+     * @returns {undefined}
+     */
+    constructor() 
+    {
+        super();
+        
+        this.dataSources = [];
+        
+        this.processList = [];
+        
+        this.tasks = []; 
+        
+        this.currentProcess = 0;
+        
+        if (MPI.CommSize()>1) 
+            throw "cannot run DataProcessor if MPI comm size is greater than 1.";
+    }    
+
+    /**
+     * Lance le traitement de preprocess en mode asynchrone
+     * @returns {undefined}
+     */
+    async start()
+    {
+        try {
+            await super.start();
+            
+            this.model.setup();
+           
+            this.currentProcess = 0;            
+                       
+            this._status = Scenario.STATE_RUN;
+                    
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }        
+    }
+    
+    
+    async stepDo()
+    {
+        try {
+            if (this.currentProcess&lt;this.processList.length)
+            {
+                this.sendMessage(`preprocessor : processing ${this.processList[this.currentProcess].name}`);
+                var task = this.getTask(this.processList[this.currentProcess].task);
+                task.onMessage = this.onMessage;
+                
+                task.model = this.model;
+                
+                this.sendMessage(`preprocessor : task ${task.name}`);
+                
+                await task.setup();
+                
+                // Passage des paramètres
+                for (var i=0;i&lt;task.parameters.length;i++)
+                {
+                    var paramValue = this.getProcessParameterValue(this.processList[this.currentProcess], task.parameters[i]);
+                    task.setParameterValue(task.parameters[i], paramValue);
+                }
+                
+                await task.process();
+                
+                await task.terminate();
+                
+                this.currentProcess++;
+            }
+            else
+            {
+                this._status = Scenario.STATE_END;
+            }
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+    
+    /**
+     * 
+     * @returns {undefined}
+     */
+    async finish()
+    {
+        try
+        {            
+            return this;
+        }
+        catch (e)
+        {
+            throw e;
+        }
+    }
+       
+    /**
+     * 
+     * @param {type} p_task
+     * @returns {undefined}
+     */
+    getTask(p_task)
+    {
+        for (var i in this.tasks)
+        {
+            if (this.tasks[i].name == p_task)
+            {
+                return this.tasks[i];
+            }
+        }
+        throw `preprocessor : task ${p_task} not found.`;
+    }
+    
+    /**
+     * 
+     * @returns {undefined}
+     */
+    getOutputVariable(p_field)
+    {
+        for (var i in this.output)
+        {
+            if (this.output[i].variable == p_field)
+            {
+                return this.output[i];
+            }
+        }
+    }
+        
+    getProcessParameterValue(p, name)
+    {
+        if ("parameters" in p)
+        {
+            for (var i=0;i&lt;p.parameters.length;i++)
+            {
+                if (p.parameters[i].name==name)
+                {
+                    return p.parameters[i].value;
+                }
+            }
+            throw `${p.name} : no parameter value for ${name}`;
+        }
+        else
+        {
+            throw `${p.name} : no parameter value for ${name}`;
+        }
+    }
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AbsoluteVorticityComponent.html">AbsoluteVorticityComponent</a></li><li><a href="ArithmeticComponent.html">ArithmeticComponent</a></li><li><a href="BaroclinicHydrostaticCore.html">BaroclinicHydrostaticCore</a></li><li><a href="BarotropicCore.html">BarotropicCore</a></li><li><a href="BarotropicSemiImplicitCore.html">BarotropicSemiImplicitCore</a></li><li><a href="BoundaryCondition.html">BoundaryCondition</a></li><li><a href="Component.html">Component</a></li><li><a href="ConfigManager.html">ConfigManager</a></li><li><a href="ConformalProjection.html">ConformalProjection</a></li><li><a href="CoriolisFactorComponent.html">CoriolisFactorComponent</a></li><li><a href="CouplingLimitedAreaBoundaryCondition.html">CouplingLimitedAreaBoundaryCondition</a></li><li><a href="CouplingStep.html">CouplingStep</a></li><li><a href="DataProcessor.html">DataProcessor</a></li><li><a href="DataSource.html">DataSource</a></li><li><a href="DFIInitScenario.html">DFIInitScenario</a></li><li><a href="DynamicsCore.html">DynamicsCore</a></li><li><a href="Earth.html">Earth</a></li><li><a href="FileInfo.html">FileInfo</a></li><li><a href="Grid.html">Grid</a></li><li><a href="HistoryStep.html">HistoryStep</a></li><li><a href="LatLonDomain.html">LatLonDomain</a></li><li><a href="LeapFrogTimeIntegrator.html">LeapFrogTimeIntegrator</a></li><li><a href="Matrix.html">Matrix</a></li><li><a href="MercatorProjection.html">MercatorProjection</a></li><li><a href="Model.html">Model</a></li><li><a href="ModuleLoader.html">ModuleLoader</a></li><li><a href="PhysicsScheme.html">PhysicsScheme</a></li><li><a href="PolarStereographicProjection.html">PolarStereographicProjection</a></li><li><a href="PrecipitationScheme.html">PrecipitationScheme</a></li><li><a href="PRMSLComponent.html">PRMSLComponent</a></li><li><a href="ProjectionComponent.html">ProjectionComponent</a></li><li><a href="RecorderStep.html">RecorderStep</a></li><li><a href="RobertAsselinTimeFilter.html">RobertAsselinTimeFilter</a></li><li><a href="RunScenario.html">RunScenario</a></li><li><a href="ScalingFactorComponent.html">ScalingFactorComponent</a></li><li><a href="Scenario.html">Scenario</a></li><li><a href="SchumannFilter.html">SchumannFilter</a></li><li><a href="SigmaLevelInterpolationComponent.html">SigmaLevelInterpolationComponent</a></li><li><a href="SpatialFilter.html">SpatialFilter</a></li><li><a href="Step.html">Step</a></li><li><a href="Task.html">Task</a></li><li><a href="TextFile.html">TextFile</a></li><li><a href="TimeFilter.html">TimeFilter</a></li><li><a href="TimeIntegrator.html">TimeIntegrator</a></li><li><a href="TridiagonalSystem.html">TridiagonalSystem</a></li><li><a href="Variable.html">Variable</a></li><li><a href="VariableDescription.html">VariableDescription</a></li><li><a href="WGRIBFormat.html">WGRIBFormat</a></li><li><a href="WGRIBOutputComponent.html">WGRIBOutputComponent</a></li><li><a href="WGRIBTextFieldDataSource.html">WGRIBTextFieldDataSource</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BarotropicInterpolator">BarotropicInterpolator</a></li><li><a href="global.html#GeopotentialInterpolator">GeopotentialInterpolator</a></li><li><a href="global.html#HumidityInterpolator">HumidityInterpolator</a></li><li><a href="global.html#OutputInterpolator">OutputInterpolator</a></li><li><a href="global.html#TimeInterpolator">TimeInterpolator</a></li><li><a href="global.html#VerticalInterpolator">VerticalInterpolator</a></li><li><a href="global.html#WGRIBInterpolator">WGRIBInterpolator</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.2</a> on Thu Nov 28 2019 18:08:43 GMT+0100 (heure normale d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

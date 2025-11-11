@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: modeling/PrecipitationScheme.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: modeling/PrecipitationScheme.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* 
+ * Copyright (C) 2018 Nicolas GASNIER (http://www.meteo-blois.fr/contact/)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/>.
+ */
+
+import { Model } from './Model.js';
+import { PhysicsScheme } from './PhysicsScheme.js';
+import { Variable } from './Variable.js';
+import { Utility } from './Utility.js';
+
+/**
+ * Schéma de paramétrisation des pluies non convectives, de type Kessler.
+ * @type type
+ */
+export class PrecipitationScheme extends PhysicsScheme
+{
+    constructor()
+    {
+        super();
+    }
+    
+    h(t)
+    {
+        if (t&lt;Model.T00)
+        {
+            var tmp = (t-Model.T00)/(2*11.82);
+            return 1-Math.exp(-tmp*tmp);
+        }
+        else
+        {
+            return 0.0;
+        }
+    }
+    
+    setup()
+    {
+        
+    }
+        
+    step()
+    {
+        var qsat;
+        var width = this._model.width;
+        var height = this._model.height;
+        var nbLayers = this._model.nbLayers;
+        var k_tilde = 0;
+        var k_couche = 0;
+        var k_tilde1 = 0;
+        var prems = false;
+        var dq = 0;
+        var flux = 0;
+        var ri, ri_tmp;
+        var rf, rf_tmp;
+        var C_star, mevap;
+        var P_temp = 0;
+        var P_tot = 0, P_tot_save=0;
+        var i=0, j=0, k = 0;
+        for (j=0;j&lt;height;j++)
+        {
+            for (i=0;i&lt;width;i++)
+            {
+                P_tot = 0;
+                ri = 0;
+                ri_tmp = 0;
+                rf = 0;
+                rf_tmp = 0;
+                prems = true;
+                for (k=0;k&lt;nbLayers ;k++)
+                {
+                    k_tilde = this._model.surfacesIndices[k];
+                    k_couche = this._model.layersIndices[k];
+                    k_tilde1 = this._model.surfacesIndices[k+1];
+                    this._model.Pl.set3(i,j,k+1, 0);
+                    this._model.Pi.set3(i,j,k+1, 0);
+                    qsat = Utility.qsat(this._model.p.get3(i,j,k_couche), this._model.T.get3(i,j,k));
+                    dq = this._model.qv.get3(i,j,k) - qsat;
+                    P_tot_save = P_tot;
+
+                    // Saturation
+                    if (this._model.qv.get3(i,j,k)>=qsat)
+                    {
+                        // Ajout de flux de précipitations
+                        flux = (dq)*(this._model.p.get3(i,j,k_tilde1)-this._model.p.get3(i,j,k_tilde))/(this._model.dt*Model.g)
+                        P_tot = P_tot_save + flux;
+
+                        // Calcul de la proportion provisionnelle
+                        if (this._model.T.get3(i,j,k)&lt;Model.T00)
+                        {
+                            ri_tmp = (ri*P_tot_save+P_tot-P_tot_save)/P_tot;
+                            rf_tmp = (rf*P_tot_save+this.h(this._model.T.get3(i,j,k))*(P_tot-P_tot_save))/P_tot;
+                        }
+                        else
+                        {
+                            ri_tmp = (ri*P_tot_save)/P_tot;
+                            rf_tmp = (rf*P_tot_save)/P_tot;
+                        }
+
+                        // Effet de la fonte sur ri
+                        if (prems)
+                        {
+                            if (this._model.T.get3(i,j,k)&lt;Model.T00)
+                            {
+                                ri = 1;
+                                rf = this.h(this._model.T.get3(i,j,k));
+                            }
+                            else
+                            {
+                                ri = 0;
+                                rf = 0;
+                            }
+                            prems = false;
+                        }
+                        else
+                        {
+                            // Le processus de fonte/gelage modifie ri
+                            C_star = 2.4e4 * (1-rf_tmp)+2.4e4*80*rf_tmp;
+                            mevap = C_star*((this._model.T.get3(i,j,k)-Model.T00)/(0.5*(Math.sqrt(P_tot_save)+Math.sqrt(P_tot))))
+                                *(1/this._model.p.get3(i,j,k_tilde)-1/this._model.p.get3(i,j,k_tilde1));
+                            ri = ri_tmp - mevap*(P_tot-P_tot_save);
+                            ri *= ri;
+                            rf = rf_tmp - mevap*(P_tot-P_tot_save);
+                            rf *= rf;
+
+                            // On ne peut pas fondre ou geler plus que 100% 
+                            if (ri>1) ri = 1;
+                            if (ri&lt;0) ri = 0;
+                            if (rf>1) rf = 1;
+                            if (rf&lt;0) rf = 0;
+                        }
+
+                        // Flux de vapeur vers liquide/solide dépend de ce qui 
+                        // est produit dans la couche
+                        flux = flux / (this._model.dt*2);
+                        this._model.Pl_1.set3(i, j, k+1, flux*(1-ri_tmp));
+                        this._model.Pi_1.set3(i, j, k+1, flux*ri_tmp);
+                        //this._model.Pl_1[k][i] = (this._model.qv[k][i]-qsat);
+                    }
+                    else if (this._model.Pl.get3(i,j,k+1)>0)
+                    {
+                        // Evaporation du mélange pluie/neige
+                        C_star = 4.8e6*(1-rf_tmp)+4.8e6*80*rf_tmp;
+                        mevap = C_star*(this._model.qv.get3(i,j,k)-qsat)*(1/this._model.p.get3(i,j,k_tilde)-1/this._model.p.get3(i,j,k_tilde1));
+                        P_temp = Math.sqrt(P_tot_save) + mevap;
+                        P_tot = P_temp*P_temp;
+                        // Nb : ri et rf inchangés pendant l'évaporation
+                        ri_tmp = ri;
+                        rf_tmp = rf;
+
+                        // Flux de liquide/solide vers vapeur
+                        flux = (P_tot-P_tot_save) / (this._model.dt*2);
+                        this._model.Pl_3.set3(i, j, k+1, flux*(1-rf_tmp));
+                        this._model.Pi_3.set3(i, j, k+1, flux*ri_tmp);
+
+                        // Reste a modifier proportion neige/eau comme ci-dessus
+                        C_star = 2.4e4 * (1-rf_tmp)+2.4e4*80*rf_tmp;
+                        mevap = C_star*((this._model.T.get3(i,j,k)-Model.T00)/(0.5*(Math.sqrt(P_tot_save)+Math.sqrt(P_tot))))
+                            *(1/this._model.p.get3(i,j,k_tilde)-1/this._model.p.get3(i,j,k_tilde1));
+                        ri = ri_tmp - mevap*(P_tot-P_tot_save);
+                        ri *= ri;
+                        rf = rf_tmp - mevap*(P_tot-P_tot_save);
+                        rf *= rf;
+
+                        // On ne peut pas fondre ou geler plus que 100% 
+                        if (ri>1) ri = 1;
+                        if (ri&lt;0) ri = 0;
+                        if (rf>1) rf = 1;
+                        if (rf&lt;0) rf = 0;
+                    }
+
+                    // Flux final, élimine toute erreur en tronquant le négatif
+                    if (P_tot&lt;0.0) P_tot = 0.0;
+                    this._model.Pl.set3(i, j, k+1, (1-ri)*P_tot);
+                    this._model.Pi.set3(i, j, k+1, ri*P_tot);
+                }
+            }
+        }
+    }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AbsoluteVorticityComponent.html">AbsoluteVorticityComponent</a></li><li><a href="ArithmeticComponent.html">ArithmeticComponent</a></li><li><a href="BaroclinicHydrostaticCore.html">BaroclinicHydrostaticCore</a></li><li><a href="BarotropicCore.html">BarotropicCore</a></li><li><a href="BarotropicSemiImplicitCore.html">BarotropicSemiImplicitCore</a></li><li><a href="BoundaryCondition.html">BoundaryCondition</a></li><li><a href="Component.html">Component</a></li><li><a href="ConfigManager.html">ConfigManager</a></li><li><a href="ConformalProjection.html">ConformalProjection</a></li><li><a href="CoriolisFactorComponent.html">CoriolisFactorComponent</a></li><li><a href="CouplingLimitedAreaBoundaryCondition.html">CouplingLimitedAreaBoundaryCondition</a></li><li><a href="CouplingStep.html">CouplingStep</a></li><li><a href="DataProcessor.html">DataProcessor</a></li><li><a href="DataSource.html">DataSource</a></li><li><a href="DFIInitScenario.html">DFIInitScenario</a></li><li><a href="DynamicsCore.html">DynamicsCore</a></li><li><a href="Earth.html">Earth</a></li><li><a href="FileInfo.html">FileInfo</a></li><li><a href="Grid.html">Grid</a></li><li><a href="HistoryStep.html">HistoryStep</a></li><li><a href="LatLonDomain.html">LatLonDomain</a></li><li><a href="LeapFrogTimeIntegrator.html">LeapFrogTimeIntegrator</a></li><li><a href="Matrix.html">Matrix</a></li><li><a href="MercatorProjection.html">MercatorProjection</a></li><li><a href="Model.html">Model</a></li><li><a href="ModuleLoader.html">ModuleLoader</a></li><li><a href="PhysicsScheme.html">PhysicsScheme</a></li><li><a href="PolarStereographicProjection.html">PolarStereographicProjection</a></li><li><a href="PrecipitationScheme.html">PrecipitationScheme</a></li><li><a href="PRMSLComponent.html">PRMSLComponent</a></li><li><a href="ProjectionComponent.html">ProjectionComponent</a></li><li><a href="RecorderStep.html">RecorderStep</a></li><li><a href="RobertAsselinTimeFilter.html">RobertAsselinTimeFilter</a></li><li><a href="RunScenario.html">RunScenario</a></li><li><a href="ScalingFactorComponent.html">ScalingFactorComponent</a></li><li><a href="Scenario.html">Scenario</a></li><li><a href="SchumannFilter.html">SchumannFilter</a></li><li><a href="SigmaLevelInterpolationComponent.html">SigmaLevelInterpolationComponent</a></li><li><a href="SpatialFilter.html">SpatialFilter</a></li><li><a href="Step.html">Step</a></li><li><a href="Task.html">Task</a></li><li><a href="TextFile.html">TextFile</a></li><li><a href="TimeFilter.html">TimeFilter</a></li><li><a href="TimeIntegrator.html">TimeIntegrator</a></li><li><a href="TridiagonalSystem.html">TridiagonalSystem</a></li><li><a href="Variable.html">Variable</a></li><li><a href="VariableDescription.html">VariableDescription</a></li><li><a href="WGRIBFormat.html">WGRIBFormat</a></li><li><a href="WGRIBOutputComponent.html">WGRIBOutputComponent</a></li><li><a href="WGRIBTextFieldDataSource.html">WGRIBTextFieldDataSource</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BarotropicInterpolator">BarotropicInterpolator</a></li><li><a href="global.html#GeopotentialInterpolator">GeopotentialInterpolator</a></li><li><a href="global.html#HumidityInterpolator">HumidityInterpolator</a></li><li><a href="global.html#OutputInterpolator">OutputInterpolator</a></li><li><a href="global.html#TimeInterpolator">TimeInterpolator</a></li><li><a href="global.html#VerticalInterpolator">VerticalInterpolator</a></li><li><a href="global.html#WGRIBInterpolator">WGRIBInterpolator</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.2</a> on Thu Nov 28 2019 18:08:43 GMT+0100 (heure normale d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

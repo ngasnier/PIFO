@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: modeling/WGRIBInterpolator.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: modeling/WGRIBInterpolator.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* 
+Copyright (C) 2018 Nicolas GASNIER (http://www.meteo-blois.fr/contact/)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see &lt;http://www.gnu.org/licenses/>.
+*/
+
+import { Model } from "./Model.js";
+import { MercatorProjection } from "./MercatorProjection.js";
+
+/**
+ * Extraction et interpolation horizontale d'un domaine global vers le domaine
+ * du modèle. 
+ * 
+ * @returns {undefined}
+ */
+export var WGRIBInterpolator = function()
+{
+    this.projection = null;
+     
+    // Type de grille
+    this.gridType = Model.GRID_A;
+    
+    // Résolution d'entrée en degrés
+    this.dlatInput = 0.5;
+    
+    // Résolution d'entrée en degrés
+    this.dlonInput = 0.5;
+    
+    // Largeur de la grille d'entrée
+    this.widthInput = 720;
+    
+    // Hauteur de la grille d'entrée
+    this.heightInput = 361;
+    
+    // Type d'interpolation horizontale pour la grille C
+    // 1 = prendre le point de grille selon l'offset
+    // 2 = prendre la moyenne des deux points 
+    this.interpolationType = 1;
+    
+    // Indique qu'on travaille en grille globale
+    this.global = false;
+     
+    // Pas de grille en degré dans la direction des latitudes.
+    this.dlat = 10;
+    
+    // Pas de grille en degré dans la direction des longitudes.
+    this.dlon = 10;
+    
+    // Largeur de grille du domaine
+    this.width=36;    
+    
+    // Hauteur de grille du domaine
+    this.height=36;
+
+    // Latitude du coin haut gauche du domaine.
+    this.nlat = 90;
+    
+    // Latitude du coin bas droite du domaine.
+    this.slat = -80;
+    
+    // Latitude du coin haut gauche du domaine
+    this.wlon = 0;
+    
+    // Longitude du coin bas droite du domaine
+    this.elon = 350;
+}
+
+/**
+ * Interpole les données brutes texte dans f.
+ * 
+ * @param {type} f
+ * @param {type} data
+ * @param {type} offsetx
+ * @param {type} offsety
+ * @returns {undefined}
+ */
+WGRIBInterpolator.prototype.interp = function(f, data, offsetx, offsety, scale=false)
+{     
+    var lines = data.split('\n');
+    lines.shift();
+    
+    var lon = this.wlon;
+  
+    var ymin = this.projection.latToY(this.slat);
+    var ymax = this.projection.latToY(this.nlat);
+    var dy = (ymax-ymin)/(this.height);
+
+    var lat_in, lon_in;
+    var x_in1, y_in1;
+    var x_in2, y_in2;
+    var alpha_x, alpha_y;
+    var v1, v2, v3, v4;
+    var vv1, vv2;
+    var i = 0;
+    var y = 0;
+    if (this.global) i++;
+    
+    for (y=ymax-0.5*offsety*dy;y>ymin;y-=dy)
+    {
+        lat_in = this.projection.yToLat(y);
+        if (lat_in&lt;-90 || lat_in>90) throw "latitude overflow "+lat_in;
+        
+        y_in1 = Math.floor((lat_in+90)/this.dlatInput);
+        y_in2 = y_in1+1;
+        if (y_in2>=this.heightInput) throw "latitude overflow "+lat_in+" resulte en index interp "+y_in2;
+        alpha_y = ((lat_in+90)/this.dlatInput - y_in1)/(y_in2-y_in1);
+        
+        for (lon=this.wlon;lon&lt;this.elon;lon+=this.dlon)
+        {
+            lon_in = lon+this.dlon*0.5*offsetx;
+            if (lon_in&lt;0) lon_in += 360;
+            if (lon_in>=360) lon_in -= 360;
+            
+            x_in1 = Math.floor(lon_in/this.dlonInput);
+            x_in2 = x_in1+1;
+            if (x_in2>this.widthInput) x_in2 -= this.widthInput;
+            alpha_x = (lon_in/this.dlonInput - x_in1)/(x_in2-x_in1);
+            
+            v1 = Number(lines[x_in1+this.widthInput*y_in1]);
+            v2 = Number(lines[x_in1+this.widthInput*y_in2]);
+            v3 = Number(lines[x_in2+this.widthInput*y_in1]);
+            v4 = Number(lines[x_in2+this.widthInput*y_in2]);
+            
+            vv1 = alpha_y*v2 + (1-alpha_y)*v1;
+            vv2 = alpha_y*v4 + (1-alpha_y)*v3;
+            
+            f[i] = alpha_x*vv2 + (1-alpha_x)*vv1 ;
+            
+            if (scale)
+            {
+                f[i] = f[i]/this.projection.scaleFactor(this.projection.yToLat(y+0.5*offsety*dy), lon_in);
+            }
+
+            i++;
+        }
+        if (this.global) i+=2;
+    }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ArithmeticTransformation_ArithmeticTransformation.html">ArithmeticTransformation</a></li><li><a href="BarotropicCore_BarotropicCore.html">BarotropicCore</a></li><li><a href="BoundaryCondition.html">BoundaryCondition</a></li><li><a href="ConfigManager.html">ConfigManager</a></li><li><a href="ConformalProjection.html">ConformalProjection</a></li><li><a href="CouplingLimitedAreaBoundaryCondition.html">CouplingLimitedAreaBoundaryCondition</a></li><li><a href="DataSource.html">DataSource</a></li><li><a href="DataTransformation.html">DataTransformation</a></li><li><a href="DataWriter.html">DataWriter</a></li><li><a href="DynamicsCore.html">DynamicsCore</a></li><li><a href="LeapFrogTimeIntegrator.html">LeapFrogTimeIntegrator</a></li><li><a href="MercatorProjection.html">MercatorProjection</a></li><li><a href="Model.html">Model</a></li><li><a href="ModuleLoader.html">ModuleLoader</a></li><li><a href="Preprocessor.html">Preprocessor</a></li><li><a href="ProjectionTransformation.html">ProjectionTransformation</a></li><li><a href="RobertAsselinTimeFilter.html">RobertAsselinTimeFilter</a></li><li><a href="SchumannFilter_SchumannFilter.html">SchumannFilter</a></li><li><a href="TimeFilter.html">TimeFilter</a></li><li><a href="TimeIntegrator.html">TimeIntegrator</a></li><li><a href="global.html#Variable">Variable</a></li><li><a href="VariableDescription.html">VariableDescription</a></li><li><a href="WGRIBFormat.html">WGRIBFormat</a></li><li><a href="WGRIBTextFieldDataSource.html">WGRIBTextFieldDataSource</a></li><li><a href="WGRIBTextFieldDataWriter.html">WGRIBTextFieldDataWriter</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BaroclinicModel">BaroclinicModel</a></li><li><a href="global.html#BarotropicInterpolator">BarotropicInterpolator</a></li><li><a href="global.html#BarotropicModel">BarotropicModel</a></li><li><a href="global.html#GeopotentialInterpolator">GeopotentialInterpolator</a></li><li><a href="global.html#HumidityInterpolator">HumidityInterpolator</a></li><li><a href="global.html#HydrostaticLeapFrogDynamicsCore">HydrostaticLeapFrogDynamicsCore</a></li><li><a href="global.html#HydrostaticLeapFrogDynamicsCore_CP">HydrostaticLeapFrogDynamicsCore_CP</a></li><li><a href="global.html#interpLatLonGridToDomain">interpLatLonGridToDomain</a></li><li><a href="global.html#latLonToXY">latLonToXY</a></li><li><a href="global.html#OutputInterpolator">OutputInterpolator</a></li><li><a href="global.html#scaleFactor">scaleFactor</a></li><li><a href="global.html#Scenario">Scenario</a></li><li><a href="global.html#TimeInterpolator">TimeInterpolator</a></li><li><a href="global.html#VerticalInterpolator">VerticalInterpolator</a></li><li><a href="global.html#WGRIBInterpolator">WGRIBInterpolator</a></li><li><a href="global.html#xyToLatLon">xyToLatLon</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun Feb 17 2019 12:02:47 GMT+0100 (heure normale d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
