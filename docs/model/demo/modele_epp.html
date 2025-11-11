@@ -1,0 +1,166 @@
+<!-- 
+ This Meteo Blois source code is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ This Meteo Blois source code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ 
+  Author Nicolas Gasnier
+-->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
+    <title>Modèle météo en eau peu profonde</title>    
+    <script src="js/vendor/jquery-1.11.2.min.js"></script>
+    <script src="js/mb_meteo_epp.js"></script>
+    <script src="js/mb_meteo_epp_main.js"></script>
+<script>
+$(document).ready(function () {
+    atmos.projection = atmos.PROJ_CARTESIEN;
+    atmos.fieldFiltering = $("#filtering").is(':checked');
+    atmos.width = 144;
+    atmos.height = 72;
+    atmos.dt = 360;
+    atmos.dlat = 1;
+    atmos.dlon = 1;
+    atmos.nlat = 80;
+    atmos.slat = atmos.nlat - atmos.height * atmos.dlon;
+    atmos.elon = 40;
+    atmos.wlon = atmos.elon - atmos.width * atmos.dlon;
+    atmos.relaxation = 4;
+    for (i = 0; i < valids.length; i++)
+    {
+        reslist.push("hgt_500_" + valids[i] + ".txt");
+        reslist.push("ugrd_500_" + valids[i] + ".txt");
+        reslist.push("vgrd_500_" + valids[i] + ".txt");
+    }
+
+    printLoadingStatus();
+    $.ajax({
+        url: "res/run/" + scenario + "/runinfo.txt",
+        dataType: "text",
+        success: function (data)
+        {
+            $("#runinit").html(data);
+        }
+    });
+    $.ajax({
+        url: "res/run/" + scenario + "/" + reslist[0],
+        dataType: "text",
+        success: onFieldDownload
+    });
+});
+
+function onFieldDownload(data)
+{
+    var f = reslist[0].substring(0, 1);
+    switch (f)
+    {
+        case "h":
+            h500[h500.length] = [];
+            loadField(h500[h500.length - 1], data, 0, 0);
+            break;
+        case "u":
+            u500[u500.length] = [];
+            loadField(u500[u500.length - 1], data, 0, 0);
+            break;
+        case "v":
+            v500[v500.length] = [];
+            loadField(v500[v500.length - 1], data, 0, 0);
+            break;
+    }
+    reslist.shift();
+    if (reslist.length > 0)
+    {
+        printLoadingStatus();
+        $.ajax({
+            url: "res/run/" + scenario + "/" + reslist[0],
+            dataType: "text",
+            success: onFieldDownload
+        });
+    } else
+    {
+        $(statistics).html("Prêt");
+        status = "ready";
+        reset();
+    }
+}
+</script>
+    <style>
+        html, body {
+            overflow: hidden;
+            width   : 100%;
+            height  : 100%;
+            margin  : 0;
+            padding : 0;
+        }
+
+        #renderCanvas {
+            width   : 100%;
+            height  : 100%;
+            touch-action: none;
+        }
+        #result {
+            overflow-x : auto;
+        }
+        td, th {
+            min-width:12px;
+            min-height:12px;
+            text-align:center;
+            font-size:50%;
+        }
+        table {
+            border:0px none white;
+            border-spacing: 0px;
+        }
+    </style>
+</head>
+<body>
+<!-- BLOC ANALYTICS PART 2 -->
+<!-- THIS BLOC IS FOR ANALYTICS TRACKING OF METEO BLOIS ONLY, PLEASE REMOVE IF YOU REUSE THIS CODE -->
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NRNDLNN"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->    
+<!-- END BLOC ANALYTICS PART 2 -->
+    <p>
+        <a href="#" onclick="reset(); return false;">[Reset]</a> (<span id="runinit"></span>) - 
+        <a href="#" onclick="start(); return false;">[Start]</a> - 
+        <a href="#" onclick="step(); return false;">[Step]</a> 
+        | <input type="checkbox" name="filtering" id="filtering" title="Filtrage pour éviter l'accumulation de tourbillon menant à des infinis."/>Filtrer |       
+        <span id="statistics"></span> 
+    </p>
+
+    <p>
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">Vent</a> - 
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">Z500</a> - 
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">U</a> - 
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">V</a> - 
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">phi</a> -
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">K</a> - 
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">Tourbillon</a> - 
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">m</a> - 
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">f</a> -
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">dU/dx</a> -
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">dV/dy</a> - 
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">d(phi+K)/dx</a> -
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">d(phi+K)/dy</a> -    
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">d(phi*U)/dx</a> -
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">d(phi*V)/dy</a> -
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">alpha</a> -
+        <a href="#" onclick="currentField=$(this).html();printResult(); return false;">Diagnostics</a>   
+    </p>    
+    
+    <div id="result">
+    </div>
+</body>
+</html>
+
