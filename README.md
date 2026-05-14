@@ -58,7 +58,7 @@ Then copy the template file barocline.default.json to barocline.json. The file i
 
 Point your brower to the index.html file to get a starting point for things. To generate code documentation use the `npm run doc` command.  Please note that the project was initially written for my own usage and documented in my own native language. Therefore the doc is mostly written in french. I will make some effort in the future to translate it to english. The documentation is available in the repository. 
 
-Additionnal model description is available in french : [ttps://ngasnier.github.io/model/modeles](https://ngasnier.github.io/model/modeles).
+Additionnal model description is available in french : [https://www.meteo-blois.fr/model/modeles](https://www.meteo-blois.fr/model/modeles).
 
 
 ### The web interface ###
